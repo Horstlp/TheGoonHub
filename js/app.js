@@ -340,7 +340,7 @@ function renderFilterBadges(days, sortVal) {
   activeFilters.innerHTML = badges.map(b => `<span class="meta-badge">${b}</span>`).join(' ');
 }
 
-function injectPostCardsIntoGrid(data) {
+function injectPostCardsIntoGrid(data, targetContainer = grid) {
   data.forEach((post, index) => {
     const fileUrl = post.file_url || post.sample_url || post.preview_url;
     const previewUrl = post.preview_url || post.sample_url || post.file_url;
@@ -370,6 +370,23 @@ function injectPostCardsIntoGrid(data) {
         const v = card.querySelector('.hover-video'); if (v) v.remove();
       });
     }
+
+    // Add Save Badge directly to the card
+    const saveBadge = document.createElement('div');
+    saveBadge.className = 'save-badge';
+    const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
+    saveBadge.textContent = isSaved ? 'Saved' : 'Save';
+    if(isSaved) saveBadge.style.backgroundColor = '#8b5cf6';
+    
+    saveBadge.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent opening lightbox
+      togglePostFavoriteStatus(post);
+      const newlySaved = vaultedPosts.some(p => String(p.id) === String(post.id));
+      saveBadge.textContent = newlySaved ? 'Saved' : 'Save';
+      saveBadge.style.backgroundColor = newlySaved ? '#8b5cf6' : '#ff5e97';
+    });
+    card.appendChild(saveBadge);
+
     const footer = document.createElement('div');
     footer.className = 'card-footer';
     footer.innerHTML = `<span class="score">▲ ${post.score ?? 0}</span><span>${ext.toUpperCase()}</span>`;
@@ -378,8 +395,24 @@ function injectPostCardsIntoGrid(data) {
     
     // Observe card for width changes (responsiveness) to update rowSpan
     masonryObserver.observe(card);
-    grid.appendChild(card);
+    targetContainer.appendChild(card);
   });
+}
+
+function renderVaultGridToDedicatedView() {
+  const vaultGrid = document.getElementById('vault-grid');
+  const vaultStatus = document.getElementById('vault-status');
+  vaultGrid.innerHTML = '';
+  
+  if (vaultedPosts.length === 0) {
+    vaultStatus.style.display = 'block';
+    vaultStatus.innerHTML = '<span class="icon">💔</span>Your media vault is empty.';
+    return;
+  }
+  
+  vaultStatus.style.display = 'none';
+  cachedPosts = [...vaultedPosts]; // Update cachedPosts so lightbox works from Vault
+  injectPostCardsIntoGrid(vaultedPosts, vaultGrid);
 }
 
 async function search(tags, page, append = false) {
@@ -443,30 +476,16 @@ async function search(tags, page, append = false) {
 }
 
 function syncVaultCounterDisplay() {
-  vaultToggleBtn.textContent = `💖 My Vault (${vaultedPosts.length})`;
+  const navVault = document.getElementById('nav-vault');
+  if (navVault) {
+    navVault.title = `Vault (${vaultedPosts.length})`;
+    // We can also show the count visually if desired, but for now just title
+  }
 }
 
 function disableVaultViewMode() {
-  isViewingVault = false; vaultToggleBtn.classList.remove('active-vault');
+  isViewingVault = false;
 }
-
-function renderVaultGrid() {
-  isViewingVault = true; helpersPanel.classList.remove('open');
-  historyPanel.classList.remove('open'); vaultToggleBtn.classList.add('active-vault');
-  grid.innerHTML = ''; statusEl.style.display = 'none';
-  if(vaultedPosts.length === 0) {
-    statusEl.style.display = 'block'; statusEl.innerHTML = '<span class="icon">💔</span>Your media vault is empty.';
-    metaRow.style.display = 'none'; cachedPosts = []; return;
-  }
-  cachedPosts = [...vaultedPosts];
-  metaRow.style.display = 'flex'; paginationBox.style.display = 'none'; 
-  resultCount.textContent = `${vaultedPosts.length} items recovered`;
-  renderFilterBadges(); injectPostCardsIntoGrid(vaultedPosts);
-}
-
-vaultToggleBtn.addEventListener('click', () => {
-  if(isViewingVault) { disableVaultViewMode(); doSearch(); } else renderVaultGrid();
-});
 
 function togglePostFavoriteStatus(post) {
   const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
@@ -476,7 +495,13 @@ function togglePostFavoriteStatus(post) {
     vaultedPosts.unshift(post); lbFavBtn.classList.add('favorited'); lbFavBtn.textContent = '❤️ Favorited';
   }
   localStorage.setItem('r34_vault_v2', JSON.stringify(vaultedPosts));
-  syncVaultCounterDisplay(); if(isViewingVault) renderVaultGrid();
+  syncVaultCounterDisplay(); 
+  
+  // Re-render the vault grid if we are currently looking at it
+  const viewVault = document.getElementById('view-vault');
+  if(viewVault && viewVault.style.display !== 'none' && typeof renderVaultGridToDedicatedView === 'function') {
+    renderVaultGridToDedicatedView();
+  }
 }
 
 function openLightbox(index) {

@@ -147,19 +147,42 @@
     <div id="view-manga" class="app-view" style="display: none;">
       <header>
         <h1>Doujin Browser</h1>
-        <p>Access metadata and read chapters via Doujin API</p>
+        <p>Infinite scrolling manga grid powered by tags, and direct ID reader via Doujin API.</p>
+      </header>
+      
+      <!-- Manga Grid Search -->
+      <div class="search-wrap">
+        <div class="search-row">
+          <div class="search-input-container">
+            <input id="manga-grid-search-input" type="text" placeholder="Search manga tags... (e.g. english)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
+          </div>
+          <button id="manga-grid-search-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search Grid</button>
+        </div>
+      </div>
+      
+      <div id="manga-grid-status" style="text-align: center; color: var(--muted); padding: 20px;">
+        <span class="icon">🔍</span> Search to load comic covers...
+      </div>
+      
+      <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 40px;"></div>
+      <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;"></div>
+
+      <hr style="border-color: var(--border); margin: 40px 0;">
+
+      <!-- Specific ID Doujin API Reader -->
+      <header>
+        <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Direct ID Reader</h2>
+        <p style="color: var(--muted); font-size: 0.85rem;">Access high-quality chapters directly if you know the Gallery ID.</p>
       </header>
       <div class="search-wrap">
         <div class="search-row">
           <div class="search-input-container">
             <input id="manga-id-input" type="number" placeholder="Enter Gallery ID (e.g. 177013)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
           </div>
-          <button id="manga-fetch-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Load</button>
+          <button id="manga-fetch-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Load Chapter</button>
         </div>
       </div>
-      <div id="manga-status" style="text-align: center; color: var(--muted); padding: 40px;">
-        Enter an ID to fetch manga data
-      </div>
+      <div id="manga-status" style="text-align: center; color: var(--muted); padding: 20px;"></div>
       <div id="manga-content" style="display: none; margin-top: 20px;">
         <div style="display: flex; gap: 24px; flex-wrap: wrap;">
           <img id="manga-cover" style="width: 250px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);" />
