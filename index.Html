@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R34 Media Hub Pro</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-container">
+  <nav class="sidebar">
+    <div class="sidebar-nav">
+      <button class="sidebar-item active" id="nav-images" title="Images">🖼️</button>
+      <button class="sidebar-item" id="nav-videos" title="Videos">🎬</button>
+      <button class="sidebar-item" id="nav-manga" title="Manga">📖</button>
+      <button class="sidebar-item" id="nav-vault" title="Vault">💖</button>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <!-- IMAGES VIEW (Default) -->
+    <div id="view-images" class="app-view">
+      <header>
+        <h1>R34 Media Hub Pro</h1>
+        <p>Engineered with lightweight grid pipelines and real-time streaming preview triggers</p>
+      </header>
+
+      <div class="search-wrap">
+        <div class="search-row">
+          <div class="search-input-container" id="search-container">
+            <div id="tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;"></div>
+            <input id="search-input" type="text" placeholder="Add tags..." autocomplete="off" />
+            <div class="autocomplete-dropdown" id="autocomplete-box"></div>
+          </div>
+          <button id="search-btn">Search</button>
+        </div>
+
+        <div class="filter-row">
+          <select id="timeframe-select" class="filter-select" title="Filter by time period">
+            <option value="all">🕐 All time</option>
+            <option value="7">📅 Last 7 days</option>
+            <option value="30">📅 Last month</option>
+            <option value="90">📅 Last 3 months</option>
+            <option value="180">📅 Last 6 months</option>
+            <option value="365">📅 Last year</option>
+          </select>
+
+          <select id="sort-select" class="filter-select" title="Sort order">
+            <option value="">⚡ Default order</option>
+            <option value="sort:score:desc">🏆 Highest score</option>
+            <option value="sort:score:asc">📉 Lowest score</option>
+            <option value="sort:id:desc">🆕 Newest first</option>
+            <option value="sort:id:asc">🕰 Oldest first</option>
+            <option value="sort:updated:desc">🔄 Recently updated</option>
+            <option value="sort:random">🎲 Random</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="helpers-wrap">
+        <button class="helpers-toggle" id="helpers-toggle">
+          <span class="arrow">▶</span> Search syntax helpers
+        </button>
+        <button class="helpers-toggle" id="history-toggle">
+          <span class="arrow">▶</span> Saved &amp; History
+        </button>
+        <!-- Vault toggle moved to sidebar, but keep this button to jump to vault or remove it -->
+        <button class="helpers-toggle" id="vault-toggle" style="display: none;">
+          💖 My Vault (0)
+        </button>
+      </div>
+
+      <!-- Syntax Helpers Dashboard Panel -->
+      <div class="helpers-panel" id="helpers-panel" style="max-width: 720px; margin: 12px auto 0;">
+        <div>
+          <div class="hgroup-label">Combining tags</div>
+          <div class="chips">
+            <button class="chip" data-insert="tag1 tag2"><span class="chip-syntax">tag1 tag2</span><span class="chip-desc">AND both tags</span></button>
+            <button class="chip" data-insert="( tag1 ~ tag2 )"><span class="chip-syntax">( tag1 ~ tag2 )</span><span class="chip-desc">OR either tag</span></button>
+            <button class="chip" data-insert="-tag1"><span class="chip-syntax">-tag1</span><span class="chip-desc">exclude tag</span></button>
+          </div>
+        </div>
+        <div>
+          <div class="hgroup-label">Wildcards &amp; fuzzy</div>
+          <div class="chips">
+            <button class="chip" data-insert="ta*1"><span class="chip-syntax">ta*1</span><span class="chip-desc">wildcard match</span></button>
+            <button class="chip" data-insert="night~"><span class="chip-syntax">night~</span><span class="chip-desc">fuzzy match</span></button>
+          </div>
+        </div>
+        <div>
+          <div class="hgroup-label">Rating &amp; score</div>
+          <div class="chips">
+            <button class="chip" data-insert="rating:safe"><span class="chip-syntax">rating:safe</span><span class="chip-desc">safe only</span></button>
+            <button class="chip" data-insert="rating:questionable"><span class="chip-syntax">rating:questionable</span><span class="chip-desc">questionable</span></button>
+            <button class="chip" data-insert="rating:explicit"><span class="chip-syntax">rating:explicit</span><span class="chip-desc">explicit</span></button>
+            <button class="chip" data-insert="score:>=10"><span class="chip-syntax">score:>=10</span><span class="chip-desc">min score</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent & Pinned Searches Panel -->
+      <div class="helpers-panel" id="history-panel" style="max-width: 720px; margin: 12px auto 0;">
+        <div>
+          <div class="hgroup-label">📌 Pinned Configurations</div>
+          <div class="chips" id="pinned-chips-box"></div>
+        </div>
+        <div style="margin-top: 6px;">
+          <div class="hgroup-label">🕰️ Recent Search History</div>
+          <div class="chips" id="recent-chips-box"></div>
+        </div>
+      </div>
+
+      <div class="meta-row" id="meta-row" style="display:none">
+        <div class="meta-info">
+          <span id="result-count"></span>
+          <span id="active-filters"></span>
+        </div>
+        <div class="pagination" id="pagination-controls-box">
+          <button class="page-btn" id="prev-btn" disabled>← Prev</button>
+          <span id="page-indicator">Page 1</span>
+          <button class="page-btn" id="next-btn" disabled>Next →</button>
+        </div>
+      </div>
+
+      <div id="status">
+        <span class="icon">🔍</span>
+        Enter tags above to start scanning files
+      </div>
+
+      <div id="grid"></div>
+      <div id="scroll-sentinel"></div>
+    </div>
+
+    <!-- VIDEOS VIEW (TikTok Style) -->
+    <div id="view-videos" class="app-view" style="display: none; height: 100vh;">
+      <div class="tiktok-container" id="tiktok-container">
+        <!-- Videos will be injected here -->
+      </div>
+      <div id="video-status" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--muted); text-align: center; z-index: 10;">
+        <span class="icon" style="font-size: 2rem; display: block; margin-bottom: 10px;">🎥</span>
+        Loading videos stream...
+      </div>
+    </div>
+
+    <!-- MANGA VIEW -->
+    <div id="view-manga" class="app-view" style="display: none;">
+      <header>
+        <h1>Doujin Browser</h1>
+        <p>Access metadata and read chapters via Doujin API</p>
+      </header>
+      <div class="search-wrap">
+        <div class="search-row">
+          <div class="search-input-container">
+            <input id="manga-id-input" type="number" placeholder="Enter Gallery ID (e.g. 177013)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
+          </div>
+          <button id="manga-fetch-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Load</button>
+        </div>
+      </div>
+      <div id="manga-status" style="text-align: center; color: var(--muted); padding: 40px;">
+        Enter an ID to fetch manga data
+      </div>
+      <div id="manga-content" style="display: none; margin-top: 20px;">
+        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+          <img id="manga-cover" style="width: 250px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);" />
+          <div style="flex: 1; min-width: 300px;">
+            <h2 id="manga-title" style="margin-bottom: 12px;"></h2>
+            <div id="manga-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;"></div>
+            <button id="manga-read-btn" style="background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold;">📖 Read Manga</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VAULT VIEW -->
+    <div id="view-vault" class="app-view" style="display: none;">
+      <header>
+        <h1>My Vault</h1>
+        <p>Your locally secured media</p>
+      </header>
+      <div id="vault-grid" class="vault-grid-layout"></div>
+      <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;"></div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<div id="lightbox">
+  <button id="lightbox-close">✕ Close</button>
+  <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous">‹</button>
+  
+  <div class="lightbox-wrapper">
+    <div id="lightbox-media-container"></div>
+  </div>
+
+  <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next">›</button>
+  
+  <div id="lightbox-info">
+    <div class="lb-meta-row">
+      <span id="lb-score"></span>
+      <span id="lb-size"></span>
+      
+      <!-- Vault Interactive Connectors -->
+      <button class="lb-action-btn" id="lb-fav-btn">🤍 Favorite</button>
+      <button class="lb-action-btn" id="lb-dl-btn">📥 Download</button>
+    </div>
+    <!-- Interactive Click-to-Add Container -->
+    <div class="lb-tags-stream" id="lb-tags-stream-box"></div>
+  </div>
+</div>
+
+<!-- Manga Reader Modal -->
+<div id="manga-reader" style="display: none; position: fixed; inset: 0; background: #000; z-index: 1000; overflow-y: auto; text-align: center; padding: 20px;">
+  <button id="manga-reader-close" style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; z-index: 1010; backdrop-filter: blur(4px);">✕ Close Reader</button>
+  <div id="manga-pages-container" style="display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 1000px; margin: 0 auto;"></div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/vault.js"></script>
+<script src="js/app.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/videos.js"></script>
+<script src="js/manga.js"></script>
+</body>
+</html>
