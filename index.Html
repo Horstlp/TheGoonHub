@@ -146,15 +146,15 @@
     <!-- MANGA VIEW -->
     <div id="view-manga" class="app-view" style="display: none;">
       <header>
-        <h1>Doujin Browser</h1>
-        <p>Infinite scrolling manga grid powered by tags, and direct ID reader via Doujin API.</p>
+        <h1>MangaDex Browser</h1>
+        <p>Infinite scrolling manga grid and direct ID reader via MangaDex API.</p>
       </header>
       
       <!-- Manga Grid Search -->
       <div class="search-wrap">
         <div class="search-row">
           <div class="search-input-container">
-            <input id="manga-grid-search-input" type="text" placeholder="Search manga tags... (e.g. english)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
+            <input id="manga-grid-search-input" type="text" placeholder="Search manga titles... (e.g. naruto)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
           </div>
           <button id="manga-grid-search-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search Grid</button>
         </div>
@@ -169,15 +169,15 @@
 
       <hr style="border-color: var(--border); margin: 40px 0;">
 
-      <!-- Specific ID Doujin API Reader -->
+      <!-- Specific ID MangaDex API Reader -->
       <header>
         <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Direct ID Reader</h2>
-        <p style="color: var(--muted); font-size: 0.85rem;">Access high-quality chapters directly if you know the Gallery ID.</p>
+        <p style="color: var(--muted); font-size: 0.85rem;">Access high-quality chapters directly if you know the Manga UUID.</p>
       </header>
       <div class="search-wrap">
         <div class="search-row">
           <div class="search-input-container">
-            <input id="manga-id-input" type="number" placeholder="Enter Gallery ID (e.g. 177013)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
+            <input id="manga-id-input" type="text" placeholder="Enter Manga UUID (e.g. c52b2ce3-7f95...)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
           </div>
           <button id="manga-fetch-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Load Chapter</button>
         </div>
@@ -189,7 +189,12 @@
           <div style="flex: 1; min-width: 300px;">
             <h2 id="manga-title" style="margin-bottom: 12px;"></h2>
             <div id="manga-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;"></div>
-            <button id="manga-read-btn" style="background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold;">📖 Read Manga</button>
+            <!-- Like and Save actions for manga reader -->
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+                <button id="manga-read-btn" style="background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold;">📖 Read Manga</button>
+                <button id="manga-like-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;">♡ Like</button>
+                <button id="manga-save-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;">🤍 Save</button>
+            </div>
           </div>
         </div>
       </div>
@@ -201,6 +206,9 @@
         <h1>My Vault</h1>
         <p>Your locally secured media</p>
       </header>
+      <div class="folder-nav" id="vault-folders-nav" style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px;">
+        <!-- Folders injected here -->
+      </div>
       <div id="vault-grid" class="vault-grid-layout"></div>
       <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;"></div>
     </div>

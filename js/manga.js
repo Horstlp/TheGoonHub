@@ -10,22 +10,49 @@ const mangaReader = document.getElementById('manga-reader');
 const mangaReaderClose = document.getElementById('manga-reader-close');
 const mangaPagesContainer = document.getElementById('manga-pages-container');
 
-// --- MANGA GRID LOGIC ---
+// --- MANGA GRID LOGIC (MangaDex) ---
 const mangaGridSearchInput = document.getElementById('manga-grid-search-input');
 const mangaGridSearchBtn = document.getElementById('manga-grid-search-btn');
 const mangaGridStatus = document.getElementById('manga-grid-status');
 const mangaGridContainer = document.getElementById('manga-grid');
 const mangaScrollSentinel = document.getElementById('manga-scroll-sentinel');
 
-let currentMangaGridTags = 'comic';
-let currentMangaGridPage = 0;
+let currentMangaGridTags = '';
+let currentMangaGridPage = 1;
 let isMangaGridLoading = false;
 let hasMoreMangaGrid = true;
-// We will use the app.js cachedPosts and injectPostCardsIntoGrid to leverage existing Lightbox and masonry features
-// But we need to ensure we don't mix them up, so we'll store them in a separate array and temporarily swap if clicked.
 let cachedMangaPosts = [];
 
-async function searchMangaGrid(tags, page, append = false) {
+const MD_API_BASE = 'https://api.mangadex.org';
+const MD_PROXY = 'https://api.allorigins.win/raw?url=';
+
+function getMdTitle(manga) {
+  if(!manga || !manga.attributes || !manga.attributes.title) return 'Unknown';
+  return manga.attributes.title.en || Object.values(manga.attributes.title)[0] || 'Unknown';
+}
+
+function getMdCoverUrl(manga) {
+  if(!manga || !manga.relationships) return '';
+  const coverRel = manga.relationships.find(r => r.type === 'cover_art');
+  if (coverRel && coverRel.attributes && coverRel.attributes.fileName) {
+    return `https://uploads.mangadex.org/covers/${manga.id}/${coverRel.attributes.fileName}.256.jpg`;
+  }
+  return '';
+}
+
+// Convert MangaDex manga object into our generic post format for vault/likes
+function convertToPostFormat(manga) {
+  return {
+    id: manga.id,
+    preview_url: getMdCoverUrl(manga),
+    file_url: getMdCoverUrl(manga),
+    score: 0,
+    tags: manga.attributes.tags.map(t => t.attributes.name.en).join(' '),
+    mangaObject: manga // store original
+  };
+}
+
+async function searchMangaGrid(titleQuery, page, append = false) {
   if (isMangaGridLoading) return;
   isMangaGridLoading = true;
   mangaGridSearchBtn.disabled = true;
@@ -34,40 +61,38 @@ async function searchMangaGrid(tags, page, append = false) {
     mangaGridContainer.innerHTML = '';
     cachedMangaPosts = [];
     mangaGridStatus.style.display = 'block';
-    mangaGridStatus.innerHTML = '<div class="spinner"></div>Crunching requested parameters...';
+    mangaGridStatus.innerHTML = '<div class="spinner"></div>Fetching from MangaDex...';
     hasMoreMangaGrid = true;
   } else {
     mangaGridStatus.style.display = 'block';
-    mangaGridStatus.innerHTML = '<div class="spinner"></div>Loading more posts...';
+    mangaGridStatus.innerHTML = '<div class="spinner"></div>Loading more manga...';
   }
 
-  // Force comic tag for the manga grid
-  const tagsParam = `comic+${tags}`.trim();
-  const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g,'+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
+  const limit = 15;
+  const offset = (page - 1) * limit;
+  let url = `${MD_API_BASE}/manga?limit=${limit}&offset=${offset}&includes[]=cover_art&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+  if (titleQuery.trim()) {
+    url += `&title=${encodeURIComponent(titleQuery.trim())}`;
+  }
   
   try {
-    const res = await fetch(PROXY + encodeURIComponent(url));
-    const responseText = await res.text();
-    let data = [];
-    if (res.ok && responseText.trim()) {
-      data = JSON.parse(responseText);
-    }
+    const res = await fetch(MD_PROXY + encodeURIComponent(url));
+    const data = await res.json();
 
-    if (!data || data.length === 0) {
-      mangaGridStatus.innerHTML = cachedMangaPosts.length === 0 ? '<span class="icon">😶</span>No matching vectors found.' : '';
+    if (!data || !data.data || data.data.length === 0) {
+      mangaGridStatus.innerHTML = cachedMangaPosts.length === 0 ? '<span class="icon">😶</span>No matching manga found.' : '';
       hasMoreMangaGrid = false;
     } else {
-      cachedMangaPosts = append ? cachedMangaPosts.concat(data) : data;
+      const formattedPosts = data.data.map(convertToPostFormat);
+      cachedMangaPosts = append ? cachedMangaPosts.concat(formattedPosts) : formattedPosts;
       mangaGridStatus.style.display = 'none';
-      hasMoreMangaGrid = data.length === PER_PAGE;
+      hasMoreMangaGrid = data.data.length === limit;
       
-      // We borrow the `injectPostCardsIntoGrid` from app.js to build the masonry grid
-      // But we need to ensure Lightbox indexing works. 
-      // Workaround: when a manga card is clicked, we sync `cachedPosts` in app.js
-      injectMangaCardsIntoGrid(data);
+      injectMangaCardsIntoGrid(formattedPosts);
     }
   } catch (err) {
-    mangaGridStatus.innerHTML = `<span class="icon">⚠️</span>Network pipeline disruption.`;
+    console.error('MangaDex fetch error:', err);
+    mangaGridStatus.innerHTML = `<span class="icon">⚠️</span>API down or rate limited.`;
     hasMoreMangaGrid = false;
   }
   
@@ -77,11 +102,9 @@ async function searchMangaGrid(tags, page, append = false) {
 
 function injectMangaCardsIntoGrid(data) {
   data.forEach((post, index) => {
-    const fileUrl = post.file_url || post.sample_url || post.preview_url;
-    const previewUrl = post.preview_url || post.sample_url || post.file_url;
-    if (!fileUrl) return;
-    const ext = fileUrl.split('.').pop().toLowerCase();
-    const isVideo = ['mp4','webm'].includes(ext);
+    const previewUrl = post.preview_url;
+    if (!previewUrl) return;
+    
     const card = document.createElement('div');
     card.className = 'card';
     const img = document.createElement('img');
@@ -91,34 +114,45 @@ function injectMangaCardsIntoGrid(data) {
     img.onerror = () => { card.style.display = 'none'; };
     card.appendChild(img);
 
-    // Save Badge
-    const saveBadge = document.createElement('div');
-    saveBadge.className = 'save-badge';
-    const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-    saveBadge.textContent = isSaved ? 'Saved' : 'Save';
-    if(isSaved) saveBadge.style.backgroundColor = '#8b5cf6';
-    
-    saveBadge.addEventListener('click', (e) => {
+    const actionBadges = document.createElement('div');
+    actionBadges.className = 'action-badges';
+
+    const likeBtn = document.createElement('button');
+    likeBtn.className = 'grid-action-btn btn-like';
+    const isLiked = typeof likedPosts !== 'undefined' && likedPosts.includes(String(post.id));
+    if(isLiked) likeBtn.classList.add('liked');
+    likeBtn.textContent = isLiked ? '♥ Liked' : '♡ Like';
+    likeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if(typeof togglePostFavoriteStatus === 'function') togglePostFavoriteStatus(post);
-      const newlySaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-      saveBadge.textContent = newlySaved ? 'Saved' : 'Save';
-      saveBadge.style.backgroundColor = newlySaved ? '#8b5cf6' : '#ff5e97';
+      if(typeof togglePostLikeStatus === 'function') togglePostLikeStatus(post.id);
+      const newlyLiked = likedPosts.includes(String(post.id));
+      likeBtn.classList.toggle('liked', newlyLiked);
+      likeBtn.textContent = newlyLiked ? '♥ Liked' : '♡ Like';
     });
-    card.appendChild(saveBadge);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'grid-action-btn btn-save';
+    const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
+    saveBtn.textContent = isSaved ? 'Saved' : 'Save';
+    if(isSaved) saveBtn.style.backgroundColor = '#8b5cf6';
+    
+    saveBtn.addEventListener('click', (e) => {
+      if(typeof openFolderMenu === 'function') openFolderMenu(e, post, saveBtn);
+    });
+
+    actionBadges.appendChild(likeBtn);
+    actionBadges.appendChild(saveBtn);
+    card.appendChild(actionBadges);
 
     const footer = document.createElement('div');
     footer.className = 'card-footer';
-    footer.innerHTML = `<span class="score">▲ ${post.score ?? 0}</span><span>${ext.toUpperCase()}</span>`;
+    footer.innerHTML = `<span>${getMdTitle(post.mangaObject).substring(0, 30)}...</span>`;
     card.appendChild(footer);
     
-    // Lightbox Hook
     card.addEventListener('click', () => {
-      // Temporarily swap the main cachedPosts so Lightbox knows about these
-      window.cachedPosts = cachedMangaPosts;
-      // Calculate true index across the entire loaded manga set
-      const trueIndex = window.cachedPosts.findIndex(p => p.id === post.id);
-      if(typeof openLightbox === 'function' && trueIndex !== -1) openLightbox(trueIndex);
+       mangaIdInput.value = post.id;
+       mangaFetchBtn.click();
+       document.getElementById('manga-status').scrollIntoView({behavior: 'smooth'});
     });
     
     if(typeof masonryObserver !== 'undefined') masonryObserver.observe(card);
@@ -127,9 +161,9 @@ function injectMangaCardsIntoGrid(data) {
 }
 
 function doMangaSearch() {
-  const userTags = mangaGridSearchInput.value.trim().replace(/\s+/g, '+');
-  currentMangaGridTags = userTags;
-  currentMangaGridPage = 0;
+  const userQuery = mangaGridSearchInput.value.trim();
+  currentMangaGridTags = userQuery;
+  currentMangaGridPage = 1;
   searchMangaGrid(currentMangaGridTags, currentMangaGridPage, false);
 }
 
@@ -146,70 +180,119 @@ const mangaScrollObserver = new IntersectionObserver(entries => {
 }, { rootMargin: '400px' });
 mangaScrollObserver.observe(mangaScrollSentinel);
 
-// Trigger initial manga grid load
-searchMangaGrid('', 0, false);
+searchMangaGrid('', 1, false);
 
 
-// --- DOUJIN API LOGIC ---
-let currentMangaData = null;
-const MANGA_API_BASE = 'https://doujin-api.vercel.app';
+// --- MANGADEX ID READER LOGIC ---
+const mangaLikeBtn = document.getElementById('manga-like-btn');
+const mangaSaveBtn = document.getElementById('manga-save-btn');
 
 mangaFetchBtn.addEventListener('click', async () => {
   const mangaId = mangaIdInput.value.trim();
   if (!mangaId) return;
 
   mangaStatus.style.display = 'block';
-  mangaStatus.innerHTML = '<span class="icon">🔍</span> Fetching metadata...';
+  mangaStatus.innerHTML = '<span class="icon">🔍</span> Fetching metadata from MangaDex...';
   mangaContent.style.display = 'none';
   currentMangaData = null;
 
   try {
-    const res = await fetch(`${PROXY}${encodeURIComponent(`${MANGA_API_BASE}/manga_id=${mangaId}`)}`);
-    const data = await res.json();
+    const resUrl = `${MD_API_BASE}/manga/${mangaId}?includes[]=cover_art`;
+    const res = await fetch(MD_PROXY + encodeURIComponent(resUrl));
+    const resData = await res.json();
+    const data = resData.data;
 
-    if (data && !data.Error && data.title) {
+    if (data && data.id) {
       mangaStatus.style.display = 'none';
-      currentMangaData = data;
+      currentMangaData = convertToPostFormat(data);
       
-      mangaCover.src = data.cover_image;
-      mangaTitle.textContent = data.title;
+      // Also fetch chapter feed for reading
+      const feedUrl = `${MD_API_BASE}/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=100`;
+      const feedRes = await fetch(MD_PROXY + encodeURIComponent(feedUrl));
+      const feedData = await feedRes.json();
+      currentMangaData.chapters = feedData.data || [];
+      
+      mangaCover.src = getMdCoverUrl(data);
+      mangaTitle.textContent = getMdTitle(data);
       
       mangaTags.innerHTML = '';
-      if (data.tags) {
-        data.tags.forEach(tag => {
+      if (data.attributes && data.attributes.tags) {
+        data.attributes.tags.forEach(tagObj => {
           const t = document.createElement('span');
           t.className = 'lb-stream-tag';
-          t.textContent = tag;
+          t.textContent = tagObj.attributes.name.en;
           mangaTags.appendChild(t);
         });
       }
 
+      const isLiked = typeof likedPosts !== 'undefined' && likedPosts.includes(String(data.id));
+      mangaLikeBtn.textContent = isLiked ? '♥ Liked' : '♡ Like';
+      mangaLikeBtn.style.color = isLiked ? '#ff3366' : 'var(--text)';
+      mangaLikeBtn.style.borderColor = isLiked ? '#ff3366' : 'var(--border)';
+
+      const isSaved = vaultedPosts.some(p => String(p.id) === String(data.id));
+      mangaSaveBtn.textContent = isSaved ? '💖 Saved' : '🤍 Save';
+      mangaSaveBtn.style.color = isSaved ? '#8b5cf6' : 'var(--text)';
+      mangaSaveBtn.style.borderColor = isSaved ? '#8b5cf6' : 'var(--border)';
+
       mangaContent.style.display = 'block';
     } else {
-      mangaStatus.innerHTML = `<span class="icon">❌</span> Error: ${data.Error || 'Not found'}`;
+      mangaStatus.innerHTML = `<span class="icon">❌</span> Error: Not found on MangaDex`;
     }
   } catch (err) {
     console.error(err);
-    mangaStatus.innerHTML = '<span class="icon">⚠️</span> Network error or API down.';
+    mangaStatus.innerHTML = '<span class="icon">⚠️</span> Network error reaching MangaDex API';
   }
 });
 
-mangaReadBtn.addEventListener('click', () => {
-  if (!currentMangaData || !currentMangaData.page_urls) return;
+mangaLikeBtn.addEventListener('click', () => {
+  if (!currentMangaData) return;
+  if(typeof togglePostLikeStatus === 'function') togglePostLikeStatus(currentMangaData.id);
+  const isLiked = likedPosts.includes(String(currentMangaData.id));
+  mangaLikeBtn.textContent = isLiked ? '♥ Liked' : '♡ Like';
+  mangaLikeBtn.style.color = isLiked ? '#ff3366' : 'var(--text)';
+  mangaLikeBtn.style.borderColor = isLiked ? '#ff3366' : 'var(--border)';
+});
 
-  mangaPagesContainer.innerHTML = '';
-  currentMangaData.page_urls.forEach((url, idx) => {
-    const img = document.createElement('img');
-    img.src = url;
-    img.style.maxWidth = '100%';
-    img.style.height = 'auto';
-    img.style.marginBottom = '10px';
-    img.loading = 'lazy';
-    mangaPagesContainer.appendChild(img);
-  });
+mangaSaveBtn.addEventListener('click', (e) => {
+  if (!currentMangaData) return;
+  if(typeof openFolderMenu === 'function') openFolderMenu(e, currentMangaData, mangaSaveBtn);
+});
 
+mangaReadBtn.addEventListener('click', async () => {
+  if (!currentMangaData || !currentMangaData.chapters || currentMangaData.chapters.length === 0) {
+      alert("No English chapters found for this manga.");
+      return;
+  }
+
+  mangaPagesContainer.innerHTML = '<div class="spinner"></div><p style="color:white">Loading first chapter pages...</p>';
   mangaReader.style.display = 'block';
-  document.body.style.overflow = 'hidden'; // prevent bg scroll
+  document.body.style.overflow = 'hidden';
+
+  try {
+      const firstChap = currentMangaData.chapters[0];
+      const pageUrl = `${MD_API_BASE}/at-home/server/${firstChap.id}`;
+      const pageRes = await fetch(MD_PROXY + encodeURIComponent(pageUrl));
+      const pageData = await pageRes.json();
+      
+      mangaPagesContainer.innerHTML = '';
+      const baseUrl = pageData.baseUrl;
+      const hash = pageData.chapter.hash;
+      const pages = pageData.chapter.data;
+      
+      pages.forEach(p => {
+        const url = `${baseUrl}/data/${hash}/${p}`;
+        const img = document.createElement('img');
+        img.src = url;
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.marginBottom = '10px';
+        img.loading = 'lazy';
+        mangaPagesContainer.appendChild(img);
+      });
+  } catch(e) {
+      mangaPagesContainer.innerHTML = '<p style="color:red">Failed to load chapter pages.</p>';
+  }
 });
 
 mangaReaderClose.addEventListener('click', () => {

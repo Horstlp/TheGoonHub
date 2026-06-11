@@ -340,6 +340,124 @@ function renderFilterBadges(days, sortVal) {
   activeFilters.innerHTML = badges.map(b => `<span class="meta-badge">${b}</span>`).join(' ');
 }
 
+let likedPosts = JSON.parse(localStorage.getItem('r34_liked_v2') || '[]');
+
+function togglePostLikeStatus(postId) {
+  const idx = likedPosts.indexOf(String(postId));
+  if(idx > -1) {
+    likedPosts.splice(idx, 1);
+  } else {
+    likedPosts.push(String(postId));
+  }
+  localStorage.setItem('r34_liked_v2', JSON.stringify(likedPosts));
+}
+
+let currentVaultFolder = 'Default';
+
+function getVaultFolders() {
+  const folders = new Set(['Default']);
+  vaultedPosts.forEach(p => { if(p.folder) folders.add(p.folder); });
+  return Array.from(folders);
+}
+
+function renderVaultFoldersNav() {
+  const nav = document.getElementById('vault-folders-nav');
+  if(!nav) return;
+  nav.innerHTML = '';
+  const folders = getVaultFolders();
+  folders.forEach(f => {
+    const btn = document.createElement('button');
+    btn.className = 'folder-btn' + (f === currentVaultFolder ? ' active' : '');
+    btn.textContent = f;
+    btn.addEventListener('click', () => {
+      currentVaultFolder = f;
+      renderVaultGridToDedicatedView();
+      renderVaultFoldersNav();
+    });
+    nav.appendChild(btn);
+  });
+}
+
+function openFolderMenu(e, post, saveBtn) {
+  e.stopPropagation();
+  document.querySelectorAll('.save-folder-menu').forEach(m => m.remove());
+  
+  const menu = document.createElement('div');
+  menu.className = 'save-folder-menu show';
+  
+  const folders = getVaultFolders();
+  folders.forEach(f => {
+    const item = document.createElement('button');
+    item.className = 'save-folder-item';
+    const isSavedInHere = vaultedPosts.some(p => String(p.id) === String(post.id) && (p.folder || 'Default') === f);
+    item.textContent = isSavedInHere ? `✓ ${f}` : f;
+    item.addEventListener('click', (ev) => {
+       ev.stopPropagation();
+       if(isSavedInHere) {
+         const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
+         if(idx > -1) vaultedPosts.splice(idx, 1);
+       } else {
+         const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
+         if(idx > -1) vaultedPosts.splice(idx, 1);
+         post.folder = f;
+         vaultedPosts.unshift(post);
+       }
+       localStorage.setItem('r34_vault_v2', JSON.stringify(vaultedPosts));
+       syncVaultCounterDisplay();
+       const isNowSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
+       saveBtn.textContent = isNowSaved ? 'Saved' : 'Save';
+       saveBtn.style.backgroundColor = isNowSaved ? '#8b5cf6' : '#ff5e97';
+       menu.remove();
+       
+       const viewVault = document.getElementById('view-vault');
+       if(viewVault && viewVault.style.display !== 'none') {
+         renderVaultGridToDedicatedView();
+         renderVaultFoldersNav();
+       }
+    });
+    menu.appendChild(item);
+  });
+  
+  const input = document.createElement('input');
+  input.className = 'save-folder-input';
+  input.placeholder = 'New folder...';
+  input.addEventListener('click', ev => ev.stopPropagation());
+  input.addEventListener('keydown', ev => {
+     ev.stopPropagation();
+     if(ev.key === 'Enter' && input.value.trim()) {
+       const newFolder = input.value.trim();
+       const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
+       if(idx > -1) vaultedPosts.splice(idx, 1);
+       post.folder = newFolder;
+       vaultedPosts.unshift(post);
+       localStorage.setItem('r34_vault_v2', JSON.stringify(vaultedPosts));
+       syncVaultCounterDisplay();
+       saveBtn.textContent = 'Saved';
+       saveBtn.style.backgroundColor = '#8b5cf6';
+       menu.remove();
+       
+       const viewVault = document.getElementById('view-vault');
+       if(viewVault && viewVault.style.display !== 'none') {
+         renderVaultGridToDedicatedView();
+         renderVaultFoldersNav();
+       }
+     }
+  });
+  menu.appendChild(input);
+  
+  saveBtn.style.position = 'relative';
+  saveBtn.appendChild(menu);
+  
+  // Close menu when clicking outside
+  const closeMenu = (ev) => {
+    if(!menu.contains(ev.target)) {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeMenu), 0);
+}
+
 function injectPostCardsIntoGrid(data, targetContainer = grid) {
   data.forEach((post, index) => {
     const fileUrl = post.file_url || post.sample_url || post.preview_url;
@@ -371,21 +489,36 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       });
     }
 
-    // Add Save Badge directly to the card
-    const saveBadge = document.createElement('div');
-    saveBadge.className = 'save-badge';
-    const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-    saveBadge.textContent = isSaved ? 'Saved' : 'Save';
-    if(isSaved) saveBadge.style.backgroundColor = '#8b5cf6';
-    
-    saveBadge.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent opening lightbox
-      togglePostFavoriteStatus(post);
-      const newlySaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-      saveBadge.textContent = newlySaved ? 'Saved' : 'Save';
-      saveBadge.style.backgroundColor = newlySaved ? '#8b5cf6' : '#ff5e97';
+    // Action Badges Container
+    const actionBadges = document.createElement('div');
+    actionBadges.className = 'action-badges';
+
+    // Like Badge
+    const likeBtn = document.createElement('button');
+    likeBtn.className = 'grid-action-btn btn-like';
+    const isLiked = likedPosts.includes(String(post.id));
+    if(isLiked) likeBtn.classList.add('liked');
+    likeBtn.textContent = isLiked ? '♥ Liked' : '♡ Like';
+    likeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePostLikeStatus(post.id);
+      const newlyLiked = likedPosts.includes(String(post.id));
+      likeBtn.classList.toggle('liked', newlyLiked);
+      likeBtn.textContent = newlyLiked ? '♥ Liked' : '♡ Like';
     });
-    card.appendChild(saveBadge);
+
+    // Save Badge
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'grid-action-btn btn-save';
+    const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
+    saveBtn.textContent = isSaved ? 'Saved' : 'Save';
+    if(isSaved) saveBtn.style.backgroundColor = '#8b5cf6';
+    
+    saveBtn.addEventListener('click', (e) => openFolderMenu(e, post, saveBtn));
+
+    actionBadges.appendChild(likeBtn);
+    actionBadges.appendChild(saveBtn);
+    card.appendChild(actionBadges);
 
     const footer = document.createElement('div');
     footer.className = 'card-footer';
@@ -399,6 +532,19 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
   });
 }
 
+// Global Panic Button (Space + Tab)
+let keysPressed = {};
+document.addEventListener('keydown', (e) => {
+  keysPressed[e.code] = true;
+  if (keysPressed['Space'] && keysPressed['Tab']) {
+    e.preventDefault();
+    window.location.href = 'https://en.wikipedia.org/wiki/Special:Random';
+  }
+});
+document.addEventListener('keyup', (e) => {
+  delete keysPressed[e.code];
+});
+
 function renderVaultGridToDedicatedView() {
   const vaultGrid = document.getElementById('vault-grid');
   const vaultStatus = document.getElementById('vault-status');
@@ -410,9 +556,19 @@ function renderVaultGridToDedicatedView() {
     return;
   }
   
+  const filteredPosts = currentVaultFolder === 'Default' 
+    ? vaultedPosts.filter(p => !p.folder || p.folder === 'Default')
+    : vaultedPosts.filter(p => p.folder === currentVaultFolder);
+
+  if (filteredPosts.length === 0) {
+    vaultStatus.style.display = 'block';
+    vaultStatus.innerHTML = `<span class="icon">📁</span>No media in ${currentVaultFolder} folder.`;
+    return;
+  }
+  
   vaultStatus.style.display = 'none';
-  cachedPosts = [...vaultedPosts]; // Update cachedPosts so lightbox works from Vault
-  injectPostCardsIntoGrid(vaultedPosts, vaultGrid);
+  cachedPosts = [...filteredPosts]; // Update cachedPosts so lightbox works from Vault
+  injectPostCardsIntoGrid(filteredPosts, vaultGrid);
 }
 
 async function search(tags, page, append = false) {

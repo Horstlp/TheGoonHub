@@ -495,7 +495,7 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   opacity: 0.9;
 }
 
-/* ── Vault Layout ── */
+/* ── Vault Layout & Folders ── */
 .vault-grid-layout {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -503,4 +503,137 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   gap: 16px;
   width: 100%;
   align-items: start;
+}
+
+.folder-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  padding: 8px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.folder-btn:hover { background: var(--surface-hover); }
+.folder-btn.active { background: var(--accent-purple); border-color: var(--accent-purple); color: #fff; }
+
+.save-dropdown-wrapper { position: relative; display: inline-block; }
+.save-folder-menu {
+  position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px;
+  background: #111116; border: 1px solid var(--border); border-radius: 12px;
+  padding: 8px 0; z-index: 100; min-width: 140px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  display: none; flex-direction: column;
+}
+.save-folder-menu.show { display: flex; }
+.save-folder-item {
+  padding: 8px 16px; font-size: 0.8rem; color: var(--text); cursor: pointer;
+  background: transparent; border: none; text-align: left; transition: background 0.2s;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.save-folder-item:hover { background: var(--surface-hover); color: var(--accent); }
+.save-folder-input {
+  margin: 4px 12px; padding: 6px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font-size: 0.75rem; width: calc(100% - 24px); outline: none;
+  font-family: inherit;
+}
+.save-folder-input:focus { border-color: var(--accent-purple); }
+
+/* ── Content Action Buttons (Like / Save) ── */
+.action-badges {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  display: flex;
+  gap: 8px;
+  z-index: 8;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.card:hover .action-badges {
+  opacity: 1;
+  transform: translateY(0);
+}
+.grid-action-btn {
+  background: #ff5e97;
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.grid-action-btn.btn-like {
+  background: rgba(22, 22, 31, 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+}
+.grid-action-btn.btn-like.liked {
+  color: #ff3366;
+  border-color: #ff3366;
+}
+
+/* ── TikTok Scrubber & Controls ── */
+.tiktok-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tiktok-scrubber-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.tiktok-scrubber-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  pointer-events: none;
+}
+.tiktok-actions-right {
+  position: absolute;
+  right: 20px;
+  bottom: 80px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.tiktok-circle-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(22, 22, 31, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  color: white;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tiktok-circle-btn:hover {
+  background: var(--surface-hover);
+  transform: scale(1.05);
+}
+.tiktok-circle-btn.active-save {
+  background: rgba(139, 92, 246, 0.4);
+  border-color: #8b5cf6;
+}
+.tiktok-circle-btn.active-like {
+  color: #ff3366;
+  border-color: #ff3366;
 }
