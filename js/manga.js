@@ -24,7 +24,13 @@ let hasMoreMangaGrid = true;
 let cachedMangaPosts = [];
 
 const MD_API_BASE = 'https://api.mangadex.org';
-const MD_PROXY = 'https://api.allorigins.win/raw?url=';
+const MD_CLIENT_ID = 'personal-client-512490bf-72f9-49c3-9793-5f361e909453-75974a36';
+
+const mdFetchOptions = {
+  headers: {
+    'Client-Id': MD_CLIENT_ID
+  }
+};
 
 function getMdTitle(manga) {
   if(!manga || !manga.attributes || !manga.attributes.title) return 'Unknown';
@@ -76,7 +82,7 @@ async function searchMangaGrid(titleQuery, page, append = false) {
   }
   
   try {
-    const res = await fetch(MD_PROXY + encodeURIComponent(url));
+    const res = await fetch(PROXY + encodeURIComponent(url), mdFetchOptions);
     const data = await res.json();
 
     if (!data || !data.data || data.data.length === 0) {
@@ -198,7 +204,7 @@ mangaFetchBtn.addEventListener('click', async () => {
 
   try {
     const resUrl = `${MD_API_BASE}/manga/${mangaId}?includes[]=cover_art`;
-    const res = await fetch(MD_PROXY + encodeURIComponent(resUrl));
+    const res = await fetch(PROXY + encodeURIComponent(resUrl), mdFetchOptions);
     const resData = await res.json();
     const data = resData.data;
 
@@ -208,7 +214,7 @@ mangaFetchBtn.addEventListener('click', async () => {
       
       // Also fetch chapter feed for reading
       const feedUrl = `${MD_API_BASE}/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=100`;
-      const feedRes = await fetch(MD_PROXY + encodeURIComponent(feedUrl));
+      const feedRes = await fetch(PROXY + encodeURIComponent(feedUrl), mdFetchOptions);
       const feedData = await feedRes.json();
       currentMangaData.chapters = feedData.data || [];
       
@@ -272,7 +278,7 @@ mangaReadBtn.addEventListener('click', async () => {
   try {
       const firstChap = currentMangaData.chapters[0];
       const pageUrl = `${MD_API_BASE}/at-home/server/${firstChap.id}`;
-      const pageRes = await fetch(MD_PROXY + encodeURIComponent(pageUrl));
+      const pageRes = await fetch(PROXY + encodeURIComponent(pageUrl), mdFetchOptions);
       const pageData = await pageRes.json();
       
       mangaPagesContainer.innerHTML = '';
