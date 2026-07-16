@@ -767,27 +767,52 @@ document.addEventListener('keyup', (e) => {
   delete keysPressed[e.code];
 });
 
+let activeVaultTab = 'images';
+
+document.getElementById('vault-main-tabs')?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('vault-tab-btn')) {
+        document.querySelectorAll('.vault-tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        activeVaultTab = e.target.dataset.tab;
+        
+        // Toggle UI elements if needed
+        const folderNav = document.getElementById('vault-folders-nav');
+        // We keep folder nav for both!
+        
+        renderVaultGridToDedicatedView();
+    }
+});
+
 function renderVaultGridToDedicatedView() {
   const vaultGrid = document.getElementById('vault-grid');
   const vaultStatus = document.getElementById('vault-status');
   vaultGrid.innerHTML = '';
   
+  // Apply Tab filter first
+  let tabFilteredPosts = vaultedPosts.filter(p => {
+      const isManga = !!p.mangaObject;
+      if (activeVaultTab === 'bookshelf') return isManga;
+      return !isManga;
+  });
+
   const delBtn = document.getElementById('vault-delete-folder-btn');
   if (delBtn) {
      delBtn.style.display = (currentVaultFolder === 'Default' || currentVaultFolder === 'All') ? 'none' : 'block';
   }
 
-  if (vaultedPosts.length === 0) {
+  if (tabFilteredPosts.length === 0) {
     vaultStatus.style.display = 'block';
-    vaultStatus.innerHTML = '<span class="icon">💔</span>Your media vault is empty.';
+    vaultStatus.innerHTML = activeVaultTab === 'bookshelf' 
+      ? '<span class="icon">📚</span>Your bookshelf is empty. Save some manga!'
+      : '<span class="icon">💔</span>Your media vault is empty.';
     return;
   }
   
   let filteredPosts = currentVaultFolder === 'All' 
-    ? vaultedPosts
+    ? tabFilteredPosts
     : currentVaultFolder === 'Default' 
-      ? vaultedPosts.filter(p => !p.folder || p.folder === 'Default')
-      : vaultedPosts.filter(p => p.folder === currentVaultFolder);
+      ? tabFilteredPosts.filter(p => !p.folder || p.folder === 'Default')
+      : tabFilteredPosts.filter(p => p.folder === currentVaultFolder);
 
   // Apply Vault Local Search filter
   const searchInput = document.getElementById('vault-search-input');
@@ -804,7 +829,7 @@ function renderVaultGridToDedicatedView() {
 
   if (filteredPosts.length === 0) {
     vaultStatus.style.display = 'block';
-    vaultStatus.innerHTML = `<span class="icon">📁</span>No media found in ${currentVaultFolder} folder.`;
+    vaultStatus.innerHTML = `<span class="icon">📁</span>No matching media found in ${currentVaultFolder} folder.`;
     return;
   }
   
@@ -821,7 +846,12 @@ function renderVaultGridToDedicatedView() {
   
   vaultStatus.style.display = 'none';
   cachedPosts = [...filteredPosts]; // Update cachedPosts so lightbox works from Vault
-  injectPostCardsIntoGrid(filteredPosts, vaultGrid);
+  
+  if (activeVaultTab === 'bookshelf' && typeof injectMangaCardsIntoGrid === 'function') {
+      injectMangaCardsIntoGrid(filteredPosts, vaultGrid);
+  } else {
+      injectPostCardsIntoGrid(filteredPosts, vaultGrid);
+  }
 }
 
 document.getElementById('vault-sort-select')?.addEventListener('change', renderVaultGridToDedicatedView);

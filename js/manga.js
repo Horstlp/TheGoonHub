@@ -157,7 +157,7 @@ async function searchMangaGrid(titleQuery, page, append = false) {
   isMangaGridLoading = false;
 }
 
-function injectMangaCardsIntoGrid(data) {
+function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer) {
   data.forEach((post, index) => {
     const previewUrl = post.preview_url;
     if (!previewUrl) return;
@@ -209,11 +209,13 @@ function injectMangaCardsIntoGrid(data) {
     card.addEventListener('click', () => {
        mangaIdInput.value = post.id;
        mangaFetchBtn.click();
+       // If clicking from vault, switch to manga view
+       if (typeof switchView === 'function') switchView('manga');
        document.getElementById('manga-status').scrollIntoView({behavior: 'smooth'});
     });
     
     if(typeof masonryObserver !== 'undefined') masonryObserver.observe(card);
-    mangaGridContainer.appendChild(card);
+    targetContainer.appendChild(card);
   });
 }
 
@@ -421,45 +423,65 @@ async function loadMangaChapter(chapterId) {
       const hash = pageData.chapter.hash;
       const pages = pageData.chapter.dataSaver;
       
+      window.currentMangaPreloadSession = Date.now();
+      const mySession = window.currentMangaPreloadSession;
+      let preloadQueue = [];
+      
       pages.forEach((p, idx) => {
         let url = `${baseUrl}/data-saver/${hash}/${p}`;
         
         const img = document.createElement('img');
-        img.src = url;
+        // Instantly load first 3 pages. For the rest, only set data-src
+        if (idx < 3) {
+            img.src = url;
+            img.loading = 'eager';
+        } else {
+            img.dataset.src = url;
+            preloadQueue.push(img);
+        }
+        
         img.style.maxWidth = '100%';
         img.style.height = 'auto';
         img.style.marginBottom = '10px';
-        img.loading = idx < 3 ? 'eager' : 'lazy'; // Force first 3 pages
         img.onerror = () => {
             // If QUIC or connection fails, attempt a retry to force a new TCP connection
-            if (!img.src.includes('?retry')) {
+            if (img.src && !img.src.includes('?retry') && img.src !== window.location.href) {
                 console.log("Retrying image load to bypass potential QUIC protocol drop...");
                 setTimeout(() => { img.src = url + "?retry=1"; }, 1000);
             }
         };
+        
+        // If user scrolls to a page that hasn't preloaded yet, load it instantly
+        const scrollObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.dataset.src = '';
+                }
+            });
+        }, { rootMargin: '1000px' });
+        scrollObserver.observe(img);
+        
         mangaPagesContainer.appendChild(img);
       });
 
-      // Smart Pre-loader
-      const preloadObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if(entry.isIntersecting) {
-            let currentImg = entry.target;
-            for(let i=0; i<3; i++) {
-              if (!currentImg) break;
-              currentImg = currentImg.nextElementSibling;
-              if (currentImg && currentImg.tagName === 'IMG' && currentImg.loading === 'lazy') {
-                 // Trigger eager load
-                 const temp = new Image();
-                 temp.src = currentImg.src;
-                 currentImg.loading = 'eager';
-              }
-            }
+      // Background sequential preloader
+      async function processMangaQueue() {
+          while (preloadQueue.length > 0 && window.currentMangaPreloadSession === mySession) {
+              const imgEl = preloadQueue.shift();
+              if (!imgEl || !imgEl.dataset.src) continue; // Already loaded via scroll
+              
+              await new Promise(resolve => {
+                  imgEl.onload = resolve;
+                  imgEl.onerror = resolve; // Continue even if one fails
+                  imgEl.src = imgEl.dataset.src;
+                  imgEl.dataset.src = '';
+              });
           }
-        });
-      }, { rootMargin: '800px' });
+      }
       
-      Array.from(mangaPagesContainer.querySelectorAll('img')).forEach(img => preloadObserver.observe(img));
+      // Start background preloader without blocking
+      processMangaQueue();
 
   } catch(e) {
       mangaPagesContainer.innerHTML = '<p style="color:red">Failed to load chapter pages.</p>';
