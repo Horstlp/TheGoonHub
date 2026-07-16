@@ -72,6 +72,7 @@
           </select>
 
           <select id="sort-select" class="filter-select" aria-label="Sort order">
+            <option value="algo:discover" selected>🤖 Algorithmic Discovery</option>
             <option value="">⚡ Default order</option>
             <option value="sort:score:desc">🏆 Highest score</option>
             <option value="sort:score:asc">📉 Lowest score</option>
@@ -271,33 +272,33 @@
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">🧑‍🦰 Character Weight (x)</label>
-              <input type="number" id="algo-val-char" value="2.0" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-char" value="2.5" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-char" min="0" max="3" step="0.1" value="2.0" style="width: 100%;">
+            <input type="range" id="algo-weight-char" min="0" max="3" step="0.1" value="2.5" style="width: 100%;">
           </div>
           
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">🎨 Artist Weight (x)</label>
-              <input type="number" id="algo-val-artist" value="1.5" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-artist" value="2.0" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-artist" min="0" max="3" step="0.1" value="1.5" style="width: 100%;">
+            <input type="range" id="algo-weight-artist" min="0" max="3" step="0.1" value="2.0" style="width: 100%;">
           </div>
           
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">📺 Series Weight (x)</label>
-              <input type="number" id="algo-val-series" value="1.2" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-series" value="1.0" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-series" min="0" max="3" step="0.1" value="1.2" style="width: 100%;">
+            <input type="range" id="algo-weight-series" min="0" max="3" step="0.1" value="1.0" style="width: 100%;">
           </div>
           
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">🏷️ General Weight (x)</label>
-              <input type="number" id="algo-val-general" value="1.0" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-general" value="0.3" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-general" min="0" max="3" step="0.1" value="1.0" style="width: 100%;">
+            <input type="range" id="algo-weight-general" min="0" max="3" step="0.1" value="0.3" style="width: 100%;">
           </div>
           
         </div>
@@ -306,33 +307,33 @@
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">📦 Batch Size</label>
-              <input type="number" id="algo-val-batch" value="50" step="10" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-batch" value="30" step="10" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-batch" min="10" max="100" step="10" value="50" style="width: 100%;">
+            <input type="range" id="algo-weight-batch" min="10" max="100" step="10" value="30" style="width: 100%;">
           </div>
 
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">🎲 Discovery Ratio (%)</label>
-              <input type="number" id="algo-val-ratio" value="20" step="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-ratio" value="50" step="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-ratio" min="0" max="100" step="5" value="20" style="width: 100%;">
+            <input type="range" id="algo-weight-ratio" min="0" max="100" step="5" value="50" style="width: 100%;">
           </div>
 
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">🌱 Freshness (%)</label>
-              <input type="number" id="algo-val-freshness" value="10" step="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-freshness" value="30" step="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-freshness" min="0" max="100" step="5" value="10" style="width: 100%;">
+            <input type="range" id="algo-weight-freshness" min="0" max="100" step="5" value="30" style="width: 100%;">
           </div>
 
           <div class="algo-control">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label style="font-weight: bold;">⚡ Concurrent Fetches</label>
-              <input type="number" id="algo-val-fetches" value="3" step="1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              <input type="number" id="algo-val-fetches" value="9" step="1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
             </div>
-            <input type="range" id="algo-weight-fetches" min="1" max="10" step="1" value="3" style="width: 100%;">
+            <input type="range" id="algo-weight-fetches" min="1" max="10" step="1" value="9" style="width: 100%;">
           </div>
           
           <div class="algo-control">

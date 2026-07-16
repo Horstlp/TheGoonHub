@@ -9,7 +9,7 @@ let idCalibrated = false;
 // --- Rate Limiting & Throttler ---
 let fetchQueue = [];
 let isFetchingQueue = false;
-const FETCH_DELAY_MS = 500; // Limit to ~2 requests per second
+const FETCH_DELAY_MS = 300; // Limit to ~3 requests per second with API key
 
 function processFetchQueue() {
   if (fetchQueue.length === 0) {

@@ -50,14 +50,14 @@ function loadAlgoSettings() {
 
 function saveAlgoSettings() {
     const settings = {
-        char: algoValChar ? algoValChar.value : 2.0,
-        artist: algoValArtist ? algoValArtist.value : 1.5,
-        series: algoValSeries ? algoValSeries.value : 1.2,
-        general: algoValGeneral ? algoValGeneral.value : 1.0,
-        batch: algoValBatch ? algoValBatch.value : 50,
-        ratio: algoValRatio ? algoValRatio.value : 20,
-        freshness: algoValFreshness ? algoValFreshness.value : 10,
-        fetches: algoValFetches ? algoValFetches.value : 3,
+        char: algoValChar ? algoValChar.value : 2.5,
+        artist: algoValArtist ? algoValArtist.value : 2.0,
+        series: algoValSeries ? algoValSeries.value : 1.0,
+        general: algoValGeneral ? algoValGeneral.value : 0.3,
+        batch: algoValBatch ? algoValBatch.value : 30,
+        ratio: algoValRatio ? algoValRatio.value : 50,
+        freshness: algoValFreshness ? algoValFreshness.value : 30,
+        fetches: algoValFetches ? algoValFetches.value : 9,
         baseSearch: algoBaseSearch ? algoBaseSearch.value : ''
     };
     localStorage.setItem('algo_settings', JSON.stringify(settings));
@@ -383,7 +383,7 @@ async function renderAlgoTable() {
 }
 
 // Pulls a blended batch of images
-async function pullBlendedBatch(append = false) {
+async function pullBlendedBatch(append = false, isMainGrid = false) {
     if (isAlgoLoading) return;
     if (vaultedPosts.length === 0) {
         triggerToastNotification('Save some images to your vault first to train the algorithm!');
@@ -392,14 +392,17 @@ async function pullBlendedBatch(append = false) {
     isAlgoLoading = true;
     logAlgo(append ? 'Pulling next chunk for infinite scroll...' : 'Initiating feed generation...');
     
+    const targetGrid = isMainGrid ? document.getElementById('grid') : algoGrid;
+    const targetStatus = isMainGrid ? document.getElementById('status') : algoStatus;
+    
     if (!append) {
-        algoGrid.innerHTML = '';
+        targetGrid.innerHTML = '';
         algoGridPage = 0;
-        algoStatus.style.display = 'block';
-        algoStatus.innerHTML = '<div class="spinner"></div>Analyzing Vault & Generating Feed...';
+        targetStatus.style.display = 'block';
+        targetStatus.innerHTML = '<div class="spinner"></div>Analyzing Vault & Generating Feed...';
     } else {
-        algoStatus.style.display = 'block';
-        algoStatus.innerHTML = '<div class="spinner"></div>Loading more recommendations...';
+        targetStatus.style.display = 'block';
+        targetStatus.innerHTML = '<div class="spinner"></div>Loading more recommendations...';
     }
 
     const batchSize = parseInt(algoValBatch.value || 50);
@@ -461,7 +464,7 @@ async function pullBlendedBatch(append = false) {
         const isFresh = Math.random() < freshnessRatio;
         let q = isFresh ? '' : 'sort:random';
         if (baseSearch) q = isFresh ? baseSearch : `${baseSearch} sort:random`;
-        if (!q) q = 'sort:random'; // Fallback so we don't query empty string
+        q += (q ? ' ' : '') + 'score:>=300'; // Enforce high-quality score filter
         logAlgo(`Queuing Discovery Fetch: "${q}" for ${randomCount} posts...`);
         fetchPromises.push((async () => {
             const res = await fetchR34Posts(q, randomCount, algoGridPage);
@@ -500,6 +503,7 @@ async function pullBlendedBatch(append = false) {
                         }
                         
                         if (baseSearch) q = `${baseSearch} ${q}`;
+                        q += ' score:>=300'; // Enforce high-quality score filter
                         
                         logAlgo(`Queuing Targeted Fetch (Attempt ${4 - maxRetries}/3): "${q}" for ${countPerTag} posts...`);
                         const res = await fetchR34Posts(q, countPerTag, algoGridPage);
@@ -544,11 +548,11 @@ async function pullBlendedBatch(append = false) {
         [finalBatch[i], finalBatch[j]] = [finalBatch[j], finalBatch[i]];
     }
     
-    algoStatus.style.display = 'none';
+    targetStatus.style.display = 'none';
     
     if (finalBatch.length === 0 && !append) {
-        algoStatus.style.display = 'block';
-        algoStatus.innerHTML = 'No results found. Try clearing your Base Search or lowering weights.';
+        targetStatus.style.display = 'block';
+        targetStatus.innerHTML = 'No results found. Try clearing your Base Search or lowering weights.';
         logAlgo('ERROR: Batch resulted in 0 posts.');
         isAlgoLoading = false;
         return;
@@ -558,7 +562,7 @@ async function pullBlendedBatch(append = false) {
         if (!append) cachedPosts = [];
         cachedPosts = append ? cachedPosts.concat(finalBatch) : finalBatch;
         logAlgo(`Injecting ${finalBatch.length} posts into grid...`);
-        injectPostCardsIntoGrid(finalBatch, algoGrid);
+        injectPostCardsIntoGrid(finalBatch, targetGrid);
     }
     
     logAlgo('Batch successfully completed.');

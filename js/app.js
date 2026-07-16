@@ -66,7 +66,7 @@ const masonryObserver = new ResizeObserver(entries => {
 
 /** Infinite Scroll Observer **/
 const handleScroll = debounce((entries) => {
-  if (entries[0].isIntersecting && !isLoading && hasMore && !isViewingVault && currentTags !== '') {
+  if (entries[0].isIntersecting && !isLoading && hasMore && !isViewingVault) {
     if(typeof loadNextPage === 'function') loadNextPage();
   }
 }, 250);
@@ -540,6 +540,12 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     const isVideo = ['mp4','webm'].includes(ext);
     const card = document.createElement('div');
     card.className = 'card';
+    
+    // Detect extreme vertical aspect ratios (comic strips) to prevent layout breakage
+    if (post.height && post.width && (post.height / post.width > 2.5)) {
+      card.classList.add('comic-strip');
+    }
+    
     const img = document.createElement('img');
     img.src = previewUrl; 
     img.loading = 'lazy';
@@ -822,6 +828,12 @@ function navigateLightbox(dir) {
 
 function loadNextPage() {
   currentPage++;
+  if (sortSelect && sortSelect.value === 'algo:discover') {
+    if (typeof pullBlendedBatch === 'function') {
+      pullBlendedBatch(true, true);
+      return;
+    }
+  }
   search(currentTags, currentPage, true); // Pass true for append
 }
 
@@ -831,6 +843,14 @@ function doSearch() {
   scrollSentinel.style.display = 'flex'; // Ensure sentinel is visible for new searches
   currentTags = tagsArray.join(' ');
   currentPage = 0; // Reset page for a new search
+  
+  if (sortSelect && sortSelect.value === 'algo:discover') {
+    if (typeof pullBlendedBatch === 'function') {
+      pullBlendedBatch(false, true);
+      return;
+    }
+  }
+  
   search(currentTags, currentPage, false); // Start a new search, not appending
 }
 
@@ -856,6 +876,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderHistoryAndPins();
   syncVaultCounterDisplay();
   if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
+  if (typeof initAlgoCache === 'function') await initAlgoCache(); // Preload algorithm cache
+  doSearch(); // Automatically generate the feed on startup
 });
 
 const vaultExportBtn = document.getElementById('vault-export-btn');

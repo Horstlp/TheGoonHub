@@ -335,6 +335,12 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   background: #111116; 
 }
 
+/* Crop extremely tall comic strips so they don't break masonry */
+.card.comic-strip img {
+  max-height: 800px;
+  object-position: top;
+}
+
 /* Float Custom Save Button Overlay */
 .save-badge {
   position: absolute;
