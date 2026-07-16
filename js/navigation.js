@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const views = ['images', 'videos', 'manga', 'vault'];
+  const views = ['images', 'videos', 'manga', 'vault', 'algo'];
   
   views.forEach(view => {
     const btn = document.getElementById(`nav-${view}`);
@@ -34,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (view === 'vault') {
           if (typeof renderVaultGridToDedicatedView === 'function') renderVaultGridToDedicatedView();
           if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
+        }
+        
+        if (view === 'algo') {
+          if (typeof renderAlgoTable === 'function') renderAlgoTable();
         }
       });
     }
