@@ -1,6 +1,39 @@
-let recentSearches = JSON.parse(localStorage.getItem('r34_history_v2') || '[]');
-let pinnedSearches = JSON.parse(localStorage.getItem('r34_pinned_v2') || '[]');
-let vaultedPosts   = JSON.parse(localStorage.getItem('r34_vault_v2') || '[]');
+let recentSearches = [];
+let pinnedSearches = [];
+let vaultedPosts   = [];
+let vaultedFolders = ["Default"];
+let globalBlacklist = [];
+
+async function initVault() {
+  try {
+    // Migration logic
+    const oldVault = localStorage.getItem('r34_vault_v2');
+    if (oldVault) {
+      triggerToastNotification("Migrating vault to IndexedDB...");
+      await localforage.setItem('r34_vault_v2', JSON.parse(oldVault));
+      await localforage.setItem('r34_history_v2', JSON.parse(localStorage.getItem('r34_history_v2') || '[]'));
+      await localforage.setItem('r34_pinned_v2', JSON.parse(localStorage.getItem('r34_pinned_v2') || '[]'));
+      await localforage.setItem('r34_folders_v2', JSON.parse(localStorage.getItem('r34_folders_v2') || '["Default"]'));
+      
+      localStorage.removeItem('r34_vault_v2');
+      localStorage.removeItem('r34_history_v2');
+      localStorage.removeItem('r34_pinned_v2');
+      localStorage.removeItem('r34_folders_v2');
+      triggerToastNotification("Migration complete!");
+    }
+
+    recentSearches = (await localforage.getItem('r34_history_v2')) || [];
+    pinnedSearches = (await localforage.getItem('r34_pinned_v2')) || [];
+    vaultedPosts   = (await localforage.getItem('r34_vault_v2')) || [];
+    vaultedFolders = (await localforage.getItem('r34_folders_v2')) || ["Default"];
+    globalBlacklist = (await localforage.getItem('r34_blacklist')) || [];
+
+    if (typeof renderHistoryAndPins === 'function') renderHistoryAndPins();
+    if (typeof renderBlacklist === 'function') renderBlacklist();
+  } catch (err) {
+    console.error("Vault Init Error:", err);
+  }
+}
 
 function cacheSuccessfulSearch(tagsString) {
   let cleanString = tagsString.trim();
@@ -8,7 +41,7 @@ function cacheSuccessfulSearch(tagsString) {
   recentSearches = recentSearches.filter(s => s !== cleanString);
   recentSearches.unshift(cleanString);
   if(recentSearches.length > 5) recentSearches.pop();
-  localStorage.setItem('r34_history_v2', JSON.stringify(recentSearches));
+  localforage.setItem('r34_history_v2', recentSearches);
 }
 
 function togglePinSearch(tagsString) {
@@ -19,8 +52,65 @@ function togglePinSearch(tagsString) {
     pinnedSearches.push(tagsString);
     triggerToastNotification("Configuration pinned to desktop!");
   }
-  localStorage.setItem('r34_pinned_v2', JSON.stringify(pinnedSearches));
+  localforage.setItem('r34_pinned_v2', pinnedSearches);
   renderHistoryAndPins();
+}
+
+async function exportVault() {
+  try {
+    const data = {
+      vaultedPosts,
+      vaultedFolders,
+      recentSearches,
+      pinnedSearches,
+      globalBlacklist
+    };
+    const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `R34_Vault_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    triggerToastNotification("Vault exported successfully!");
+  } catch (err) {
+    triggerToastNotification("Failed to export vault.");
+  }
+}
+
+async function importVault(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    
+    if (data.vaultedPosts) {
+      vaultedPosts = data.vaultedPosts;
+      await localforage.setItem('r34_vault_v2', vaultedPosts);
+    }
+    if (data.vaultedFolders) {
+      vaultedFolders = data.vaultedFolders;
+      await localforage.setItem('r34_folders_v2', vaultedFolders);
+    }
+    if (data.recentSearches) {
+      recentSearches = data.recentSearches;
+      await localforage.setItem('r34_history_v2', recentSearches);
+    }
+    if (data.pinnedSearches) {
+      pinnedSearches = data.pinnedSearches;
+      await localforage.setItem('r34_pinned_v2', pinnedSearches);
+    }
+    if (data.globalBlacklist) {
+      globalBlacklist = data.globalBlacklist;
+      await localforage.setItem('r34_blacklist', globalBlacklist);
+    }
+    
+    triggerToastNotification("Vault imported successfully! Reloading...");
+    setTimeout(() => location.reload(), 1500);
+  } catch (err) {
+    triggerToastNotification("Invalid vault backup file.");
+  }
 }
 
 async function forceBinaryAssetDownload(url, postId) {
@@ -28,32 +118,22 @@ async function forceBinaryAssetDownload(url, postId) {
   const ext = url.split('.').pop().toLowerCase();
   const targetedFilename = `Hub_Post_${postId}.${ext}`;
   
-  triggerToastNotification("Allocating proxy stream connection...");
-  lbDlBtn.disabled = true;
-  lbDlBtn.textContent = '⚡ Pulling...';
+  triggerToastNotification("Triggering native download via proxy...");
 
   try {
-    const response = await fetch(PROXY + encodeURIComponent(url));
-    if(!response.ok) throw new Error("Proxy connection dropped");
-    
-    const outputBlob = await response.blob();
-    const generatedUrl = URL.createObjectURL(outputBlob);
+    const downloadUrl = PROXY + encodeURIComponent(url) + '&download=true';
     
     const hiddenAnchor = document.createElement('a');
-    hiddenAnchor.href = generatedUrl;
+    hiddenAnchor.href = downloadUrl;
     hiddenAnchor.download = targetedFilename;
     document.body.appendChild(hiddenAnchor);
     hiddenAnchor.click();
     
     document.body.removeChild(hiddenAnchor);
-    URL.revokeObjectURL(generatedUrl);
     triggerToastNotification("Asset deployed to desktop! 🎉");
   } catch (err) {
-    console.warn("Direct binary blob stream failed, routing via safety layout:", err);
+    console.warn("Direct proxy download failed, routing via safety layout:", err);
     window.open(url, '_blank');
     triggerToastNotification("Opened original in secondary window");
-  } finally {
-    lbDlBtn.disabled = false;
-    lbDlBtn.textContent = '📥 Download';
   }
 }

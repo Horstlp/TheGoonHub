@@ -65,14 +65,14 @@ const masonryObserver = new ResizeObserver(entries => {
 });
 
 /** Infinite Scroll Observer **/
-const scrollObserver = new IntersectionObserver(entries => {
-  // Only load next page if sentinel is intersecting, not already loading, there's more data,
-  // not in vault view, and there are active search tags.
+const handleScroll = debounce((entries) => {
   if (entries[0].isIntersecting && !isLoading && hasMore && !isViewingVault && currentTags !== '') {
-    loadNextPage();
+    if(typeof loadNextPage === 'function') loadNextPage();
   }
-}, { 
-  rootMargin: '400px' // Start loading 400px before reaching the bottom
+}, 250);
+
+const scrollObserver = new IntersectionObserver(handleScroll, { 
+  rootMargin: '400px' 
 });
 
 scrollObserver.observe(scrollSentinel);
@@ -355,9 +355,15 @@ function togglePostLikeStatus(postId) {
 let currentVaultFolder = 'Default';
 
 function getVaultFolders() {
-  const folders = new Set(['Default']);
+  const folders = new Set(vaultedFolders);
   vaultedPosts.forEach(p => { if(p.folder) folders.add(p.folder); });
-  return Array.from(folders);
+  
+  const newFoldersArray = Array.from(folders);
+  if (newFoldersArray.length !== vaultedFolders.length) {
+      vaultedFolders = newFoldersArray;
+      localforage.setItem('r34_folders_v2', vaultedFolders);
+  }
+  return newFoldersArray;
 }
 
 function renderVaultFoldersNav() {
@@ -376,38 +382,85 @@ function renderVaultFoldersNav() {
     });
     nav.appendChild(btn);
   });
+
+  const newFolderInput = document.createElement('input');
+  newFolderInput.className = 'folder-btn';
+  newFolderInput.placeholder = '+ New Folder';
+  newFolderInput.style.background = 'transparent';
+  newFolderInput.style.border = '1px dashed var(--border)';
+  newFolderInput.style.outline = 'none';
+  newFolderInput.style.color = 'var(--text)';
+  newFolderInput.style.width = '120px';
+  newFolderInput.style.cursor = 'text';
+
+  newFolderInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && newFolderInput.value.trim()) {
+      const newFolder = newFolderInput.value.trim();
+      if (!vaultedFolders.includes(newFolder)) {
+        vaultedFolders.push(newFolder);
+        localforage.setItem('r34_folders_v2', vaultedFolders);
+      }
+      currentVaultFolder = newFolder;
+      renderVaultGridToDedicatedView();
+      renderVaultFoldersNav();
+    }
+  });
+  nav.appendChild(newFolderInput);
 }
 
-function openFolderMenu(e, post, saveBtn) {
-  e.stopPropagation();
-  document.querySelectorAll('.save-folder-menu').forEach(m => m.remove());
-  
-  const menu = document.createElement('div');
-  menu.className = 'save-folder-menu show';
-  
+let currentSavePost = null;
+let currentSaveAnchor = null;
+let currentSaveCallback = null;
+
+const saveModalOverlay = document.getElementById('save-modal-overlay');
+const saveModalClose = document.getElementById('save-modal-close');
+const saveModalSearch = document.getElementById('save-modal-search');
+const saveModalFolders = document.getElementById('save-modal-folders');
+const saveModalNewInput = document.getElementById('save-modal-new-input');
+const saveModalNewBtn = document.getElementById('save-modal-new-btn');
+
+function renderSaveModalFolders(filterText = '') {
+  if(!saveModalFolders) return;
+  saveModalFolders.innerHTML = '';
   const folders = getVaultFolders();
-  folders.forEach(f => {
+  
+  folders.filter(f => f.toLowerCase().includes(filterText.toLowerCase())).forEach(f => {
     const item = document.createElement('button');
     item.className = 'save-folder-item';
-    const isSavedInHere = vaultedPosts.some(p => String(p.id) === String(post.id) && (p.folder || 'Default') === f);
-    item.textContent = isSavedInHere ? `✓ ${f}` : f;
+    item.style.display = 'flex';
+    item.style.justifyContent = 'space-between';
+    item.style.alignItems = 'center';
+    item.style.width = '100%';
+    item.style.padding = '12px 16px';
+    item.style.borderRadius = '8px';
+    
+    const isSavedInHere = vaultedPosts.some(p => String(p.id) === String(currentSavePost.id) && (p.folder || 'Default') === f);
+    
+    item.innerHTML = `<span>${f}</span><span style="color: ${isSavedInHere ? 'var(--accent-purple)' : 'var(--muted)'}; font-weight: bold;">${isSavedInHere ? 'Saved' : 'Save'}</span>`;
+    
     item.addEventListener('click', (ev) => {
        ev.stopPropagation();
-       if(isSavedInHere) {
-         const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
-         if(idx > -1) vaultedPosts.splice(idx, 1);
-       } else {
-         const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
-         if(idx > -1) vaultedPosts.splice(idx, 1);
-         post.folder = f;
-         vaultedPosts.unshift(post);
+       
+       const idx = vaultedPosts.findIndex(p => String(p.id) === String(currentSavePost.id));
+       if(idx > -1) vaultedPosts.splice(idx, 1);
+       
+       if (!isSavedInHere) {
+         currentSavePost.folder = f;
+         vaultedPosts.unshift(currentSavePost);
        }
-       localStorage.setItem('r34_vault_v2', JSON.stringify(vaultedPosts));
+       
+       localforage.setItem('r34_vault_v2', vaultedPosts);
        syncVaultCounterDisplay();
-       const isNowSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-       saveBtn.textContent = isNowSaved ? 'Saved' : 'Save';
-       saveBtn.style.backgroundColor = isNowSaved ? '#8b5cf6' : '#ff5e97';
-       menu.remove();
+       const isNowSaved = vaultedPosts.some(p => String(p.id) === String(currentSavePost.id));
+       
+       if (currentSaveCallback) {
+           currentSaveCallback(isNowSaved, currentSaveAnchor);
+       } else {
+           currentSaveAnchor.textContent = isNowSaved ? 'Saved' : 'Save';
+           currentSaveAnchor.style.backgroundColor = isNowSaved ? '#8b5cf6' : '#ff5e97';
+       }
+       
+       renderSaveModalFolders(saveModalSearch.value); 
        
        const viewVault = document.getElementById('view-vault');
        if(viewVault && viewVault.style.display !== 'none') {
@@ -415,47 +468,67 @@ function openFolderMenu(e, post, saveBtn) {
          renderVaultFoldersNav();
        }
     });
-    menu.appendChild(item);
+    saveModalFolders.appendChild(item);
   });
-  
-  const input = document.createElement('input');
-  input.className = 'save-folder-input';
-  input.placeholder = 'New folder...';
-  input.addEventListener('click', ev => ev.stopPropagation());
-  input.addEventListener('keydown', ev => {
-     ev.stopPropagation();
-     if(ev.key === 'Enter' && input.value.trim()) {
-       const newFolder = input.value.trim();
-       const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
-       if(idx > -1) vaultedPosts.splice(idx, 1);
-       post.folder = newFolder;
-       vaultedPosts.unshift(post);
-       localStorage.setItem('r34_vault_v2', JSON.stringify(vaultedPosts));
-       syncVaultCounterDisplay();
-       saveBtn.textContent = 'Saved';
-       saveBtn.style.backgroundColor = '#8b5cf6';
-       menu.remove();
-       
-       const viewVault = document.getElementById('view-vault');
-       if(viewVault && viewVault.style.display !== 'none') {
-         renderVaultGridToDedicatedView();
-         renderVaultFoldersNav();
-       }
-     }
+}
+
+if(saveModalClose) saveModalClose.addEventListener('click', () => saveModalOverlay.style.display = 'none');
+if(saveModalSearch) saveModalSearch.addEventListener('input', (e) => renderSaveModalFolders(e.target.value));
+if(saveModalOverlay) saveModalOverlay.addEventListener('click', (e) => { if(e.target === saveModalOverlay) saveModalOverlay.style.display = 'none'; });
+
+if(saveModalNewBtn) {
+  saveModalNewBtn.addEventListener('click', () => {
+      const newFolder = saveModalNewInput.value.trim();
+      if (newFolder) {
+         if (!vaultedFolders.includes(newFolder)) {
+             vaultedFolders.push(newFolder);
+             localforage.setItem('r34_folders_v2', vaultedFolders);
+         }
+         
+         const idx = vaultedPosts.findIndex(p => String(p.id) === String(currentSavePost.id));
+         if(idx > -1) vaultedPosts.splice(idx, 1);
+         
+         currentSavePost.folder = newFolder;
+         vaultedPosts.unshift(currentSavePost);
+         localforage.setItem('r34_vault_v2', vaultedPosts);
+         syncVaultCounterDisplay();
+         
+         if (currentSaveCallback) {
+             currentSaveCallback(true, currentSaveAnchor);
+         } else {
+             currentSaveAnchor.textContent = 'Saved';
+             currentSaveAnchor.style.backgroundColor = '#8b5cf6';
+         }
+         
+         saveModalNewInput.value = '';
+         renderSaveModalFolders();
+         
+         const viewVault = document.getElementById('view-vault');
+         if(viewVault && viewVault.style.display !== 'none') {
+           renderVaultGridToDedicatedView();
+           renderVaultFoldersNav();
+         }
+      }
   });
-  menu.appendChild(input);
+}
+
+if(saveModalNewInput) {
+  saveModalNewInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveModalNewBtn.click();
+  });
+}
+
+function openFolderMenu(e, post, anchorBtn, onUpdateCallback = null) {
+  e.stopPropagation();
+  currentSavePost = post;
+  currentSaveAnchor = anchorBtn;
+  currentSaveCallback = onUpdateCallback;
   
-  saveBtn.style.position = 'relative';
-  saveBtn.appendChild(menu);
+  if(saveModalSearch) saveModalSearch.value = '';
+  if(saveModalNewInput) saveModalNewInput.value = '';
+  renderSaveModalFolders();
   
-  // Close menu when clicking outside
-  const closeMenu = (ev) => {
-    if(!menu.contains(ev.target)) {
-      menu.remove();
-      document.removeEventListener('click', closeMenu);
-    }
-  };
-  setTimeout(() => document.addEventListener('click', closeMenu), 0);
+  if(saveModalOverlay) saveModalOverlay.style.display = 'flex';
 }
 
 function injectPostCardsIntoGrid(data, targetContainer = grid) {
@@ -524,7 +597,11 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     footer.className = 'card-footer';
     footer.innerHTML = `<span class="score">▲ ${post.score ?? 0}</span><span>${ext.toUpperCase()}</span>`;
     card.appendChild(footer);
-    card.addEventListener('click', () => openLightbox(index));
+    card.addEventListener('click', () => {
+      const targetArray = isViewingVault ? vaultedPosts : cachedPosts;
+      const actualIndex = targetArray.findIndex(p => String(p.id) === String(post.id));
+      if (actualIndex > -1) openLightbox(actualIndex);
+    });
     
     // Observe card for width changes (responsiveness) to update rowSpan
     masonryObserver.observe(card);
@@ -550,13 +627,18 @@ function renderVaultGridToDedicatedView() {
   const vaultStatus = document.getElementById('vault-status');
   vaultGrid.innerHTML = '';
   
+  const delBtn = document.getElementById('vault-delete-folder-btn');
+  if (delBtn) {
+     delBtn.style.display = currentVaultFolder === 'Default' ? 'none' : 'block';
+  }
+
   if (vaultedPosts.length === 0) {
     vaultStatus.style.display = 'block';
     vaultStatus.innerHTML = '<span class="icon">💔</span>Your media vault is empty.';
     return;
   }
   
-  const filteredPosts = currentVaultFolder === 'Default' 
+  let filteredPosts = currentVaultFolder === 'Default' 
     ? vaultedPosts.filter(p => !p.folder || p.folder === 'Default')
     : vaultedPosts.filter(p => p.folder === currentVaultFolder);
 
@@ -566,10 +648,40 @@ function renderVaultGridToDedicatedView() {
     return;
   }
   
+  const sortSelect = document.getElementById('vault-sort-select');
+  const sortVal = sortSelect ? sortSelect.value : 'newest';
+  
+  if (sortVal === 'oldest') {
+      filteredPosts.reverse();
+  } else if (sortVal === 'highest') {
+      filteredPosts.sort((a,b) => (b.score||0) - (a.score||0));
+  } else if (sortVal === 'lowest') {
+      filteredPosts.sort((a,b) => (a.score||0) - (b.score||0));
+  }
+  
   vaultStatus.style.display = 'none';
   cachedPosts = [...filteredPosts]; // Update cachedPosts so lightbox works from Vault
   injectPostCardsIntoGrid(filteredPosts, vaultGrid);
 }
+
+document.getElementById('vault-sort-select')?.addEventListener('change', renderVaultGridToDedicatedView);
+
+document.getElementById('vault-delete-folder-btn')?.addEventListener('click', () => {
+    if (currentVaultFolder === 'Default') return;
+    if (confirm(`Delete the folder "${currentVaultFolder}"? All items will be moved to Default.`)) {
+        vaultedPosts.forEach(p => {
+            if (p.folder === currentVaultFolder) p.folder = 'Default';
+        });
+        localforage.setItem('r34_vault_v2', vaultedPosts);
+        
+        vaultedFolders = vaultedFolders.filter(f => f !== currentVaultFolder);
+        localforage.setItem('r34_folders_v2', vaultedFolders);
+        
+        currentVaultFolder = 'Default';
+        renderVaultFoldersNav();
+        renderVaultGridToDedicatedView();
+    }
+});
 
 async function search(tags, page, append = false) {
   if (isLoading) return; // Prevent multiple simultaneous requests
@@ -591,6 +703,10 @@ async function search(tags, page, append = false) {
   const sortVal = sortSelect.value;
   let tagParts = tags.trim() ? tags.trim().split(/\s+/) : [];
   if (sortVal) tagParts.push(sortVal);
+  
+  if (typeof globalBlacklist !== 'undefined' && globalBlacklist.length > 0) {
+    globalBlacklist.forEach(t => tagParts.push(`-${t}`));
+  }
   if (days !== 'all') {
     if (!append) statusEl.innerHTML = '<div class="spinner"></div>Calibrating target timeframe offsets...'; // Update status for initial load
     let range = await getIdRange(parseInt(days));
@@ -599,7 +715,7 @@ async function search(tags, page, append = false) {
   const tagsParam = tagParts.join('+') || 'all';
   const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g,'+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
   try {
-    const res = await fetch(PROXY + encodeURIComponent(url));
+    const res = await throttledFetch(PROXY + encodeURIComponent(url));
     const responseText = await res.text(); // Read as text first
 
     if (!res.ok || !responseText.trim()) {
@@ -650,7 +766,7 @@ function togglePostFavoriteStatus(post) {
   } else {
     vaultedPosts.unshift(post); lbFavBtn.classList.add('favorited'); lbFavBtn.textContent = '❤️ Favorited';
   }
-  localStorage.setItem('r34_vault_v2', JSON.stringify(vaultedPosts));
+  localforage.setItem('r34_vault_v2', vaultedPosts);
   syncVaultCounterDisplay(); 
   
   // Re-render the vault grid if we are currently looking at it
@@ -663,9 +779,11 @@ function togglePostFavoriteStatus(post) {
 function openLightbox(index) {
   currentPostIndex = index; const post = cachedPosts[index];
   lbContainer.innerHTML = ''; lbTagsStreamBox.innerHTML = '';
-  const fileUrl = post.file_url || post.sample_url;
-  const ext = fileUrl.split('.').pop().toLowerCase();
-  if (['mp4','webm'].includes(ext)) {
+  const originalExt = (post.file_url || '').split('.').pop().toLowerCase();
+  const isVideo = ['mp4','webm'].includes(originalExt);
+  const fileUrl = isVideo ? post.file_url : (post.sample_url || post.file_url);
+  
+  if (isVideo) {
     const v = document.createElement('video'); v.src = fileUrl; v.controls = true; v.autoplay = true; v.loop = true; v.playsInline = true; lbContainer.appendChild(v);
   } else {
     const img = document.createElement('img'); img.src = fileUrl; lbContainer.appendChild(img);
@@ -674,7 +792,13 @@ function openLightbox(index) {
   lbSize.textContent  = post.width ? `${post.width}×${post.height}` : '';
   const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
   lbFavBtn.classList.toggle('favorited', isSaved); lbFavBtn.textContent = isSaved ? '❤️ Favorited' : '🤍 Favorite';
-  lbFavBtn.onclick = (e) => { e.stopPropagation(); togglePostFavoriteStatus(post); };
+  lbFavBtn.onclick = (e) => { 
+    e.stopPropagation(); 
+    openFolderMenu(e, post, lbFavBtn, (isSavedNow) => {
+       lbFavBtn.classList.toggle('favorited', isSavedNow); 
+       lbFavBtn.textContent = isSavedNow ? '❤️ Favorited' : '🤍 Favorite';
+    });
+  };
   lbDlBtn.onclick  = (e) => { e.stopPropagation(); forceBinaryAssetDownload(fileUrl, post.id); };
   const tags = (post.tags || '').split(/\s+/).filter(Boolean);
   tags.forEach(t => {
@@ -726,6 +850,142 @@ document.querySelectorAll('[data-insert]').forEach(chip => {
   chip.addEventListener('click', () => addPill(chip.dataset.insert));
 });
 
-getLatestId();
-renderHistoryAndPins();
-syncVaultCounterDisplay();
+document.addEventListener('DOMContentLoaded', async () => {
+  await initVault(); // Wait for IndexedDB migration and load
+  getLatestId();
+  renderHistoryAndPins();
+  syncVaultCounterDisplay();
+  if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
+});
+
+const vaultExportBtn = document.getElementById('vault-export-btn');
+const vaultImportBtn = document.getElementById('vault-import-btn');
+const vaultImportInput = document.getElementById('vault-import-input');
+
+if(vaultExportBtn) vaultExportBtn.addEventListener('click', exportVault);
+if(vaultImportBtn) vaultImportBtn.addEventListener('click', () => vaultImportInput.click());
+if(vaultImportInput) vaultImportInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) importVault(e.target.files[0]);
+});
+
+function renderBlacklist() {
+  const container = document.getElementById('blacklist-tags');
+  if(!container) return;
+  container.innerHTML = '';
+  globalBlacklist.forEach(tag => {
+    const pill = document.createElement('span');
+    pill.className = 'meta-badge';
+    pill.style.background = 'rgba(244,63,94,0.15)';
+    pill.style.color = '#fb7185';
+    pill.style.borderColor = '#f43f5e';
+    pill.style.cursor = 'pointer';
+    pill.textContent = tag + ' ✕';
+    pill.onclick = async () => {
+      globalBlacklist = globalBlacklist.filter(t => t !== tag);
+      await localforage.setItem('r34_blacklist', globalBlacklist);
+      renderBlacklist();
+    };
+    container.appendChild(pill);
+  });
+}
+
+const blacklistInput = document.getElementById('blacklist-input');
+const blacklistSaveBtn = document.getElementById('blacklist-save-btn');
+if(blacklistSaveBtn) {
+  blacklistSaveBtn.addEventListener('click', async () => {
+    const tags = blacklistInput.value.trim().split(/\s+/).filter(Boolean);
+    let updated = false;
+    tags.forEach(t => {
+      if(!globalBlacklist.includes(t)) {
+        globalBlacklist.push(t);
+        updated = true;
+      }
+    });
+    if(updated) {
+      await localforage.setItem('r34_blacklist', globalBlacklist);
+      renderBlacklist();
+    }
+    blacklistInput.value = '';
+  });
+}
+if(blacklistInput) {
+  blacklistInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') blacklistSaveBtn.click();
+  });
+}
+
+class Slideshow {
+  constructor() {
+    this.timer = null;
+    this.interval = 4000;
+    this.isPlaying = false;
+    this.btn = document.getElementById('slideshow-btn');
+    if(this.btn) {
+      this.btn.addEventListener('click', () => this.toggle());
+    }
+    
+    // Pause if user interacts with lightbox
+    const stopInteract = () => { if(this.isPlaying) this.stop(); };
+    if(typeof lbPrevBtn !== 'undefined') lbPrevBtn.addEventListener('click', stopInteract);
+    if(typeof lbNextBtn !== 'undefined') lbNextBtn.addEventListener('click', stopInteract);
+    if(typeof lbClose !== 'undefined') lbClose.addEventListener('click', stopInteract);
+  }
+
+  toggle() {
+    if (this.isPlaying) {
+      this.stop();
+    } else {
+      this.start();
+    }
+  }
+
+  start() {
+    if (cachedPosts.length === 0) {
+      triggerToastNotification("No images to play!");
+      return;
+    }
+    this.isPlaying = true;
+    if(this.btn) {
+      this.btn.innerHTML = '⏸ Stop';
+      this.btn.style.background = '#f43f5e';
+    }
+    triggerToastNotification("Slideshow started");
+    
+    if(!lightbox.classList.contains('open')) {
+      openLightbox(0);
+    }
+    
+    this.timer = setInterval(() => {
+      if (!lightbox.classList.contains('open')) {
+        this.stop();
+        return;
+      }
+      if (currentPostIndex < cachedPosts.length - 1) {
+        lbNextBtn.click();
+      } else {
+        if (hasMore) {
+          loadNextPage();
+          // wait a bit for it to load, then next
+          setTimeout(() => {
+             if (currentPostIndex < cachedPosts.length - 1) lbNextBtn.click();
+          }, 1500);
+        } else {
+          this.stop();
+          triggerToastNotification("Slideshow finished");
+        }
+      }
+    }, this.interval);
+  }
+
+  stop() {
+    this.isPlaying = false;
+    if(this.timer) clearInterval(this.timer);
+    this.timer = null;
+    if(this.btn) {
+      this.btn.innerHTML = '▶ Play';
+      this.btn.style.background = 'var(--accent-purple)';
+    }
+  }
+}
+
+const slideshow = new Slideshow();

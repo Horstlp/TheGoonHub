@@ -1,43 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>R34 Media Hub Pro</title>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Accessibility & SEO: Added meta description for better indexing and context -->
+  <meta name="description" content="R34 Media Hub Pro - Advanced Media Browser">
+  <title>R34 Media Hub Pro</title>
+  
+  <!-- Performance: Preload main stylesheet to avoid render-blocking delay -->
+  <link rel="preload" href="css/style.css" as="style">
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Performance: Defer scripts so they don't block HTML parsing, keeping them in <head> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/vault.js" defer></script>
+  <script src="js/app.js" defer></script>
+  <script src="js/navigation.js" defer></script>
+  <script src="js/videos.js" defer></script>
+  <script src="js/manga.js" defer></script>
 </head>
 <body>
 
 <div class="app-container">
-  <nav class="sidebar">
-    <div class="sidebar-nav">
-      <button class="sidebar-item active" id="nav-images" title="Images">🖼️</button>
-      <button class="sidebar-item" id="nav-videos" title="Videos">🎬</button>
-      <button class="sidebar-item" id="nav-manga" title="Manga">📖</button>
-      <button class="sidebar-item" id="nav-vault" title="Vault">💖</button>
+  <!-- Accessibility & Semantic HTML: Use <nav> and aria-label for navigation -->
+  <nav class="sidebar" aria-label="Primary Navigation">
+    <div class="sidebar-nav" role="menubar">
+      <!-- Accessibility: Add aria-label and explicit role to emoji buttons -->
+      <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images" role="menuitem">🖼️</button>
+      <button class="sidebar-item" id="nav-videos" title="Videos" aria-label="View Videos" role="menuitem">🎬</button>
+      <button class="sidebar-item" id="nav-manga" title="Manga" aria-label="View Manga" role="menuitem">📖</button>
+      <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" role="menuitem">💖</button>
     </div>
   </nav>
 
   <main class="main-content">
     <!-- IMAGES VIEW (Default) -->
-    <div id="view-images" class="app-view">
+    <!-- Semantic HTML: Use <section> for views instead of <div> -->
+    <section id="view-images" class="app-view" aria-labelledby="images-title">
       <header>
-        <h1>R34 Media Hub Pro</h1>
-        <p>Engineered with lightweight grid pipelines and real-time streaming preview triggers</p>
+        <h1 id="images-title">The Better Rule 34</h1>
       </header>
 
-      <div class="search-wrap">
+      <!-- Accessibility & Modern Best Practice: Wrap search inputs in <form> with role="search" -->
+      <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
         <div class="search-row">
           <div class="search-input-container" id="search-container">
-            <div id="tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;"></div>
-            <input id="search-input" type="text" placeholder="Add tags..." autocomplete="off" />
-            <div class="autocomplete-dropdown" id="autocomplete-box"></div>
+            <!-- Accessibility: aria-live="polite" announces dynamic changes to tags -->
+            <div id="tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;" aria-live="polite"></div>
+            <!-- Accessibility: Use type="search", aria-autocomplete, and aria-controls -->
+            <input id="search-input" type="search" placeholder="Add tags..." autocomplete="off" aria-label="Search tags" aria-autocomplete="list" aria-controls="autocomplete-box" />
+            <div class="autocomplete-dropdown" id="autocomplete-box" role="listbox" aria-label="Search suggestions"></div>
           </div>
-          <button id="search-btn">Search</button>
+          <!-- Accessibility: Explicit type="submit" -->
+          <button id="search-btn" type="submit" aria-label="Execute search">Search</button>
+          <button id="slideshow-btn" type="button" aria-label="Play Slideshow" style="background: var(--accent-purple); color: white; border: none; border-radius: 30px; padding: 0 20px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap;">▶ Play</button>
         </div>
 
-        <div class="filter-row">
-          <select id="timeframe-select" class="filter-select" title="Filter by time period">
+        <!-- Accessibility: Group select filters semantically -->
+        <fieldset class="filter-row" style="border: none; padding: 0; margin: 0;">
+          <legend class="sr-only" style="display: none;">Search Filters</legend>
+          <select id="timeframe-select" class="filter-select" aria-label="Filter by time period">
             <option value="all">🕐 All time</option>
             <option value="7">📅 Last 7 days</option>
             <option value="30">📅 Last month</option>
@@ -46,7 +69,7 @@
             <option value="365">📅 Last year</option>
           </select>
 
-          <select id="sort-select" class="filter-select" title="Sort order">
+          <select id="sort-select" class="filter-select" aria-label="Sort order">
             <option value="">⚡ Default order</option>
             <option value="sort:score:desc">🏆 Highest score</option>
             <option value="sort:score:asc">📉 Lowest score</option>
@@ -55,26 +78,35 @@
             <option value="sort:updated:desc">🔄 Recently updated</option>
             <option value="sort:random">🎲 Random</option>
           </select>
-        </div>
-      </div>
+        </fieldset>
+      </form>
 
-      <div class="helpers-wrap">
-        <button class="helpers-toggle" id="helpers-toggle">
-          <span class="arrow">▶</span> Search syntax helpers
+      <div class="helpers-wrap" aria-label="Helper toggles">
+        <!-- Accessibility: Use aria-expanded and aria-controls for expandable panels -->
+        <button class="helpers-toggle" id="helpers-toggle" aria-expanded="false" aria-controls="helpers-panel">
+          <span class="arrow" aria-hidden="true">▶</span> Search syntax helpers
         </button>
-        <button class="helpers-toggle" id="history-toggle">
-          <span class="arrow">▶</span> Saved &amp; History
+        <button class="helpers-toggle" id="history-toggle" aria-expanded="false" aria-controls="history-panel">
+          <span class="arrow" aria-hidden="true">▶</span> Saved &amp; History
         </button>
-        <!-- Vault toggle moved to sidebar, but keep this button to jump to vault or remove it -->
-        <button class="helpers-toggle" id="vault-toggle" style="display: none;">
+        <button class="helpers-toggle" id="vault-toggle" style="display: none;" aria-hidden="true">
           💖 My Vault (0)
         </button>
       </div>
 
       <!-- Syntax Helpers Dashboard Panel -->
-      <div class="helpers-panel" id="helpers-panel" style="max-width: 720px; margin: 12px auto 0;">
+      <section class="helpers-panel" id="helpers-panel" style="max-width: 720px; margin: 12px auto 0;" aria-label="Syntax Helpers">
+        <div style="margin-bottom: 12px; width: 100%;">
+          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Global Blacklist</h2>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input type="text" id="blacklist-input" placeholder="Tags to exclude everywhere... (space separated)" style="flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 4px; outline: none;">
+            <button id="blacklist-save-btn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 4px; cursor: pointer;">Save</button>
+          </div>
+          <div id="blacklist-tags" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;"></div>
+        </div>
         <div>
-          <div class="hgroup-label">Combining tags</div>
+          <!-- Semantic HTML: Replace div labels with headings -->
+          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Combining tags</h2>
           <div class="chips">
             <button class="chip" data-insert="tag1 tag2"><span class="chip-syntax">tag1 tag2</span><span class="chip-desc">AND both tags</span></button>
             <button class="chip" data-insert="( tag1 ~ tag2 )"><span class="chip-syntax">( tag1 ~ tag2 )</span><span class="chip-desc">OR either tag</span></button>
@@ -82,14 +114,14 @@
           </div>
         </div>
         <div>
-          <div class="hgroup-label">Wildcards &amp; fuzzy</div>
+          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Wildcards &amp; fuzzy</h2>
           <div class="chips">
             <button class="chip" data-insert="ta*1"><span class="chip-syntax">ta*1</span><span class="chip-desc">wildcard match</span></button>
             <button class="chip" data-insert="night~"><span class="chip-syntax">night~</span><span class="chip-desc">fuzzy match</span></button>
           </div>
         </div>
         <div>
-          <div class="hgroup-label">Rating &amp; score</div>
+          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Rating &amp; score</h2>
           <div class="chips">
             <button class="chip" data-insert="rating:safe"><span class="chip-syntax">rating:safe</span><span class="chip-desc">safe only</span></button>
             <button class="chip" data-insert="rating:questionable"><span class="chip-syntax">rating:questionable</span><span class="chip-desc">questionable</span></button>
@@ -97,163 +129,218 @@
             <button class="chip" data-insert="score:>=10"><span class="chip-syntax">score:>=10</span><span class="chip-desc">min score</span></button>
           </div>
         </div>
-      </div>
+      </section>
 
       <!-- Recent & Pinned Searches Panel -->
-      <div class="helpers-panel" id="history-panel" style="max-width: 720px; margin: 12px auto 0;">
+      <section class="helpers-panel" id="history-panel" style="max-width: 720px; margin: 12px auto 0;" aria-label="Search History">
         <div>
-          <div class="hgroup-label">📌 Pinned Configurations</div>
+          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">📌 Pinned Configurations</h2>
           <div class="chips" id="pinned-chips-box"></div>
         </div>
         <div style="margin-top: 6px;">
-          <div class="hgroup-label">🕰️ Recent Search History</div>
+          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">🕰️ Recent Search History</h2>
           <div class="chips" id="recent-chips-box"></div>
         </div>
-      </div>
+      </section>
 
-      <div class="meta-row" id="meta-row" style="display:none">
+      <!-- Accessibility: aria-live ensures screen readers announce pagination updates -->
+      <div class="meta-row" id="meta-row" style="display:none" aria-live="polite">
         <div class="meta-info">
           <span id="result-count"></span>
           <span id="active-filters"></span>
         </div>
-        <div class="pagination" id="pagination-controls-box">
-          <button class="page-btn" id="prev-btn" disabled>← Prev</button>
-          <span id="page-indicator">Page 1</span>
-          <button class="page-btn" id="next-btn" disabled>Next →</button>
-        </div>
+        <!-- Semantic HTML: Use <nav> for pagination controls -->
+        <nav class="pagination" id="pagination-controls-box" aria-label="Pagination">
+          <button class="page-btn" id="prev-btn" aria-label="Previous Page" disabled>← Prev</button>
+          <span id="page-indicator" aria-live="polite">Page 1</span>
+          <button class="page-btn" id="next-btn" aria-label="Next Page" disabled>Next →</button>
+        </nav>
       </div>
 
-      <div id="status">
-        <span class="icon">🔍</span>
+      <div id="status" aria-live="polite">
+        <span class="icon" aria-hidden="true">🔍</span>
         Enter tags above to start scanning files
       </div>
 
-      <div id="grid"></div>
-      <div id="scroll-sentinel"></div>
-    </div>
+      <div id="grid" aria-label="Image Results Grid" role="grid"></div>
+      <div id="scroll-sentinel" aria-hidden="true"></div>
+    </section>
 
     <!-- VIDEOS VIEW (TikTok Style) -->
-    <div id="view-videos" class="app-view" style="display: none; height: 100vh;">
-      <div class="tiktok-container" id="tiktok-container">
+    <section id="view-videos" class="app-view" style="display: none; height: 100vh;" aria-labelledby="video-status">
+      <div class="tiktok-container" id="tiktok-container" aria-label="Video Stream">
         <!-- Videos will be injected here -->
       </div>
-      <div id="video-status" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--muted); text-align: center; z-index: 10;">
-        <span class="icon" style="font-size: 2rem; display: block; margin-bottom: 10px;">🎥</span>
+      <div id="video-status" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--muted); text-align: center; z-index: 10;" aria-live="polite">
+        <span class="icon" style="font-size: 2rem; display: block; margin-bottom: 10px;" aria-hidden="true">🎥</span>
         Loading videos stream...
       </div>
-    </div>
+    </section>
 
     <!-- MANGA VIEW -->
-    <div id="view-manga" class="app-view" style="display: none;">
+    <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
       <header>
-        <h1>MangaDex Browser</h1>
+        <h1 id="manga-title">MangaDex Browser</h1>
         <p>Infinite scrolling manga grid and direct ID reader via MangaDex API.</p>
       </header>
       
-      
       <!-- Manga Grid Search -->
-      <div class="search-wrap">
+      <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
         <div class="search-row">
           <div class="search-input-container">
-            <input id="manga-grid-search-input" type="text" placeholder="Search manga titles... (e.g. naruto)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
+            <input id="manga-grid-search-input" type="search" placeholder="Search titles... (e.g. naruto tag:romance tag:yuri)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" aria-label="Search manga grid" />
           </div>
-          <button id="manga-grid-search-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search Grid</button>
+          <button id="manga-grid-search-btn" type="submit" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search Grid</button>
         </div>
+      </form>
+      
+      <div id="manga-grid-status" style="text-align: center; color: var(--muted); padding: 20px;" aria-live="polite">
+        <span class="icon" aria-hidden="true">🔍</span> Search to load comic covers...
       </div>
       
-      <div id="manga-grid-status" style="text-align: center; color: var(--muted); padding: 20px;">
-        <span class="icon">🔍</span> Search to load comic covers...
-      </div>
-      
-      <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 40px;"></div>
-      <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;"></div>
+      <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 40px;" role="grid" aria-label="Manga Results"></div>
+      <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;" aria-hidden="true"></div>
 
-      <hr style="border-color: var(--border); margin: 40px 0;">
+      <hr style="border-color: var(--border); margin: 40px 0;" aria-hidden="true">
 
       <!-- Specific ID MangaDex API Reader -->
       <header>
         <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Direct ID Reader</h2>
         <p style="color: var(--muted); font-size: 0.85rem;">Access high-quality chapters directly if you know the Manga UUID.</p>
       </header>
-      <div class="search-wrap">
+      <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
         <div class="search-row">
           <div class="search-input-container">
-            <input id="manga-id-input" type="text" placeholder="Enter Manga UUID (e.g. c52b2ce3-7f95...)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" />
+            <input id="manga-id-input" type="text" placeholder="Enter Manga UUID (e.g. c52b2ce3-7f95...)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" aria-label="Manga UUID" />
           </div>
-          <button id="manga-fetch-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Load Chapter</button>
+          <button id="manga-fetch-btn" type="submit" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Load Chapter</button>
         </div>
-      </div>
-      <div id="manga-status" style="text-align: center; color: var(--muted); padding: 20px;"></div>
-      <div id="manga-content" style="display: none; margin-top: 20px;">
+      </form>
+      <div id="manga-status" style="text-align: center; color: var(--muted); padding: 20px;" aria-live="polite"></div>
+      <!-- Semantic HTML: Use <article> for individual manga item -->
+      <article id="manga-content" style="display: none; margin-top: 20px;" aria-labelledby="manga-content-title">
         <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-          <img id="manga-cover" style="width: 250px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);" />
+          <!-- Accessibility: Add empty alt attribute (to be populated by JS) -->
+          <img id="manga-cover" alt="" style="width: 250px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);" />
           <div style="flex: 1; min-width: 300px;">
-            <h2 id="manga-title" style="margin-bottom: 12px;"></h2>
-            <div id="manga-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;"></div>
+            <h2 id="manga-content-title" style="margin-bottom: 12px;"></h2>
+            <div id="manga-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;" aria-label="Manga Tags"></div>
             <!-- Like and Save actions for manga reader -->
             <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-                <button id="manga-read-btn" style="background: var(--accent-purple); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold;">📖 Read Manga</button>
-                <button id="manga-like-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;">♡ Like</button>
-                <button id="manga-save-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;">🤍 Save</button>
+                <!-- Removed manga-read-btn here as it's now per-chapter -->
+                <button id="manga-like-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Like Manga">♡ Like</button>
+                <button id="manga-save-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Save Manga">🤍 Save</button>
+            </div>
+            
+            <div id="manga-chapter-selection" style="margin-top: 20px;">
+              <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
+                  <h3 style="margin: 0; font-size: 1.2rem;">Chapters</h3>
+                  <select id="manga-lang-select" class="filter-select" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 4px; outline: none; cursor: pointer;" aria-label="Select Language">
+                    <option value="en">English</option>
+                    <option value="es-la">Spanish (LATAM)</option>
+                    <option value="es">Spanish (ES)</option>
+                    <option value="fr">French</option>
+                    <option value="ja">Japanese</option>
+                    <option value="zh">Chinese</option>
+                    <option value="ko">Korean</option>
+                    <option value="pt-br">Portuguese (BR)</option>
+                    <option value="ru">Russian</option>
+                  </select>
+              </div>
+              <div id="manga-chapter-list" style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;" role="list" aria-label="Manga Chapters">
+                  <!-- Chapters injected here -->
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </article>
+    </section>
 
     <!-- VAULT VIEW -->
-    <div id="view-vault" class="app-view" style="display: none;">
-      <header>
-        <h1>My Vault</h1>
-        <p>Your locally secured media</p>
+    <section id="view-vault" class="app-view" style="display: none;" aria-labelledby="vault-title">
+      <header style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h1 id="vault-title">My Vault</h1>
+          <p>Your locally secured media</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <select id="vault-sort-select" class="filter-select" aria-label="Sort vault" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; cursor: pointer;">
+            <option value="newest">🆕 Newest saved</option>
+            <option value="oldest">🕰 Oldest saved</option>
+            <option value="highest">🏆 Highest score</option>
+            <option value="lowest">📉 Lowest score</option>
+          </select>
+          <button id="vault-export-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Export Vault">📤 Export</button>
+          <button id="vault-import-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Import Vault">📥 Import</button>
+          <input type="file" id="vault-import-input" accept=".json" style="display: none;">
+          <button id="vault-delete-folder-btn" style="display: none; background: rgba(244,63,94,0.15); color: #fb7185; border: 1px solid #f43f5e; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Delete Folder">🗑 Delete Folder</button>
+        </div>
       </header>
-      <div class="folder-nav" id="vault-folders-nav" style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px;">
+      <nav class="folder-nav" id="vault-folders-nav" style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px;" aria-label="Vault Folders">
         <!-- Folders injected here -->
-      </div>
-      <div id="vault-grid" class="vault-grid-layout"></div>
-      <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;"></div>
-    </div>
+      </nav>
+      <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
+      <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;" aria-live="polite"></div>
+    </section>
 
   </main>
 </div>
 
-<div id="toast"></div>
+<!-- Accessibility: role="alert" for immediate notifications -->
+<div id="toast" aria-live="assertive" role="alert"></div>
 
-<div id="lightbox">
-  <button id="lightbox-close">✕ Close</button>
-  <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous">‹</button>
+<!-- Accessibility: Use role="dialog" and aria-modal for custom modals -->
+<div id="lightbox" role="dialog" aria-modal="true" aria-label="Image Lightbox">
+  <button id="lightbox-close" aria-label="Close Lightbox">✕ Close</button>
+  <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous Image">‹</button>
   
   <div class="lightbox-wrapper">
-    <div id="lightbox-media-container"></div>
+    <div id="lightbox-media-container" aria-live="polite"></div>
   </div>
 
-  <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next">›</button>
+  <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next Image">›</button>
   
   <div id="lightbox-info">
     <div class="lb-meta-row">
       <span id="lb-score"></span>
       <span id="lb-size"></span>
       
-      <!-- Vault Interactive Connectors -->
-      <button class="lb-action-btn" id="lb-fav-btn">🤍 Favorite</button>
-      <button class="lb-action-btn" id="lb-dl-btn">📥 Download</button>
+      <button class="lb-action-btn" id="lb-fav-btn" aria-label="Favorite Image">🤍 Favorite</button>
+      <button class="lb-action-btn" id="lb-dl-btn" aria-label="Download Image">📥 Download</button>
     </div>
-    <!-- Interactive Click-to-Add Container -->
-    <div class="lb-tags-stream" id="lb-tags-stream-box"></div>
+    <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
   </div>
 </div>
 
 <!-- Manga Reader Modal -->
-<div id="manga-reader" style="display: none; position: fixed; inset: 0; background: #000; z-index: 1000; overflow-y: auto; text-align: center; padding: 20px;">
-  <button id="manga-reader-close" style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; z-index: 1010; backdrop-filter: blur(4px);">✕ Close Reader</button>
-  <div id="manga-pages-container" style="display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 1000px; margin: 0 auto;"></div>
+<div id="manga-reader" style="display: none; position: fixed; inset: 0; background: #000; z-index: 1000; overflow-y: auto; text-align: center; padding: 20px;" role="dialog" aria-modal="true" aria-label="Manga Reader">
+  <button id="manga-reader-close" style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; z-index: 1010; backdrop-filter: blur(4px);" aria-label="Close Manga Reader">✕ Close Reader</button>
+  <div id="manga-pages-container" style="display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 1000px; margin: 0 auto;" aria-live="polite"></div>
 </div>
 
-<script src="js/api.js"></script>
-<script src="js/vault.js"></script>
-<script src="js/app.js"></script>
-<script src="js/navigation.js"></script>
-<script src="js/videos.js"></script>
-<script src="js/manga.js"></script>
+<!-- Global Save Modal (Pinterest Style) -->
+<div id="save-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+  <div id="save-modal-content" style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 320px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; max-height: 80vh;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 id="save-modal-title" style="margin: 0; font-size: 1.2rem;">Save to folder</h3>
+      <button id="save-modal-close" style="background: transparent; border: none; color: var(--text); cursor: pointer; font-size: 1.2rem;" aria-label="Close Save Modal">✕</button>
+    </div>
+    
+    <form class="search-input-container" style="margin-bottom: 12px; min-height: 40px; padding: 0 10px;" onsubmit="event.preventDefault();" role="search">
+      <input id="save-modal-search" type="search" placeholder="Search folders..." style="width: 100%; background: transparent; border: none; outline: none; color: var(--text);" autocomplete="off" aria-label="Search folders">
+    </form>
+
+    <div id="save-modal-folders" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding-right: 4px;" role="list" aria-label="Folder List">
+      <!-- Folder items injected here -->
+    </div>
+    
+    <form style="display: flex; gap: 8px;" onsubmit="event.preventDefault();">
+      <input id="save-modal-new-input" type="text" placeholder="Create folder..." style="flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 10px; border-radius: 8px; color: var(--text); outline: none;" aria-label="New folder name" required>
+      <button id="save-modal-new-btn" type="submit" style="background: var(--accent-purple); color: white; border: none; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: bold;">Create</button>
+    </form>
+  </div>
+</div>
+
+<!-- Script tags already moved to <head> with defer attribute for performance -->
 </body>
 </html>

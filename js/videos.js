@@ -19,14 +19,18 @@ async function loadMoreVideos() {
   videoStatus.style.display = 'block';
 
   // Search for high score videos with a fresh cache-busting timestamp attached
-  const tagsParam = 'video sort:random score:>=300';
+  let tagsParam = 'video sort:random score:>=300';
+  
+  if (typeof globalBlacklist !== 'undefined' && globalBlacklist.length > 0) {
+    globalBlacklist.forEach(t => tagsParam += ` -${t}`);
+  }
   
   // FIXED: Removed incremental pid and added a live timestamp query parameter (&cb=) 
   // We bump limit to 20 to ensure a thick cushion of items after filtering duplicates!
   const url = `${API}&tags=${encodeURIComponent(tagsParam)}&limit=20&json=1&cb=${Date.now()}`;
   
   try {
-    const res = await fetch(PROXY + encodeURIComponent(url));
+    const res = await throttledFetch(PROXY + encodeURIComponent(url));
     const data = await res.json();
     
     if (data && data.length > 0) {
@@ -76,13 +80,43 @@ function appendVideosToScroller(data) {
     video.playsInline = true;
     video.muted = false; 
     
+    let clickTimeout;
     wrapper.addEventListener('click', (e) => {
       if(e.target.closest('.tiktok-actions-right') || e.target.closest('.tiktok-controls')) return;
-      if(video.paused) {
-        video.play().catch(()=>{});
+      
+      // Delay single click to allow double click to fire without toggling pause
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
       } else {
-        video.pause();
+        clickTimeout = setTimeout(() => {
+          if(video.paused) {
+            video.play().catch(()=>{});
+          } else {
+            video.pause();
+          }
+          clickTimeout = null;
+        }, 250);
       }
+    });
+
+    wrapper.addEventListener('dblclick', (e) => {
+      if(e.target.closest('.tiktok-actions-right') || e.target.closest('.tiktok-controls')) return;
+      
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+      }
+      
+      likeBtn.click();
+      
+      const heart = document.createElement('div');
+      heart.innerHTML = '❤️';
+      heart.className = 'floating-heart';
+      heart.style.left = `${e.clientX - 25}px`;
+      heart.style.top = `${e.clientY - 25}px`;
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 1000);
     });
 
     // Info overlay
@@ -123,17 +157,10 @@ function appendVideosToScroller(data) {
     saveBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if(typeof openFolderMenu === 'function') {
-        // Reset the inner HTML when openFolderMenu updates textContent, so we override it to an icon
-        const originalTextContent = saveBtn.textContent;
-        openFolderMenu(e, post, saveBtn);
-
-        // Wait for next frame to swap text Content back to icon since openFolderMenu overrides it with text
-        setTimeout(() => {
-           const currentlySaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-           saveBtn.innerHTML = currentlySaved ? '💖' : '🤍';
-           saveBtn.classList.toggle('active-save', currentlySaved);
-           saveBtn.style.backgroundColor = ''; // reset openFolderMenu inline styles
-        }, 10);
+        openFolderMenu(e, post, saveBtn, (isSavedNow) => {
+           saveBtn.innerHTML = isSavedNow ? '💖' : '🤍';
+           saveBtn.classList.toggle('active-save', isSavedNow);
+        });
       } else if(typeof togglePostFavoriteStatus === 'function') {
         togglePostFavoriteStatus(post);
         const currentlySaved = vaultedPosts.some(p => String(p.id) === String(post.id));
@@ -152,9 +179,27 @@ function appendVideosToScroller(data) {
       muteBtn.innerHTML = video.muted ? '🔇' : '🔊';
     });
 
+    // PiP Button
+    const pipBtn = document.createElement('div');
+    pipBtn.className = 'tiktok-circle-btn';
+    pipBtn.innerHTML = '⧉';
+    pipBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else {
+          await video.requestPictureInPicture();
+        }
+      } catch (err) {
+        console.warn("PiP not supported or failed", err);
+      }
+    });
+
     actionsRight.appendChild(likeBtn);
     actionsRight.appendChild(saveBtn);
     actionsRight.appendChild(muteBtn);
+    actionsRight.appendChild(pipBtn);
 
     // Timeline Scrubber
     const controlsWrap = document.createElement('div');
@@ -186,11 +231,31 @@ function appendVideosToScroller(data) {
       }
     });
 
+    wrapper.dataset.originalSrc = fileUrl;
     wrapper.appendChild(video);
     wrapper.appendChild(info);
     wrapper.appendChild(actionsRight);
     wrapper.appendChild(controlsWrap);
     tiktokContainer.appendChild(wrapper);
+
+    // Attribute Virtualization Observer
+    if (!window.virtualizeObserver) {
+      window.virtualizeObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const v = entry.target.querySelector('video');
+          const originalSrc = entry.target.dataset.originalSrc;
+          if (entry.isIntersecting) {
+            if (!v.getAttribute('src')) {
+              v.setAttribute('src', originalSrc);
+            }
+          } else {
+            v.removeAttribute('src');
+            v.load();
+          }
+        });
+      }, { rootMargin: '2000px 0px' });
+    }
+    window.virtualizeObserver.observe(wrapper);
 
     // Observe to play/pause
     if (!currentVideoObserver) {

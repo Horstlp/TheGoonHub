@@ -31,8 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
           initVideoScroller();
         }
         
-        if (view === 'vault' && typeof renderVaultGridToDedicatedView === 'function') {
-          renderVaultGridToDedicatedView();
+        if (view === 'vault') {
+          if (typeof renderVaultGridToDedicatedView === 'function') renderVaultGridToDedicatedView();
+          if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
         }
       });
     }
