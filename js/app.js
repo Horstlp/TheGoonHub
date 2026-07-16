@@ -612,8 +612,23 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     footer.className = 'card-footer';
     footer.innerHTML = `<span class="score">▲ ${post.score ?? 0}</span><span>${ext.toUpperCase()}</span>`;
     card.appendChild(footer);
-    card.addEventListener('click', () => {
-      const targetArray = isViewingVault ? vaultedPosts : cachedPosts;
+    card.addEventListener('click', (e) => {
+      const isVaultView = targetContainer && targetContainer.id === 'vault-grid';
+      if (typeof isVaultBulkMode !== 'undefined' && isVaultBulkMode && isVaultView) {
+        const postIdStr = String(post.id);
+        if (selectedVaultPosts.has(postIdStr)) {
+           selectedVaultPosts.delete(postIdStr);
+           card.classList.remove('bulk-selected');
+        } else {
+           selectedVaultPosts.add(postIdStr);
+           card.classList.add('bulk-selected');
+        }
+        const countEl = document.getElementById('bulk-selection-count');
+        if (countEl) countEl.textContent = `${selectedVaultPosts.size} items selected`;
+        return;
+      }
+
+      const targetArray = cachedPosts; // cachedPosts handles Vault mode dynamically
       const actualIndex = targetArray.findIndex(p => String(p.id) === String(post.id));
       if (actualIndex > -1) openLightbox(actualIndex);
     });
@@ -673,9 +688,22 @@ function renderVaultGridToDedicatedView() {
     ? vaultedPosts.filter(p => !p.folder || p.folder === 'Default')
     : vaultedPosts.filter(p => p.folder === currentVaultFolder);
 
+  // Apply Vault Local Search filter
+  const searchInput = document.getElementById('vault-search-input');
+  if (searchInput && searchInput.value.trim() !== '') {
+    const query = searchInput.value.trim().toLowerCase();
+    const queryParts = query.split(/\s+/);
+    filteredPosts = filteredPosts.filter(p => {
+      if (!p.tags) return false;
+      const t = p.tags.toLowerCase();
+      // All search parts must match
+      return queryParts.every(part => t.includes(part));
+    });
+  }
+
   if (filteredPosts.length === 0) {
     vaultStatus.style.display = 'block';
-    vaultStatus.innerHTML = `<span class="icon">📁</span>No media in ${currentVaultFolder} folder.`;
+    vaultStatus.innerHTML = `<span class="icon">📁</span>No media found in ${currentVaultFolder} folder.`;
     return;
   }
   
@@ -696,6 +724,78 @@ function renderVaultGridToDedicatedView() {
 }
 
 document.getElementById('vault-sort-select')?.addEventListener('change', renderVaultGridToDedicatedView);
+document.getElementById('vault-search-input')?.addEventListener('input', debounce(renderVaultGridToDedicatedView, 300));
+
+let isVaultBulkMode = false;
+const selectedVaultPosts = new Set();
+
+const bulkEditBtn = document.getElementById('vault-bulk-edit-btn');
+const bulkActionsFooter = document.getElementById('vault-bulk-actions');
+const bulkCancelBtn = document.getElementById('bulk-cancel-btn');
+
+function toggleBulkMode() {
+    isVaultBulkMode = !isVaultBulkMode;
+    selectedVaultPosts.clear();
+    
+    if (bulkEditBtn) {
+        bulkEditBtn.style.background = isVaultBulkMode ? 'rgba(239, 68, 68, 0.15)' : 'rgba(52, 211, 153, 0.15)';
+        bulkEditBtn.style.color = isVaultBulkMode ? '#ef4444' : '#34d399';
+        bulkEditBtn.style.borderColor = isVaultBulkMode ? '#ef4444' : '#34d399';
+        bulkEditBtn.innerHTML = isVaultBulkMode ? 'Cancel Bulk Edit' : '✅ Bulk Edit';
+    }
+    
+    if (bulkActionsFooter) {
+        bulkActionsFooter.style.display = isVaultBulkMode ? 'flex' : 'none';
+        if (isVaultBulkMode) {
+            const folderSelect = document.getElementById('bulk-folder-select');
+            if (folderSelect) {
+                folderSelect.innerHTML = '';
+                getVaultFolders().forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f;
+                    opt.textContent = f;
+                    folderSelect.appendChild(opt);
+                });
+            }
+        }
+    }
+    
+    const countEl = document.getElementById('bulk-selection-count');
+    if (countEl) countEl.textContent = `0 items selected`;
+    
+    renderVaultGridToDedicatedView(); // Re-render to clear any active selections visually
+}
+
+if (bulkEditBtn) bulkEditBtn.addEventListener('click', toggleBulkMode);
+if (bulkCancelBtn) bulkCancelBtn.addEventListener('click', toggleBulkMode);
+
+document.getElementById('bulk-move-btn')?.addEventListener('click', () => {
+    if (selectedVaultPosts.size === 0) return triggerToastNotification("No items selected.");
+    const folderSelect = document.getElementById('bulk-folder-select');
+    const targetFolder = folderSelect ? folderSelect.value : 'Default';
+    
+    vaultedPosts.forEach(p => {
+        if (selectedVaultPosts.has(String(p.id))) {
+            p.folder = targetFolder;
+        }
+    });
+    
+    localforage.setItem('r34_vault_v2', vaultedPosts);
+    triggerToastNotification(`Moved ${selectedVaultPosts.size} items to ${targetFolder}.`);
+    toggleBulkMode();
+});
+
+document.getElementById('bulk-delete-btn')?.addEventListener('click', () => {
+    if (selectedVaultPosts.size === 0) return triggerToastNotification("No items selected.");
+    if (!confirm(`Are you sure you want to delete ${selectedVaultPosts.size} items from your vault?`)) return;
+    
+    vaultedPosts = vaultedPosts.filter(p => !selectedVaultPosts.has(String(p.id)));
+    localforage.setItem('r34_vault_v2', vaultedPosts);
+    
+    triggerToastNotification(`Deleted ${selectedVaultPosts.size} items.`);
+    syncVaultCounterDisplay();
+    toggleBulkMode();
+});
 
 document.getElementById('vault-delete-folder-btn')?.addEventListener('click', () => {
     if (currentVaultFolder === 'Default') return;

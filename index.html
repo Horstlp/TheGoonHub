@@ -411,18 +411,20 @@
 
     <!-- VAULT VIEW -->
     <section id="view-vault" class="app-view" style="display: none;" aria-labelledby="vault-title">
-      <header style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+      <header style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
         <div>
           <h1 id="vault-title">My Vault</h1>
           <p>Your locally secured media</p>
         </div>
-        <div style="display: flex; gap: 12px; align-items: center;">
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <input type="search" id="vault-search-input" placeholder="Search saved tags..." style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; width: 200px;" aria-label="Search Vault">
           <select id="vault-sort-select" class="filter-select" aria-label="Sort vault" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; cursor: pointer;">
             <option value="newest">🆕 Newest saved</option>
             <option value="oldest">🕰 Oldest saved</option>
             <option value="highest">🏆 Highest score</option>
             <option value="lowest">📉 Lowest score</option>
           </select>
+          <button id="vault-bulk-edit-btn" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid #34d399; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Bulk Edit Mode">✅ Bulk Edit</button>
           <button id="vault-export-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Export Vault">📤 Export</button>
           <button id="vault-import-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Import Vault">📥 Import</button>
           <input type="file" id="vault-import-input" accept=".json" style="display: none;">
@@ -434,6 +436,18 @@
       </nav>
       <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
       <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;" aria-live="polite"></div>
+      
+      <!-- Bulk Actions Sticky Footer -->
+      <div id="vault-bulk-actions" style="display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-light); padding: 16px 24px; box-shadow: 0 -4px 16px rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; gap: 16px; border-top: 1px solid var(--border);">
+        <span id="bulk-selection-count" style="font-weight: bold; color: var(--text); margin-right: auto;">0 items selected</span>
+        
+        <select id="bulk-folder-select" style="background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; cursor: pointer;">
+           <!-- Populated dynamically -->
+        </select>
+        <button id="bulk-move-btn" style="background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Move to Folder</button>
+        <button id="bulk-delete-btn" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">🗑 Delete Selected</button>
+        <button id="bulk-cancel-btn" style="background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Cancel</button>
+      </div>
     </section>
 
   </main>
