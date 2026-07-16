@@ -7,6 +7,12 @@
   <meta name="description" content="R34 Media Hub Pro - Advanced Media Browser">
   <title>R34 Media Hub Pro</title>
   
+  <!-- Performance: Preconnect to APIs to shave off DNS & TCP handshake time -->
+  <link rel="preconnect" href="https://api.rule34.xxx">
+  <link rel="dns-prefetch" href="https://api.rule34.xxx">
+  <link rel="preconnect" href="https://frosty-forest-2c7f.markus4free.workers.dev">
+  <link rel="dns-prefetch" href="https://frosty-forest-2c7f.markus4free.workers.dev">
+  
   <!-- Performance: Preload main stylesheet to avoid render-blocking delay -->
   <link rel="preload" href="css/style.css" as="style">
   <link rel="stylesheet" href="css/style.css">
@@ -166,6 +172,13 @@
       </div>
 
       <div id="grid" aria-label="Image Results Grid" role="grid"></div>
+      
+      <!-- Infinite Scroll Bottom Indicator -->
+      <div id="bottom-status" style="display:none; text-align: center; padding: 40px 20px; color: var(--muted); width: 100%; clear: both;" aria-live="polite">
+        <div class="spinner" style="width: 24px; height: 24px; margin: 0 auto 10px;"></div>
+        Loading next batch...
+      </div>
+      
       <div id="scroll-sentinel" aria-hidden="true"></div>
     </section>
 

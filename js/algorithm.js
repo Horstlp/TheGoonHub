@@ -382,41 +382,20 @@ async function renderAlgoTable() {
     logAlgo('DNA Table rendered successfully.');
 }
 
-// Pulls a blended batch of images
-async function pullBlendedBatch(append = false, isMainGrid = false) {
-    if (isAlgoLoading) return;
-    if (vaultedPosts.length === 0) {
-        triggerToastNotification('Save some images to your vault first to train the algorithm!');
-        return;
-    }
-    isAlgoLoading = true;
-    logAlgo(append ? 'Pulling next chunk for infinite scroll...' : 'Initiating feed generation...');
-    
-    const targetGrid = isMainGrid ? document.getElementById('grid') : algoGrid;
-    const targetStatus = isMainGrid ? document.getElementById('status') : algoStatus;
-    
-    if (!append) {
-        targetGrid.innerHTML = '';
-        algoGridPage = 0;
-        targetStatus.style.display = 'block';
-        targetStatus.innerHTML = '<div class="spinner"></div>Analyzing Vault & Generating Feed...';
-    } else {
-        targetStatus.style.display = 'block';
-        targetStatus.innerHTML = '<div class="spinner"></div>Loading more recommendations...';
-    }
+let preloadAlgoPromise = null;
 
-    const batchSize = parseInt(algoValBatch.value || 50);
-    const ratio = parseInt(algoValRatio.value || 20) / 100;
-    const fetchAmount = parseInt(algoValFetches.value || 3);
-    const freshnessRatio = parseInt(algoValFreshness.value || 10) / 100;
+async function generateRawAlgoBatch(pageIndex) {
+    const batchSize = parseInt(algoValBatch.value || 30);
+    const ratio = parseInt(algoValRatio.value || 50) / 100;
+    const fetchAmount = parseInt(algoValFetches.value || 9);
+    const freshnessRatio = parseInt(algoValFreshness.value || 30) / 100;
     const baseSearch = algoBaseSearch.value.trim();
     
     const randomCount = Math.round(batchSize * ratio);
     const targetedCount = batchSize - randomCount;
     
-    logAlgo(`Calculated batch split: ${randomCount} random discovery posts, ${targetedCount} targeted posts.`);
+    logAlgo(`[PRELOAD ${pageIndex}] Split: ${randomCount} random, ${targetedCount} targeted.`);
     
-    // Analyze tags
     const sortedTags = analyzeVaultTags();
     await resolveTopTagTypes(sortedTags, 100);
     
@@ -443,7 +422,7 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
         }
     });
     
-    // Update Insights UI
+    // Update Insights UI (Only visually updates when it resolves, which is fine)
     const allWeighted = [...subjectTags, ...modifierTags].sort((a,b) => b.weight - a.weight);
     algoInsights.innerHTML = '<span style="color:var(--muted); font-size: 0.9rem; margin-right: 10px;">Top Weighted Influences:</span>';
     allWeighted.slice(0, 5).forEach(t => {
@@ -456,64 +435,39 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
         algoInsights.appendChild(pill);
     });
 
-    // Build the concurrent fetch pool
     const fetchPromises = [];
     
-    // 1. Fetch Discovery Pool
     if (randomCount > 0) {
         const isFresh = Math.random() < freshnessRatio;
         let q = isFresh ? '' : 'sort:random';
         if (baseSearch) q = isFresh ? baseSearch : `${baseSearch} sort:random`;
-        q += (q ? ' ' : '') + 'score:>=300'; // Enforce high-quality score filter
-        logAlgo(`Queuing Discovery Fetch: "${q}" for ${randomCount} posts...`);
+        q += (q ? ' ' : '') + 'score:>=300';
         fetchPromises.push((async () => {
-            const res = await fetchR34Posts(q, randomCount, algoGridPage);
-            logAlgo(`✔️ Hit [Discovery]: "${q}" returned ${res.length} posts.`);
-            return res;
+            return await fetchR34Posts(q, randomCount, pageIndex);
         })());
     }
     
-    // 2. Fetch Targeted Pool
     if (targetedCount > 0) {
         const primaryPool = subjectTags.length > 0 ? subjectTags : modifierTags;
         const tagsToQuery = selectWeightedTags(primaryPool, fetchAmount);
         
         if (tagsToQuery.length > 0) {
-            logAlgo(`Selected ${tagsToQuery.length} core subject tags: ${tagsToQuery.join(', ')}`);
             const countPerTag = Math.ceil(targetedCount / tagsToQuery.length);
-            
             tagsToQuery.forEach(tag => {
                 fetchPromises.push((async () => {
                     let maxRetries = 3;
                     while (maxRetries > 0) {
                         let q = tag;
-                        
-                        // 50% chance to append a modifier, 50% chance for pure tag
-                        // On the final retry, skip modifiers entirely to guarantee hits
                         if (subjectTags.length > 0 && modifierTags.length > 0 && Math.random() > 0.5 && maxRetries > 1) {
                             const mod = selectWeightedTags(modifierTags, 1);
-                            if (mod.length > 0) {
-                                q += ` ${mod[0]}`;
-                            }
+                            if (mod.length > 0) q += ` ${mod[0]}`;
                         }
-                        
                         const isFresh = Math.random() < freshnessRatio;
-                        if (!isFresh) {
-                            q += ' sort:random';
-                        }
-                        
+                        if (!isFresh) q += ' sort:random';
                         if (baseSearch) q = `${baseSearch} ${q}`;
-                        q += ' score:>=300'; // Enforce high-quality score filter
-                        
-                        logAlgo(`Queuing Targeted Fetch (Attempt ${4 - maxRetries}/3): "${q}" for ${countPerTag} posts...`);
-                        const res = await fetchR34Posts(q, countPerTag, algoGridPage);
-                        
-                        if (res.length > 0) {
-                            logAlgo(`✔️ Hit [Targeted]: "${q}" returned ${res.length} posts.`);
-                            return res;
-                        }
-                        
-                        logAlgo(`❌ Miss [Targeted]: "${q}" returned 0 posts. Retrying...`);
+                        q += ' score:>=300';
+                        const res = await fetchR34Posts(q, countPerTag, pageIndex);
+                        if (res.length > 0) return res;
                         maxRetries--;
                     }
                     return [];
@@ -522,17 +476,47 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
         }
     }
     
-    logAlgo(`Executing ${fetchPromises.length} parallel API requests...`);
     const resultsArrays = await Promise.all(fetchPromises);
+    return resultsArrays.flat();
+}
+
+async function pullBlendedBatch(append = false, isMainGrid = false) {
+    if (isAlgoLoading) return;
+    if (vaultedPosts.length === 0) {
+        triggerToastNotification('Save some images to your vault first to train the algorithm!');
+        return;
+    }
+    isAlgoLoading = true;
+    logAlgo(append ? 'Pulling next chunk for infinite scroll...' : 'Initiating feed generation...');
     
-    const allPosts = resultsArrays.flat();
+    const targetGrid = isMainGrid ? document.getElementById('grid') : algoGrid;
+    const targetStatus = isMainGrid ? document.getElementById('status') : algoStatus;
+    const bottomStatusEl = document.getElementById('bottom-status');
+    
+    if (!append) {
+        targetGrid.innerHTML = '';
+        algoGridPage = 0;
+        targetStatus.style.display = 'block';
+        if(bottomStatusEl) bottomStatusEl.style.display = 'none';
+        targetStatus.innerHTML = '<div class="spinner"></div>Analyzing Vault & Generating Feed...';
+        preloadAlgoPromise = null;
+    } else {
+        if(bottomStatusEl) bottomStatusEl.style.display = 'block';
+    }
+
+    let allPosts = [];
+    if (append && preloadAlgoPromise) {
+        allPosts = await preloadAlgoPromise;
+    } else {
+        allPosts = await generateRawAlgoBatch(algoGridPage);
+    }
+    
     logAlgo(`Received ${allPosts.length} total raw posts from API.`);
     
     const uniquePostsMap = new Map();
     const existingIds = append ? new Set(cachedPosts.map(p => p.id)) : new Set();
     
     allPosts.forEach(post => {
-        // Prevent duplicates within the same batch, AND prevent duplicates across Infinite Scroll batches
         if (!uniquePostsMap.has(post.id) && !existingIds.has(post.id)) {
             uniquePostsMap.set(post.id, post);
         }
@@ -542,18 +526,17 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
     logAlgo(`Deduplicated array: ${finalBatch.length} unique posts remain.`);
     
     // Fisher-Yates Shuffle
-    logAlgo('Shuffling final batch...');
     for (let i = finalBatch.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [finalBatch[i], finalBatch[j]] = [finalBatch[j], finalBatch[i]];
     }
     
     targetStatus.style.display = 'none';
+    if(bottomStatusEl) bottomStatusEl.style.display = 'none';
     
     if (finalBatch.length === 0 && !append) {
         targetStatus.style.display = 'block';
         targetStatus.innerHTML = 'No results found. Try clearing your Base Search or lowering weights.';
-        logAlgo('ERROR: Batch resulted in 0 posts.');
         isAlgoLoading = false;
         return;
     }
@@ -561,11 +544,9 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
     if (typeof injectPostCardsIntoGrid === 'function') {
         if (!append) cachedPosts = [];
         cachedPosts = append ? cachedPosts.concat(finalBatch) : finalBatch;
-        logAlgo(`Injecting ${finalBatch.length} posts into grid...`);
         injectPostCardsIntoGrid(finalBatch, targetGrid);
     }
     
-    logAlgo('Batch successfully completed.');
     const loadMoreBtn = document.getElementById('algo-load-more-btn');
     if (loadMoreBtn) {
         if (finalBatch.length > 0) {
@@ -576,6 +557,9 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
             loadMoreBtn.style.display = 'none';
         }
     }
+    
+    // KICK OFF BACKGROUND PRELOAD FOR NEXT PAGE
+    preloadAlgoPromise = generateRawAlgoBatch(algoGridPage + 1);
     
     isAlgoLoading = false;
 }

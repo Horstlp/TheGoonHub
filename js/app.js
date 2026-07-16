@@ -532,6 +532,9 @@ function openFolderMenu(e, post, anchorBtn, onUpdateCallback = null) {
 }
 
 function injectPostCardsIntoGrid(data, targetContainer = grid) {
+  const fragment = document.createDocumentFragment();
+  const newCards = []; // Store references for batch layout calculation
+
   data.forEach((post, index) => {
     const fileUrl = post.file_url || post.sample_url || post.preview_url;
     const previewUrl = post.preview_url || post.sample_url || post.file_url;
@@ -549,8 +552,14 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     const img = document.createElement('img');
     img.src = previewUrl; 
     img.loading = 'lazy';
-    // Recalculate masonry span once the image dimensions are known
-    img.onload = () => resizeGridItem(card);
+    img.decoding = 'async'; // Offload image decoding from main thread
+    
+    // Performance: Pre-allocate image height using aspect-ratio so the DOM 
+    // doesn't have to wait for the image to download to calculate the layout.
+    if (post.width && post.height) {
+        img.style.aspectRatio = `${post.width} / ${post.height}`;
+    }
+    
     img.onerror = () => { card.style.display = 'none'; };
     card.appendChild(img);
     if (isVideo) {
@@ -611,7 +620,23 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     
     // Observe card for width changes (responsiveness) to update rowSpan
     masonryObserver.observe(card);
-    targetContainer.appendChild(card);
+    fragment.appendChild(card);
+    newCards.push(card);
+  });
+
+  // Inject all 50 cards at once (1 Reflow instead of 50)
+  targetContainer.appendChild(fragment);
+
+  // Synchronized Batch Read-then-Write to completely eliminate layout thrashing
+  // Phase 1: Read Phase
+  const cardHeights = newCards.map(card => card.getBoundingClientRect().height);
+  
+  // Phase 2: Write Phase
+  const rowHeight = 10;
+  const rowGap = 16;
+  newCards.forEach((card, i) => {
+      const rowSpan = Math.ceil((cardHeights[i] + rowGap) / (rowHeight + rowGap));
+      card.style.gridRowEnd = `span ${rowSpan}`;
   });
 }
 
@@ -689,22 +714,40 @@ document.getElementById('vault-delete-folder-btn')?.addEventListener('click', ()
     }
 });
 
+let preloadStandardPromise = null;
+
+async function fetchStandardBatch(tagsParam, page) {
+  const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g,'+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
+  try {
+    const res = await throttledFetch(PROXY + encodeURIComponent(url));
+    const responseText = await res.text();
+    if (!res.ok || !responseText.trim()) return null;
+    return JSON.parse(responseText);
+  } catch (err) {
+    return null;
+  }
+}
+
 async function search(tags, page, append = false) {
   if (isLoading) return; // Prevent multiple simultaneous requests
   isLoading = true;
   btn.disabled = true; // Disable search button during loading
+
+  const bottomStatusEl = document.getElementById('bottom-status');
 
   if (!append) {
     grid.innerHTML = ''; // Clear grid only for new searches
     cachedPosts = []; // Clear cached posts for new searches
     metaRow.style.display = 'none';
     statusEl.style.display = 'block';
+    if(bottomStatusEl) bottomStatusEl.style.display = 'none';
     statusEl.innerHTML = '<div class="spinner"></div>Crunching requested parameters...';
     hasMore = true; // Assume there's more for a new search
+    preloadStandardPromise = null; // Clear any old preloads
   } else {
-    statusEl.style.display = 'block'; // Show spinner for loading more
-    statusEl.innerHTML = '<div class="spinner"></div>Loading more posts...';
+    if(bottomStatusEl) bottomStatusEl.style.display = 'block'; // Show spinner at bottom
   }
+  
   const days = timeframeSelect.value;
   const sortVal = sortSelect.value;
   let tagParts = tags.trim() ? tags.trim().split(/\s+/) : [];
@@ -714,41 +757,50 @@ async function search(tags, page, append = false) {
     globalBlacklist.forEach(t => tagParts.push(`-${t}`));
   }
   if (days !== 'all') {
-    if (!append) statusEl.innerHTML = '<div class="spinner"></div>Calibrating target timeframe offsets...'; // Update status for initial load
+    if (!append) statusEl.innerHTML = '<div class="spinner"></div>Calibrating target timeframe offsets...';
     let range = await getIdRange(parseInt(days));
     if (range) { tagParts.push(`id:>=${range.min}`); tagParts.push(`id:<=${range.max}`); }
   }
   const tagsParam = tagParts.join('+') || 'all';
-  const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g,'+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
+  
+  let data = null;
+  
   try {
-    const res = await throttledFetch(PROXY + encodeURIComponent(url));
-    const responseText = await res.text(); // Read as text first
-
-    if (!res.ok || !responseText.trim()) {
-      console.warn("API Engine alert: Received an empty or broken server packet.");
-      triggerToastNotification("⚠️ No data received from host. Try shifting filters!");
-      hasMore = false; // No more data if response is empty or broken
-      var data = []; // Provide an empty array backup
+    if (append && preloadStandardPromise) {
+      // PROMISE BUFFER ARCHITECTURE: Instantly resolve the background fetch!
+      data = await preloadStandardPromise;
     } else {
-      var data = JSON.parse(responseText); // Parse safely now
+      // Fallback or Initial fetch
+      data = await fetchStandardBatch(tagsParam, page);
     }
+  } catch (err) {
+    data = null;
+  }
 
-    if (!data || data.length === 0) {
-      statusEl.innerHTML = cachedPosts.length === 0 ? '<span class="icon">😶</span>No matching vectors found.' : ''; // Only show "no results" if no posts loaded yet
-      hasMore = false; // No more data to load
-    } else {
-      cacheSuccessfulSearch(tags);
-      cachedPosts = append ? cachedPosts.concat(data) : data; // Append or replace cached posts
-      statusEl.style.display = 'none'; metaRow.style.display = 'flex';
-      resultCount.textContent = `${cachedPosts.length} items loaded dynamically`; // Update total count
-      hasMore = data.length === PER_PAGE; // If less than PER_PAGE, assume no more pages
-    }
+  if (!data || data.length === 0) {
+    if (!append) statusEl.innerHTML = cachedPosts.length === 0 ? '<span class="icon">😶</span>No matching vectors found.' : '';
+    if (bottomStatusEl) bottomStatusEl.style.display = 'none';
+    hasMore = false; // No more data to load
+  } else {
+    cacheSuccessfulSearch(tags);
+    cachedPosts = append ? cachedPosts.concat(data) : data; // Append or replace cached posts
+    statusEl.style.display = 'none'; 
+    if (bottomStatusEl) bottomStatusEl.style.display = 'none';
+    metaRow.style.display = 'flex';
+    resultCount.textContent = `${cachedPosts.length} items loaded dynamically`; // Update total count
+    hasMore = data.length === PER_PAGE; // If less than PER_PAGE, assume no more pages
+    
     renderFilterBadges(days, sortVal);
     injectPostCardsIntoGrid(data);
-  } catch (err) {
-    statusEl.innerHTML = `<span class="icon">⚠️</span>Network pipeline disruption.`;
-    cachedPosts = [];
+
+    // KICK OFF BACKGROUND PRELOAD FOR THE NEXT PAGE
+    if (hasMore) {
+        preloadStandardPromise = fetchStandardBatch(tagsParam, page + 1);
+    } else {
+        preloadStandardPromise = null;
+    }
   }
+  
   btn.disabled = false;
   isLoading = false;
 }
