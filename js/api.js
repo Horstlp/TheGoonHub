@@ -74,12 +74,16 @@ async function getIdRange(days) {
   return { min: minId, max: latest };
 }
 
-async function queryAutocomplete(query) {
+async function queryAutocomplete(query, callback = null) {
   const targetUrl = `${AUTOCOMPLETE_API}${encodeURIComponent(query)}`;
   try {
     const res = await throttledFetch(PROXY + encodeURIComponent(targetUrl));
     const data = await res.json();
-    renderSuggestions(data);
+    if (callback) {
+      callback(data);
+    } else if (typeof renderSuggestions === 'function') {
+      renderSuggestions(data);
+    }
   } catch (err) {
     console.error('Autocomplete fetch loop fail:', err);
   }

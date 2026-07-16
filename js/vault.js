@@ -2,7 +2,9 @@ let recentSearches = [];
 let pinnedSearches = [];
 let vaultedPosts   = [];
 let vaultedFolders = ["Default"];
+let vaultFolderSettings = {};
 let globalBlacklist = [];
+let globalWhitelist = [];
 
 async function initVault() {
   try {
@@ -26,7 +28,9 @@ async function initVault() {
     pinnedSearches = (await localforage.getItem('r34_pinned_v2')) || [];
     vaultedPosts   = (await localforage.getItem('r34_vault_v2')) || [];
     vaultedFolders = (await localforage.getItem('r34_folders_v2')) || ["Default"];
+    vaultFolderSettings = (await localforage.getItem('r34_folder_settings_v1')) || {};
     globalBlacklist = (await localforage.getItem('r34_blacklist')) || [];
+    globalWhitelist = (await localforage.getItem('r34_whitelist')) || [];
 
     if (typeof renderHistoryAndPins === 'function') renderHistoryAndPins();
     if (typeof renderBlacklist === 'function') renderBlacklist();
@@ -63,7 +67,9 @@ async function exportVault() {
       vaultedFolders,
       recentSearches,
       pinnedSearches,
-      globalBlacklist
+      vaultFolderSettings,
+      globalBlacklist,
+      globalWhitelist
     };
     const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -104,6 +110,10 @@ async function importVault(file) {
     if (data.globalBlacklist) {
       globalBlacklist = data.globalBlacklist;
       await localforage.setItem('r34_blacklist', globalBlacklist);
+    }
+    if (data.globalWhitelist) {
+      globalWhitelist = data.globalWhitelist;
+      await localforage.setItem('r34_whitelist', globalWhitelist);
     }
     
     triggerToastNotification("Vault imported successfully! Reloading...");

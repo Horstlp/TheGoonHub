@@ -115,9 +115,18 @@ async function initAlgoCache() {
 // Analyze Vault and tally tag frequencies with chronological decay (Recency Bias)
 function analyzeVaultTags() {
     const counts = {};
-    const total = vaultedPosts.length;
     
-    vaultedPosts.forEach((post, index) => {
+    const validPosts = vaultedPosts.filter(post => {
+        const f = post.folder || 'Default';
+        if (typeof vaultFolderSettings !== 'undefined' && vaultFolderSettings[f]) {
+             if (vaultFolderSettings[f].useInAlgo === false) return false;
+        }
+        return true;
+    });
+
+    const total = validPosts.length;
+    
+    validPosts.forEach((post, index) => {
         if (!post.tags) return;
         
         // Calculate recency weight (Newest post = 1.0, Oldest post = 0.1)
@@ -213,7 +222,14 @@ async function resolveTopTagTypes(sortedTags, limit = 100) {
 async function fetchR34Posts(query, limit, page = 0) {
     // We MUST use the API constant from api.js to ensure api_key and user_id are passed, otherwise it 403s.
     const baseUrl = typeof API !== 'undefined' ? API : 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index';
-    const url = `${baseUrl}&limit=${limit}&pid=${page}&tags=${encodeURIComponent(query)}&json=1`;
+    
+    let finalQuery = query || '';
+    if (typeof globalBlacklist !== 'undefined' && globalBlacklist.length > 0) {
+        const blStr = globalBlacklist.map(t => `-${t}`).join(' ');
+        finalQuery = finalQuery ? `${finalQuery} ${blStr}` : blStr;
+    }
+    
+    const url = `${baseUrl}&limit=${limit}&pid=${page}&tags=${encodeURIComponent(finalQuery)}&json=1`;
     try {
         const res = await throttledFetch(PROXY + encodeURIComponent(url));
         const text = await res.text();
@@ -382,7 +398,10 @@ async function renderAlgoTable() {
     logAlgo('DNA Table rendered successfully.');
 }
 
-let preloadAlgoPromise = null;
+let algoPreloadQueue = [];
+let isAlgoPreloading = false;
+let currentAlgoPreloadPage = 0;
+const ALGO_PRELOAD_BUFFER_SIZE = 3;
 
 async function generateRawAlgoBatch(pageIndex) {
     const batchSize = parseInt(algoValBatch.value || 30);
@@ -480,6 +499,32 @@ async function generateRawAlgoBatch(pageIndex) {
     return resultsArrays.flat();
 }
 
+async function startContinuousAlgoPreload(startPage) {
+    if (isAlgoPreloading && currentAlgoPreloadPage >= startPage) return;
+    
+    isAlgoPreloading = true;
+    currentAlgoPreloadPage = startPage;
+    
+    while(isAlgoPreloading) {
+        if (algoPreloadQueue.length < ALGO_PRELOAD_BUFFER_SIZE) {
+            const data = await generateRawAlgoBatch(currentAlgoPreloadPage);
+            
+            if (!isAlgoPreloading) break;
+            
+            if (data && data.length > 0) {
+                algoPreloadQueue.push(data);
+                currentAlgoPreloadPage++;
+            } else {
+                // If it fails or returns empty, pause to prevent infinite failure loops
+                await new Promise(r => setTimeout(r, 2000));
+            }
+        } else {
+            // Queue full
+            await new Promise(r => setTimeout(r, 500));
+        }
+    }
+}
+
 async function pullBlendedBatch(append = false, isMainGrid = false) {
     if (isAlgoLoading) return;
     if (vaultedPosts.length === 0) {
@@ -499,14 +544,17 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
         targetStatus.style.display = 'block';
         if(bottomStatusEl) bottomStatusEl.style.display = 'none';
         targetStatus.innerHTML = '<div class="spinner"></div>Analyzing Vault & Generating Feed...';
-        preloadAlgoPromise = null;
+        
+        isAlgoPreloading = false;
+        algoPreloadQueue = [];
     } else {
         if(bottomStatusEl) bottomStatusEl.style.display = 'block';
+        algoGridPage++; // Properly increment the central tracking state
     }
 
     let allPosts = [];
-    if (append && preloadAlgoPromise) {
-        allPosts = await preloadAlgoPromise;
+    if (append && algoPreloadQueue.length > 0) {
+        allPosts = algoPreloadQueue.shift();
     } else {
         allPosts = await generateRawAlgoBatch(algoGridPage);
     }
@@ -558,8 +606,8 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
         }
     }
     
-    // KICK OFF BACKGROUND PRELOAD FOR NEXT PAGE
-    preloadAlgoPromise = generateRawAlgoBatch(algoGridPage + 1);
+    // KICK OFF OR RESUME CONTINUOUS PRELOAD FOR THE NEXT PAGES
+    startContinuousAlgoPreload(algoGridPage + 1);
     
     isAlgoLoading = false;
 }
@@ -577,7 +625,6 @@ const loadMoreBtn = document.getElementById('algo-load-more-btn');
 if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', () => {
         if (!isAlgoLoading) {
-            algoGridPage++;
             loadMoreBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></div> Loading...';
             loadMoreBtn.disabled = true;
             pullBlendedBatch(true);

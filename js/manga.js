@@ -403,8 +403,18 @@ async function loadMangaChapter(chapterId) {
       }
 
       const pageUrl = `${MD_API_BASE}/at-home/server/${chapterId}`;
-      const pageRes = await throttledFetch(PROXY + encodeURIComponent(pageUrl), mdFetchOptions);
-      const pageData = await pageRes.json();
+      let pageData;
+      
+      try {
+          // Attempt direct fetch first
+          const pageRes = await throttledFetch(pageUrl);
+          pageData = await pageRes.json();
+      } catch (err) {
+          // MangaDex API only allows localhost CORS, not 127.0.0.1
+          console.warn("Direct at-home/server fetch failed due to CORS. Please use http://localhost:5500 instead of 127.0.0.1!");
+          mangaPagesContainer.innerHTML = '<p style="color:red; margin-top: 20px;"><strong>CORS Error:</strong> MangaDex strictly requires you to run the site on <code>http://localhost:5500</code>. <br>Please change your address bar from 127.0.0.1 to localhost and try again.</p>';
+          return;
+      }
       
       mangaPagesContainer.innerHTML = '';
       const baseUrl = pageData.baseUrl;
@@ -412,13 +422,21 @@ async function loadMangaChapter(chapterId) {
       const pages = pageData.chapter.dataSaver;
       
       pages.forEach((p, idx) => {
-        const url = `${baseUrl}/data-saver/${hash}/${p}`;
+        let url = `${baseUrl}/data-saver/${hash}/${p}`;
+        
         const img = document.createElement('img');
         img.src = url;
         img.style.maxWidth = '100%';
         img.style.height = 'auto';
         img.style.marginBottom = '10px';
         img.loading = idx < 3 ? 'eager' : 'lazy'; // Force first 3 pages
+        img.onerror = () => {
+            // If QUIC or connection fails, attempt a retry to force a new TCP connection
+            if (!img.src.includes('?retry')) {
+                console.log("Retrying image load to bypass potential QUIC protocol drop...");
+                setTimeout(() => { img.src = url + "?retry=1"; }, 1000);
+            }
+        };
         mangaPagesContainer.appendChild(img);
       });
 
@@ -428,6 +446,7 @@ async function loadMangaChapter(chapterId) {
           if(entry.isIntersecting) {
             let currentImg = entry.target;
             for(let i=0; i<3; i++) {
+              if (!currentImg) break;
               currentImg = currentImg.nextElementSibling;
               if (currentImg && currentImg.tagName === 'IMG' && currentImg.loading === 'lazy') {
                  // Trigger eager load

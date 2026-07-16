@@ -24,6 +24,9 @@ async function loadMoreVideos() {
   if (typeof globalBlacklist !== 'undefined' && globalBlacklist.length > 0) {
     globalBlacklist.forEach(t => tagsParam += ` -${t}`);
   }
+  if (typeof globalWhitelist !== 'undefined' && globalWhitelist.length > 0) {
+    globalWhitelist.forEach(t => tagsParam += ` ${t}`);
+  }
   
   // FIXED: Removed incremental pid and added a live timestamp query parameter (&cb=) 
   // We bump limit to 20 to ensure a thick cushion of items after filtering duplicates!

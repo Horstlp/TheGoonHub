@@ -105,14 +105,7 @@
 
       <!-- Syntax Helpers Dashboard Panel -->
       <section class="helpers-panel" id="helpers-panel" style="max-width: 720px; margin: 12px auto 0;" aria-label="Syntax Helpers">
-        <div style="margin-bottom: 12px; width: 100%;">
-          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Global Blacklist</h2>
-          <div style="display: flex; gap: 8px; margin-top: 6px;">
-            <input type="text" id="blacklist-input" placeholder="Tags to exclude everywhere... (space separated)" style="flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px; border-radius: 4px; outline: none;">
-            <button id="blacklist-save-btn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 4px; cursor: pointer;">Save</button>
-          </div>
-          <div id="blacklist-tags" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px;"></div>
-        </div>
+
         <div>
           <!-- Semantic HTML: Replace div labels with headings -->
           <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Combining tags</h2>
@@ -411,29 +404,41 @@
 
     <!-- VAULT VIEW -->
     <section id="view-vault" class="app-view" style="display: none;" aria-labelledby="vault-title">
-      <header style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
-        <div>
-          <h1 id="vault-title">My Vault</h1>
-          <p>Your locally secured media</p>
+      
+      <!-- Profile Header -->
+      <header class="vault-profile-header">
+        <div class="profile-info">
+          <!-- Placeholder avatar from UI-Avatars -->
+          <img src="https://ui-avatars.com/api/?name=Vault+Admin&background=8b5cf6&color=fff&size=128" class="profile-pic" alt="Profile" />
+          <div class="profile-text">
+            <h1 id="vault-title">Vault Admin</h1>
+            <p>Locally Secured Collection</p>
+          </div>
         </div>
-        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-          <input type="search" id="vault-search-input" placeholder="Search saved tags..." style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; width: 200px;" aria-label="Search Vault">
-          <select id="vault-sort-select" class="filter-select" aria-label="Sort vault" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; cursor: pointer;">
-            <option value="newest">🆕 Newest saved</option>
-            <option value="oldest">🕰 Oldest saved</option>
-            <option value="highest">🏆 Highest score</option>
-            <option value="lowest">📉 Lowest score</option>
-          </select>
-          <button id="vault-bulk-edit-btn" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid #34d399; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Bulk Edit Mode">✅ Bulk Edit</button>
-          <button id="vault-export-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Export Vault">📤 Export</button>
-          <button id="vault-import-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Import Vault">📥 Import</button>
-          <input type="file" id="vault-import-input" accept=".json" style="display: none;">
-          <button id="vault-delete-folder-btn" style="display: none; background: rgba(244,63,94,0.15); color: #fb7185; border: 1px solid #f43f5e; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Delete Folder">🗑 Delete Folder</button>
+        <div class="profile-actions">
+          <button id="vault-new-folder-btn" title="Create New Folder" aria-label="Create New Folder">➕</button>
+          <button id="vault-bulk-edit-btn" title="Bulk Edit Mode" aria-label="Bulk Edit Mode">✏️</button>
+          <button id="vault-settings-btn" title="Global Settings" aria-label="Global Settings">⚙️</button>
+          <button id="vault-delete-folder-btn" style="display: none; background: rgba(244,63,94,0.15); color: #fb7185; border-color: #f43f5e;" title="Delete Folder" aria-label="Delete Folder">🗑</button>
         </div>
       </header>
-      <nav class="folder-nav" id="vault-folders-nav" style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px;" aria-label="Vault Folders">
+
+      <nav class="folder-nav" id="vault-folders-nav" style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 16px; min-height: 120px; align-items: flex-start;" aria-label="Vault Folders">
         <!-- Folders injected here -->
       </nav>
+
+      <hr class="vault-divider" />
+
+      <div class="vault-filter-row">
+        <input type="search" id="vault-search-input" placeholder="Search saved tags..." style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 20px; outline: none; width: 200px;" aria-label="Search Vault">
+        <select id="vault-sort-select" class="filter-select" aria-label="Sort vault" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 20px; outline: none; cursor: pointer;">
+          <option value="newest">🆕 Newest saved</option>
+          <option value="oldest">🕰 Oldest saved</option>
+          <option value="highest">🏆 Highest score</option>
+          <option value="lowest">📉 Lowest score</option>
+        </select>
+      </div>
+
       <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
       <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;" aria-live="polite"></div>
       
@@ -509,5 +514,84 @@
 </div>
 
 <!-- Script tags already moved to <head> with defer attribute for performance -->
+  <!-- New Folder Modal -->
+  <div id="new-folder-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);" role="dialog" aria-modal="true" aria-labelledby="new-folder-title">
+    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="new-folder-title" style="margin: 0; font-size: 1.2rem;">Folder Settings</h2>
+        <button id="new-folder-close" style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      <div>
+        <label for="new-folder-name" style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Folder Name</label>
+        <input type="text" id="new-folder-name" placeholder="e.g. Favorites" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+      </div>
+      <div>
+        <label for="new-folder-visibility" style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Visibility</label>
+        <select id="new-folder-visibility" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+          <option value="private">Private (Only visible to you)</option>
+          <option value="public">Public (Shareable)</option>
+        </select>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+        <input type="checkbox" id="new-folder-algo" checked style="width: 18px; height: 18px; accent-color: var(--accent-purple); cursor: pointer;">
+        <label for="new-folder-algo" style="color: var(--text); cursor: pointer; font-size: 0.95rem;">Include in Discovery Algorithm</label>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+        <button id="new-folder-cancel" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Cancel</button>
+        <button id="new-folder-submit" style="padding: 10px 20px; background: var(--accent-purple); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Save Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Settings Modal -->
+  <div id="global-settings-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);" role="dialog" aria-modal="true" aria-labelledby="global-settings-title">
+    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 600px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 24px; max-height: 85vh;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="global-settings-title" style="margin: 0; font-size: 1.4rem;">Global Settings</h2>
+        <button id="global-settings-close" style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <div style="overflow-y: auto; display: flex; flex-direction: column; gap: 24px; padding-right: 8px;">
+        <!-- Data Backup Section -->
+        <div class="settings-section">
+          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Data Backup</h3>
+          <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 0.9rem;">Export your Vault securely to a local JSON file or import a previous backup.</p>
+          <div style="display: flex; gap: 12px;">
+            <button id="vault-export-btn" style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📤 Export Vault</button>
+            <button id="vault-import-btn" style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📥 Import Vault</button>
+            <input type="file" id="vault-import-input" accept=".json" style="display: none;">
+          </div>
+        </div>
+
+        <!-- Content Filtering Section -->
+        <div class="settings-section">
+          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Content Filtering</h3>
+          
+          <!-- Whitelist -->
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global Whitelist</label>
+            <p style="margin: 0 0 8px 0; color: var(--muted); font-size: 0.85rem;">Tags here are ALWAYS included in your searches globally.</p>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px; position: relative;">
+              <input type="text" id="whitelist-input" placeholder="Start typing a tag to add..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+              <div id="whitelist-autocomplete-box" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+            </div>
+            <div id="whitelist-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;"></div>
+          </div>
+
+          <!-- Blacklist -->
+          <div>
+            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global Blacklist</label>
+            <p style="margin: 0 0 8px 0; color: var(--muted); font-size: 0.85rem;">Hide posts containing these tags from ALL searches globally.</p>
+            <div style="display: flex; gap: 8px; margin-bottom: 8px; position: relative;">
+              <input type="text" id="blacklist-input" placeholder="Start typing a tag to add..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+              <div id="blacklist-autocomplete-box" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+            </div>
+            <div id="blacklist-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

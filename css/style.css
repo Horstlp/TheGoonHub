@@ -672,3 +672,159 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   pointer-events: none;
   z-index: 10;
 }
+
+/* -- Folder Stack UI -- */
+.folder-stack-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  background: var(--surface);
+  min-width: 100px;
+}
+.folder-stack-btn.active {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.15);
+}
+.folder-stack-btn:hover {
+  background: var(--surface-hover);
+}
+.stack-images {
+  position: relative;
+  width: 110px;
+  height: 100px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stack-images img {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom center;
+  background: var(--surface-light);
+}
+
+.stack-img-1 { top: 4px; left: 17px; z-index: 4; transform: rotate(-10deg); }
+.stack-img-2 { top: 4px; left: 17px; z-index: 3; transform: rotate(-3deg); }
+.stack-img-3 { top: 4px; left: 17px; z-index: 2; transform: rotate(5deg); }
+.stack-img-4 { top: 4px; left: 17px; z-index: 1; transform: rotate(12deg); }
+
+.folder-stack-btn:hover .stack-img-1 { transform: rotate(-16deg) translateY(-8px) translateX(-4px); }
+.folder-stack-btn:hover .stack-img-2 { transform: rotate(-6deg) translateY(-8px) translateX(-2px); }
+.folder-stack-btn:hover .stack-img-3 { transform: rotate(6deg) translateY(-8px) translateX(2px); }
+.folder-stack-btn:hover .stack-img-4 { transform: rotate(16deg) translateY(-8px) translateX(4px); }
+
+.glass-folder-overlay {
+  position: absolute;
+  bottom: -4px; left: 5px; width: 100px; height: 80px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.3);
+  clip-path: path('M 15 5 L 35 5 Q 40 5 43 12 L 47 20 Q 50 25 55 25 L 85 25 Q 95 25 95 35 L 95 65 Q 95 75 85 75 L 15 75 Q 5 75 5 65 L 5 15 Q 5 5 15 5 Z');
+  z-index: 10;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4);
+}
+
+.glass-folder-border {
+  position: absolute;
+  bottom: -4px; left: 5px; width: 100px; height: 80px;
+  z-index: 11;
+  pointer-events: none;
+}
+
+.folder-stack-title {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: var(--text);
+  text-align: center;
+}
+.folder-stack-count {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+
+/* -- Vault Profile UI -- */
+.vault-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.profile-pic {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent-purple);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+.profile-text h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--text);
+}
+.profile-text p {
+  margin: 4px 0 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.profile-actions button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 1.2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.profile-actions button:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-purple);
+  transform: translateY(-2px);
+}
+.vault-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0 24px 0;
+}
+.vault-filter-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+
