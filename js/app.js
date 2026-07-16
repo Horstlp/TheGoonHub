@@ -847,9 +847,10 @@ function renderVaultGridToDedicatedView() {
   vaultStatus.style.display = 'none';
   cachedPosts = [...filteredPosts]; // Update cachedPosts so lightbox works from Vault
   
-  if (activeVaultTab === 'bookshelf' && typeof injectMangaCardsIntoGrid === 'function') {
-      injectMangaCardsIntoGrid(filteredPosts, vaultGrid);
+  if (activeVaultTab === 'bookshelf' && typeof injectPhysicalBookshelf === 'function') {
+      injectPhysicalBookshelf(filteredPosts, vaultGrid);
   } else {
+      vaultGrid.className = 'vault-grid-layout'; // restore original class if switching back
       injectPostCardsIntoGrid(filteredPosts, vaultGrid);
   }
 }

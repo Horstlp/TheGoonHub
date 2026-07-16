@@ -210,59 +210,7 @@
       <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 40px;" role="grid" aria-label="Manga Results"></div>
       <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;" aria-hidden="true"></div>
 
-      <hr style="border-color: var(--border); margin: 40px 0;" aria-hidden="true">
-
-      <!-- Specific ID MangaDex API Reader -->
-      <header>
-        <h2 style="font-size: 1.5rem; margin-bottom: 8px;">Direct ID Reader</h2>
-        <p style="color: var(--muted); font-size: 0.85rem;">Access high-quality chapters directly if you know the Manga UUID.</p>
-      </header>
-      <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
-        <div class="search-row">
-          <div class="search-input-container">
-            <input id="manga-id-input" type="text" placeholder="Enter Manga UUID (e.g. c52b2ce3-7f95...)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" aria-label="Manga UUID" />
-          </div>
-          <button id="manga-fetch-btn" type="submit" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Load Chapter</button>
-        </div>
-      </form>
-      <div id="manga-status" style="text-align: center; color: var(--muted); padding: 20px;" aria-live="polite"></div>
-      <!-- Semantic HTML: Use <article> for individual manga item -->
-      <article id="manga-content" style="display: none; margin-top: 20px;" aria-labelledby="manga-content-title">
-        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-          <!-- Accessibility: Add empty alt attribute (to be populated by JS) -->
-          <img id="manga-cover" alt="" style="width: 250px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);" />
-          <div style="flex: 1; min-width: 300px;">
-            <h2 id="manga-content-title" style="margin-bottom: 12px;"></h2>
-            <div id="manga-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;" aria-label="Manga Tags"></div>
-            <!-- Like and Save actions for manga reader -->
-            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
-                <!-- Removed manga-read-btn here as it's now per-chapter -->
-                <button id="manga-like-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Like Manga">♡ Like</button>
-                <button id="manga-save-btn" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: all 0.2s;" aria-label="Save Manga">🤍 Save</button>
-            </div>
-            
-            <div id="manga-chapter-selection" style="margin-top: 20px;">
-              <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
-                  <h3 style="margin: 0; font-size: 1.2rem;">Chapters</h3>
-                  <select id="manga-lang-select" class="filter-select" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 4px; outline: none; cursor: pointer;" aria-label="Select Language">
-                    <option value="en">English</option>
-                    <option value="es-la">Spanish (LATAM)</option>
-                    <option value="es">Spanish (ES)</option>
-                    <option value="fr">French</option>
-                    <option value="ja">Japanese</option>
-                    <option value="zh">Chinese</option>
-                    <option value="ko">Korean</option>
-                    <option value="pt-br">Portuguese (BR)</option>
-                    <option value="ru">Russian</option>
-                  </select>
-              </div>
-              <div id="manga-chapter-list" style="max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px;" role="list" aria-label="Manga Chapters">
-                  <!-- Chapters injected here -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </article>
+      <!-- The Manga details will now expand inline inside the grid! -->
     </section>
 
     <!-- ALGORITHM VIEW -->
