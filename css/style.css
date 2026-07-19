@@ -103,6 +103,16 @@ body {
   flex-direction: column;
 }
 
+/* ── View Transitions ── */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.active-view {
+  animation: fadeSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.05) forwards;
+}
+
 header { 
   padding: 10px 0 24px; 
   text-align: left; 
@@ -325,6 +335,27 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
 .card:hover { 
   border-color: #3e3e56;
   transform: translateY(-2px);
+}
+
+/* ── Skeleton Loading ── */
+.skeleton-loader {
+  background: linear-gradient(90deg, var(--surface) 25%, #1e1e2a 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite ease-in-out;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.skeleton-loader::before {
+  content: "🖼️";
+  font-size: 2rem;
+  opacity: 0.2;
+}
+
+@keyframes skeletonLoading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .card img { 

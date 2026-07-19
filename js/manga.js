@@ -244,7 +244,7 @@ async function injectPhysicalBookshelf(data, targetContainer) {
     // Check if we need to fetch volumeCount from MangaDex Aggregate API
     if (manga.attributes.volumeCount === undefined) {
       try {
-        const aggRes = await fetch(`${MD_API_BASE}/manga/${post.id}/aggregate`);
+        const aggRes = await throttledFetch(PROXY + encodeURIComponent(`${MD_API_BASE}/manga/${post.id}/aggregate`));
         if (aggRes.ok) {
           const aggData = await aggRes.json();
           const vols = aggData.volumes ? Object.keys(aggData.volumes).length : 1;
@@ -461,11 +461,11 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
     chapList.innerHTML = '<span style="color:var(--muted)">Loading volumes...</span>';
     try {
       // Fetch aggregate for chapters and volumes
-      const aggRes = await fetch(`https://api.mangadex.org/manga/${post.id}/aggregate?translatedLanguage[]=${lang}`);
+      const aggRes = await throttledFetch(PROXY + encodeURIComponent(`https://api.mangadex.org/manga/${post.id}/aggregate?translatedLanguage[]=${lang}`));
       const aggData = await aggRes.json();
       
       // Fetch cover arts for all volumes
-      const coverRes = await fetch(`https://api.mangadex.org/cover?manga[]=${post.id}&limit=100`);
+      const coverRes = await throttledFetch(PROXY + encodeURIComponent(`https://api.mangadex.org/cover?manga[]=${post.id}&limit=100`));
       const coverData = await coverRes.json();
       
       const coverMap = {};
@@ -674,7 +674,8 @@ async function fetchAndRenderChapters(mangaId) {
     }
 
     const progressObj = (await localforage.getItem('r34_manga_progress')) || {};
-    const lastReadChapId = progressObj[mangaId];
+    const progressEntry = progressObj[mangaId];
+    const lastReadChapId = typeof progressEntry === 'object' && progressEntry !== null ? progressEntry.chapterId : progressEntry;
 
     currentMangaData.chapters.forEach(chap => {
       const vol = chap.attributes.volume || '-';
@@ -793,21 +794,25 @@ async function loadMangaChapter(chapterId) {
     // Save progress tracker
     if (currentMangaData && currentMangaData.id) {
       const progressObj = (await localforage.getItem('r34_manga_progress')) || {};
-      progressObj[currentMangaData.id] = chapterId;
+      progressObj[currentMangaData.id] = {
+        chapterId: chapterId,
+        title: currentMangaData.title,
+        coverUrl: currentMangaData.coverUrl,
+        timestamp: Date.now()
+      };
       await localforage.setItem('r34_manga_progress', progressObj);
+      if (typeof renderMangaHistory === 'function') renderMangaHistory();
     }
 
     const pageUrl = `${MD_API_BASE}/at-home/server/${chapterId}`;
     let pageData;
 
     try {
-      // Attempt direct fetch first
-      const pageRes = await throttledFetch(pageUrl);
+      const pageRes = await fetch(pageUrl);
       pageData = await pageRes.json();
     } catch (err) {
-      // MangaDex API only allows localhost CORS, not 127.0.0.1
-      console.warn("Direct at-home/server fetch failed due to CORS. Please use http://localhost:5500 instead of 127.0.0.1!");
-      mangaPagesContainer.innerHTML = '<p style="color:red; margin-top: 20px;"><strong>CORS Error:</strong> MangaDex strictly requires you to run the site on <code>http://localhost:5500</code>. <br>Please change your address bar from 127.0.0.1 to localhost and try again.</p>';
+      console.warn("Direct at-home/server fetch failed due to CORS.");
+      mangaPagesContainer.innerHTML = '<p style="color:red; margin-top: 20px;"><strong>CORS Error:</strong> MangaDex restricts local development IPs. Please change your address bar from <code>127.0.0.1</code> to <code>localhost</code> and try again. (Note: This issue only happens locally and will not happen once you publish the site to a real domain!).</p>';
       return;
     }
 
@@ -924,4 +929,59 @@ document.addEventListener('keydown', (e) => {
       mangaPagesContainer.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
     }
   }
+});
+
+async function renderMangaHistory() {
+  const historyContainer = document.getElementById('manga-history');
+  const historyList = document.getElementById('manga-history-list');
+  if (!historyContainer || !historyList) return;
+
+  const progressObj = (await localforage.getItem('r34_manga_progress')) || {};
+  
+  // Convert object to array and filter out old format strings
+  const historyItems = Object.entries(progressObj)
+    .filter(([mangaId, data]) => typeof data === 'object' && data !== null)
+    .map(([mangaId, data]) => ({
+      mangaId,
+      ...data
+    }))
+    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  if (historyItems.length === 0) {
+    historyContainer.style.display = 'none';
+    return;
+  }
+
+  historyContainer.style.display = 'block';
+  historyList.innerHTML = '';
+
+  historyItems.forEach(item => {
+    const card = document.createElement('div');
+    card.style.cssText = 'flex: 0 0 140px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column;';
+    card.onmouseover = () => { card.style.transform = 'translateY(-2px)'; card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'; };
+    card.onmouseout = () => { card.style.transform = 'translateY(0)'; card.style.boxShadow = 'none'; };
+    
+    card.onclick = () => {
+      document.getElementById('manga-id-input').value = item.mangaId;
+      document.getElementById('manga-fetch-btn').click();
+    };
+
+    const img = document.createElement('img');
+    img.src = item.coverUrl;
+    img.style.cssText = 'width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid var(--border);';
+    img.onerror = () => { img.src = 'https://via.placeholder.com/140x200?text=No+Cover'; };
+
+    const titleEl = document.createElement('div');
+    titleEl.style.cssText = 'padding: 8px; font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);';
+    titleEl.textContent = item.title || 'Unknown Title';
+
+    card.appendChild(img);
+    card.appendChild(titleEl);
+    historyList.appendChild(card);
+  });
+}
+
+// Initial render
+document.addEventListener('DOMContentLoaded', () => {
+  renderMangaHistory();
 });

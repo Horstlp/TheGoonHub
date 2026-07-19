@@ -17,6 +17,8 @@ window.handleViewSwitch = function(view) {
     const targetView = document.getElementById(`view-${view}`);
     if (targetView) {
         targetView.style.display = 'block';
+        // Force a reflow so the animation restarts if clicking the same view or navigating
+        void targetView.offsetWidth; 
         targetView.classList.add('active-view');
     }
 

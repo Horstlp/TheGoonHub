@@ -1,5 +1,32 @@
-const PROXY = 'https://frosty-forest-2c7f.markus4free.workers.dev/?url='; // IMPORTANT: Keep the /?url= at the end
+let PROXY = localStorage.getItem('r34_proxy_url') || 'https://frosty-forest-2c7f.markus4free.workers.dev/?url='; // IMPORTANT: Keep the /?url= at the end
 const API = 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&api_key=2116381cf8a58c1de26faacfac84d760099e863311a98c1d060028461c82ab831d579f74e72983e6af34adbb661039c6a610d8f422be912fee3cb90b39d38f1a&user_id=6064624';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const proxyInput = document.getElementById('proxy-input');
+  const proxySaveBtn = document.getElementById('proxy-save-btn');
+  if (proxyInput) {
+    proxyInput.value = localStorage.getItem('r34_proxy_url') || '';
+  }
+  if (proxySaveBtn) {
+    proxySaveBtn.addEventListener('click', () => {
+      let val = proxyInput.value.trim();
+      if (val && !val.endsWith('url=')) {
+         val += (val.includes('?') ? '&url=' : '?url=');
+      }
+      if (val) {
+        localStorage.setItem('r34_proxy_url', val);
+        PROXY = val;
+      } else {
+        localStorage.removeItem('r34_proxy_url');
+        PROXY = 'https://frosty-forest-2c7f.markus4free.workers.dev/?url=';
+      }
+      if (typeof triggerToastNotification === 'function') {
+        triggerToastNotification("Proxy settings saved. Reloading feed...");
+      }
+      if (typeof doSearch === 'function') doSearch();
+    });
+  }
+});
 const AUTOCOMPLETE_API = 'https://api.rule34.xxx/autocomplete.php?q=';
 const PER_PAGE = 40;
 

@@ -81,7 +81,8 @@ function appendVideosToScroller(data) {
     video.className = 'tiktok-video';
     video.loop = true;
     video.playsInline = true;
-    video.muted = false; 
+    video.muted = window.globalTiktokMuted !== undefined ? window.globalTiktokMuted : true;
+    if (window.globalTiktokMuted === undefined) window.globalTiktokMuted = true;
     
     let clickTimeout;
     wrapper.addEventListener('click', (e) => {
@@ -178,8 +179,19 @@ function appendVideosToScroller(data) {
     muteBtn.innerHTML = video.muted ? '🔇' : '🔊';
     muteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      video.muted = !video.muted;
-      muteBtn.innerHTML = video.muted ? '🔇' : '🔊';
+      window.globalTiktokMuted = !window.globalTiktokMuted;
+      
+      // Update all currently rendered videos
+      document.querySelectorAll('.tiktok-video').forEach(v => {
+        v.muted = window.globalTiktokMuted;
+      });
+      
+      // Update all mute buttons
+      document.querySelectorAll('.tiktok-circle-btn').forEach(btn => {
+        if(btn.innerHTML === '🔇' || btn.innerHTML === '🔊') {
+          btn.innerHTML = window.globalTiktokMuted ? '🔇' : '🔊';
+        }
+      });
     });
 
     // PiP Button

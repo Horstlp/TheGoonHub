@@ -22,6 +22,8 @@
   <script src="js/api.js" defer></script>
   <script src="js/vault.js" defer></script>
   <script src="js/app.js" defer></script>
+  <script src="js/search.js" defer></script>
+  <script src="js/lightbox.js" defer></script>
   <script src="js/navigation.js" defer></script>
   <script src="js/videos.js" defer></script>
   <script src="js/manga.js" defer></script>
@@ -192,6 +194,15 @@
         <h1 id="manga-title">MangaDex Browser</h1>
         <p>Infinite scrolling manga grid and direct ID reader via MangaDex API.</p>
       </header>
+
+      <!-- Continue Reading History -->
+      <div id="manga-history" style="display: none; margin-bottom: 24px;">
+        <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 1.1rem;">Continue Reading</h3>
+        <div id="manga-history-list" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
+          <!-- History cards injected here -->
+        </div>
+      </div>
+
       
       <!-- Manga Grid Search -->
       <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
@@ -513,6 +524,16 @@
             <button id="vault-export-btn" style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📤 Export Vault</button>
             <button id="vault-import-btn" style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📥 Import Vault</button>
             <input type="file" id="vault-import-input" accept=".json" style="display: none;">
+          </div>
+        </div>
+
+        <!-- Network & Proxy Section -->
+        <div class="settings-section">
+          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Network & Proxy Settings</h3>
+          <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 0.9rem;">Set a custom CORS proxy if the default one fails. Leave empty to use the default.</p>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <input type="text" id="proxy-input" placeholder="https://your-proxy.workers.dev/?" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+            <button id="proxy-save-btn" style="padding: 10px 16px; background: var(--accent-purple); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;">Save Proxy</button>
           </div>
         </div>
 
