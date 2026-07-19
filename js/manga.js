@@ -704,8 +704,9 @@ async function fetchAndRenderChapters(mangaId) {
   }
 }
 
-mangaFetchBtn.addEventListener('click', async () => {
-  const mangaId = mangaIdInput.value.trim();
+if (mangaFetchBtn) {
+  mangaFetchBtn.addEventListener('click', async () => {
+    const mangaId = mangaIdInput.value.trim();
   if (!mangaId) return;
 
   mangaStatus.style.display = 'block';
@@ -764,8 +765,10 @@ mangaFetchBtn.addEventListener('click', async () => {
     mangaStatus.innerHTML = '<span class="icon">⚠️</span> Network error reaching MangaDex API';
   }
 });
+}
 
-mangaLikeBtn.addEventListener('click', () => {
+if (mangaLikeBtn) {
+  mangaLikeBtn.addEventListener('click', () => {
   if (!currentMangaData) return;
   if (typeof togglePostLikeStatus === 'function') togglePostLikeStatus(currentMangaData.id);
   const isLiked = likedPosts.includes(String(currentMangaData.id));
@@ -773,8 +776,10 @@ mangaLikeBtn.addEventListener('click', () => {
   mangaLikeBtn.style.color = isLiked ? '#ff3366' : 'var(--text)';
   mangaLikeBtn.style.borderColor = isLiked ? '#ff3366' : 'var(--border)';
 });
+}
 
-mangaSaveBtn.addEventListener('click', (e) => {
+if (mangaSaveBtn) {
+  mangaSaveBtn.addEventListener('click', (e) => {
   if (!currentMangaData) return;
   if (typeof openFolderMenu === 'function') {
     openFolderMenu(e, currentMangaData, mangaSaveBtn, (isSavedNow) => {
@@ -784,6 +789,7 @@ mangaSaveBtn.addEventListener('click', (e) => {
     });
   }
 });
+}
 
 async function loadMangaChapter(chapterId) {
   mangaPagesContainer.innerHTML = '<div class="spinner"></div><p style="color:white">Loading chapter pages...</p>';
@@ -962,8 +968,12 @@ async function renderMangaHistory() {
     card.onmouseout = () => { card.style.transform = 'translateY(0)'; card.style.boxShadow = 'none'; };
     
     card.onclick = () => {
-      document.getElementById('manga-id-input').value = item.mangaId;
-      document.getElementById('manga-fetch-btn').click();
+      const searchInput = document.getElementById('manga-grid-search-input');
+      const searchBtn = document.getElementById('manga-grid-search-btn');
+      if (searchInput && searchBtn) {
+        searchInput.value = item.mangaId;
+        searchBtn.click();
+      }
     };
 
     const img = document.createElement('img');
