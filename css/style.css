@@ -147,6 +147,7 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   cursor: text; 
   position: relative;
   min-height: 54px;
+  z-index: 200;
 }
 .search-input-container:focus-within { 
   border-color: #3b3b4f; 
@@ -247,7 +248,7 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
 #search-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── Filter Engine Overhauls ── */
-.filter-row { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.filter-row { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; position: relative; z-index: 190; }
 .filter-select {
   flex: 1; min-width: 160px;
   background: #111116; border: 1px solid var(--border); border-radius: 90px;

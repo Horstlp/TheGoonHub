@@ -10,6 +10,29 @@ const mangaReader = document.getElementById('manga-reader');
 const mangaReaderClose = document.getElementById('manga-reader-close');
 const mangaPagesContainer = document.getElementById('manga-pages-container');
 
+const mangaHqToggle = document.getElementById('manga-hq-toggle');
+const mangaPagedToggle = document.getElementById('manga-paged-toggle');
+
+if (mangaHqToggle) {
+  mangaHqToggle.checked = localStorage.getItem('manga_hq') === 'true';
+  mangaHqToggle.addEventListener('change', (e) => {
+    localStorage.setItem('manga_hq', e.target.checked);
+    if (mangaPagesContainer.dataset.chapterId) {
+      loadMangaChapter(mangaPagesContainer.dataset.chapterId);
+    }
+  });
+}
+
+if (mangaPagedToggle) {
+  mangaPagedToggle.checked = localStorage.getItem('manga_paged') === 'true';
+  mangaPagedToggle.addEventListener('change', (e) => {
+    localStorage.setItem('manga_paged', e.target.checked);
+    if (mangaPagesContainer.dataset.chapterId) {
+      loadMangaChapter(mangaPagesContainer.dataset.chapterId);
+    }
+  });
+}
+
 // --- MANGA GRID LOGIC (MangaDex) ---
 const mangaGridSearchInput = document.getElementById('manga-grid-search-input');
 const mangaGridSearchBtn = document.getElementById('manga-grid-search-btn');
@@ -103,11 +126,15 @@ async function searchMangaGrid(titleQuery, page, append = false) {
   if (uuidRegex.test(parsedTitle)) {
       url += `&ids[]=${parsedTitle}`;
   } else {
-      url += `&contentRating[]=erotica&contentRating[]=pornographic`;
-      
-      const tagRegex = /tag:([a-zA-Z0-9_-]+)/gi;
-      let match;
       let includedTags = [];
+      let excludedTags = [];
+      let ratings = [];
+      let statuses = [];
+      let demos = [];
+      let orderQuery = '';
+      
+      const tokens = parsedTitle.split(/\s+/);
+      let remainingTitleTokens = [];
 
       const tagAliases = {
         'yuri': "girls' love",
@@ -115,28 +142,67 @@ async function searchMangaGrid(titleQuery, page, append = false) {
         'gender_bender': 'genderswap'
       };
 
-      while ((match = tagRegex.exec(titleQuery)) !== null) {
-        let tagName = match[1].toLowerCase().replace(/_/g, ' ');
-        if (tagAliases[tagName]) tagName = tagAliases[tagName];
-
-        for (const [key, uuid] of mdTagsMap.entries()) {
-          if (key === tagName || key.includes(tagName)) {
-            if (!includedTags.includes(uuid)) includedTags.push(uuid);
-            break;
+      tokens.forEach(token => {
+          let lowerToken = token.toLowerCase();
+          if (lowerToken.startsWith('-tag:')) {
+              let tagName = lowerToken.replace('-tag:', '').replace(/_/g, ' ');
+              if (tagAliases[tagName]) tagName = tagAliases[tagName];
+              for (const [key, uuid] of mdTagsMap.entries()) {
+                  if (key === tagName || key.includes(tagName)) {
+                      if (!excludedTags.includes(uuid)) excludedTags.push(uuid);
+                      break;
+                  }
+              }
+          } else if (lowerToken.startsWith('tag:')) {
+              let tagName = lowerToken.replace('tag:', '').replace(/_/g, ' ');
+              if (tagAliases[tagName]) tagName = tagAliases[tagName];
+              for (const [key, uuid] of mdTagsMap.entries()) {
+                  if (key === tagName || key.includes(tagName)) {
+                      if (!includedTags.includes(uuid)) includedTags.push(uuid);
+                      break;
+                  }
+              }
+          } else if (lowerToken.startsWith('status:')) {
+              let val = lowerToken.replace('status:', '');
+              if (['ongoing', 'completed', 'hiatus', 'cancelled'].includes(val)) statuses.push(val);
+          } else if (lowerToken.startsWith('demo:')) {
+              let val = lowerToken.replace('demo:', '');
+              if (['shounen', 'shoujo', 'josei', 'seinen'].includes(val)) demos.push(val);
+          } else {
+              remainingTitleTokens.push(token);
           }
-        }
-        parsedTitle = parsedTitle.replace(match[0], '');
+      });
+
+      // Read UI controls
+      const sortSelect = document.getElementById('manga-sort-select');
+      if (sortSelect) {
+          const val = sortSelect.value;
+          if (val === 'rating') orderQuery = '&order[rating]=desc';
+          else if (val === 'latest') orderQuery = '&order[latestUploadedChapter]=desc';
+          else if (val === 'popular') orderQuery = '&order[followedCount]=desc';
+          else if (val === 'new') orderQuery = '&order[createdAt]=desc';
+          else if (val === 'relevance') orderQuery = '&order[relevance]=desc';
       }
 
-      parsedTitle = parsedTitle.trim();
+      const ratingCbs = document.querySelectorAll('.manga-rating-cb');
+      if (ratingCbs.length > 0) {
+          ratingCbs.forEach(cb => {
+              if (cb.checked) ratings.push(cb.value);
+          });
+      }
+
+      if (ratings.length === 0) ratings = ['erotica', 'pornographic'];
+      
+      ratings.forEach(r => url += `&contentRating[]=${r}`);
+      statuses.forEach(s => url += `&status[]=${s}`);
+      demos.forEach(d => url += `&publicationDemographic[]=${d}`);
+      includedTags.forEach(id => url += `&includedTags[]=${id}`);
+      excludedTags.forEach(id => url += `&excludedTags[]=${id}`);
+      url += orderQuery;
+
+      parsedTitle = remainingTitleTokens.join(' ').trim();
       if (parsedTitle) {
         url += `&title=${encodeURIComponent(parsedTitle)}`;
-      }
-
-      if (includedTags.length > 0) {
-        includedTags.forEach(id => {
-          url += `&includedTags[]=${id}`;
-        });
       }
   }
 
@@ -153,7 +219,12 @@ async function searchMangaGrid(titleQuery, page, append = false) {
       mangaGridStatus.style.display = 'none';
       hasMoreMangaGrid = data.data.length === limit;
 
-      injectMangaCardsIntoGrid(formattedPosts);
+      const progressObj = (await localforage.getItem('r34_manga_progress')) || {};
+      const favsObj = (await localforage.getItem('r34_manga_favorites')) || {};
+      const readIds = new Set(Object.keys(progressObj));
+      const savedIds = new Set(Object.keys(favsObj));
+
+      injectMangaCardsIntoGrid(formattedPosts, mangaGridContainer, readIds, savedIds);
       
       if (uuidRegex.test(parsedTitle) && formattedPosts.length === 1 && !append) {
         setTimeout(() => {
@@ -170,9 +241,17 @@ async function searchMangaGrid(titleQuery, page, append = false) {
 
   mangaGridSearchBtn.disabled = false;
   isMangaGridLoading = false;
+
+  if (hasMoreMangaGrid && typeof mangaScrollSentinel !== 'undefined' && mangaScrollSentinel) {
+      const sentinelRect = mangaScrollSentinel.getBoundingClientRect();
+      if (sentinelRect.top < window.innerHeight && sentinelRect.top > 0) {
+          currentMangaGridPage++;
+          searchMangaGrid(currentMangaGridTags, currentMangaGridPage, true);
+      }
+  }
 }
 
-function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer) {
+function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer, readIds = new Set(), savedIds = new Set()) {
   data.forEach((post, index) => {
     const previewUrl = post.preview_url;
     if (!previewUrl) return;
@@ -185,6 +264,37 @@ function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer) {
     img.onload = () => { if (typeof resizeGridItem === 'function') resizeGridItem(card); };
     img.onerror = () => { card.style.display = 'none'; };
     card.appendChild(img);
+
+    // Visual indicator for Read/Saved
+    if (readIds.has(post.id) || savedIds.has(post.id)) {
+      const indicator = document.createElement('div');
+      indicator.style.position = 'absolute';
+      indicator.style.top = '10px';
+      indicator.style.left = '10px';
+      indicator.style.background = 'rgba(0,0,0,0.7)';
+      indicator.style.color = 'var(--text)';
+      indicator.style.padding = '4px 8px';
+      indicator.style.borderRadius = '12px';
+      indicator.style.fontSize = '0.75rem';
+      indicator.style.fontWeight = 'bold';
+      indicator.style.zIndex = '10';
+      indicator.style.backdropFilter = 'blur(4px)';
+      
+      if (readIds.has(post.id) && savedIds.has(post.id)) {
+        indicator.textContent = '👁️ Read & 💖 Saved';
+      } else if (savedIds.has(post.id)) {
+        indicator.textContent = '💖 Saved';
+      } else {
+        indicator.textContent = '👁️ Read';
+      }
+      card.appendChild(indicator);
+      
+      // Slightly dim the cover to indicate it's been seen
+      img.style.opacity = '0.7';
+      img.style.transition = 'opacity 0.2s';
+      card.onmouseenter = () => { img.style.opacity = '1'; };
+      card.onmouseleave = () => { img.style.opacity = '0.7'; };
+    }
 
     const actionBadges = document.createElement('div');
     actionBadges.className = 'action-badges';
@@ -408,6 +518,32 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
   actions.appendChild(readBtn);
   infoCol.appendChild(actions);
 
+  const updateSaveBtnState = async () => {
+    const favs = (await localforage.getItem('r34_manga_favorites')) || {};
+    const isFav = !!favs[post.id];
+    saveBtn.textContent = isFav ? '💖 Saved' : '🤍 Save';
+    saveBtn.style.color = isFav ? '#8b5cf6' : 'var(--text)';
+    saveBtn.style.borderColor = isFav ? '#8b5cf6' : 'var(--border)';
+  };
+  updateSaveBtnState();
+
+  saveBtn.onclick = async () => {
+    const favs = (await localforage.getItem('r34_manga_favorites')) || {};
+    if (favs[post.id]) {
+      delete favs[post.id];
+    } else {
+      favs[post.id] = {
+        id: post.id,
+        title: getMdTitle(manga),
+        coverUrl: post.preview_url,
+        timestamp: Date.now()
+      };
+    }
+    await localforage.setItem('r34_manga_favorites', favs);
+    updateSaveBtnState();
+    if (typeof renderMangaLibrary === 'function') renderMangaLibrary();
+  };
+
   const desc = document.createElement('div');
   desc.className = 'expanded-desc';
   let descText = manga.attributes.description?.en || 'No description available.';
@@ -524,7 +660,6 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
           spine.appendChild(rangeEl);
           
           spine.onclick = () => {
-              currentMangaData.chaptersQueue = allOrderedChapters.slice(allOrderedChapters.indexOf(chaps[0].id));
               loadMangaChapter(chaps[0].id);
           };
           
@@ -573,7 +708,6 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
       readBtn.disabled = allOrderedChapters.length === 0;
       readBtn.onclick = () => {
           if (allOrderedChapters.length > 0) {
-              currentMangaData.chaptersQueue = [...allOrderedChapters];
               loadMangaChapter(allOrderedChapters[0]);
           }
       };
@@ -612,16 +746,177 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
 }
 
 
+// Manga Pill Logic
+let mangaTagsArray = [];
+const mangaTagPillsList = document.getElementById('manga-tag-pills-list');
+
+function applyMangaModifier(index, prefix) {
+  let pureTag = mangaTagsArray[index].replace(/^[-]?tag:/, '');
+  if (prefix) {
+      mangaTagsArray[index] = `${prefix}${pureTag}`;
+  } else {
+      mangaTagsArray[index] = pureTag;
+  }
+  renderMangaPills();
+  doMangaSearch();
+}
+
+function renderMangaPills() {
+  if (!mangaTagPillsList) return;
+  mangaTagPillsList.innerHTML = '';
+  mangaTagsArray.forEach((tag, index) => {
+    const pill = document.createElement('span');
+    pill.className = 'tag-pill';
+    pill.textContent = tag;
+    
+    if (tag.includes(':') || tag.startsWith('-')) {
+        pill.style.background = 'rgba(139, 92, 246, 0.2)';
+        pill.style.borderColor = 'var(--accent-purple)';
+        pill.style.color = '#c084fc';
+    }
+    
+    const removeBtn = document.createElement('span');
+    removeBtn.textContent = '×';
+    removeBtn.className = 'remove-btn';
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeMangaPill(index);
+      doMangaSearch();
+    });
+    
+    pill.appendChild(removeBtn);
+
+    // Interactive Menu
+    const menu = document.createElement('div');
+    menu.className = 'tag-menu';
+    const modifiers = [
+      { label: 'Title (Text)', prefix: '' },
+      { label: 'Include Tag (+)', prefix: 'tag:' },
+      { label: 'Exclude Tag (-)', prefix: '-tag:' }
+    ];
+    modifiers.forEach(mod => {
+      const item = document.createElement('button');
+      item.className = 'tag-menu-item';
+      item.textContent = mod.label;
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyMangaModifier(index, mod.prefix);
+        menu.classList.remove('show');
+      });
+      menu.appendChild(item);
+    });
+    
+    pill.appendChild(menu);
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.tag-menu').forEach(m => { if(m !== menu) m.classList.remove('show'); });
+      menu.classList.toggle('show');
+    });
+
+    mangaTagPillsList.appendChild(pill);
+  });
+
+  
+  if (mangaGridSearchInput) {
+      mangaGridSearchInput.placeholder = mangaTagsArray.length > 0 ? '' : 'Add modifiers (e.g. tag:yuri) or search titles...';
+  }
+}
+
+function addMangaPill(value) {
+  let clean = value.trim();
+  if (!clean) return;
+  const parts = clean.split(/\s+/);
+  parts.forEach(p => {
+    if (p && !mangaTagsArray.includes(p)) mangaTagsArray.push(p);
+  });
+  renderMangaPills();
+  if (mangaGridSearchInput) mangaGridSearchInput.value = '';
+}
+
+function removeMangaPill(index) {
+  mangaTagsArray.splice(index, 1);
+  renderMangaPills();
+}
+
 function doMangaSearch() {
-  const userQuery = mangaGridSearchInput.value.trim();
-  currentMangaGridTags = userQuery;
+  if (mangaGridSearchInput.value.trim() !== '') {
+      addMangaPill(mangaGridSearchInput.value);
+  }
+  currentMangaGridTags = mangaTagsArray.join(' ');
   currentMangaGridPage = 1;
   searchMangaGrid(currentMangaGridTags, currentMangaGridPage, false);
 }
 
-mangaGridSearchBtn.addEventListener('click', doMangaSearch);
+mangaGridSearchBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    doMangaSearch();
+});
+
 mangaGridSearchInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') doMangaSearch();
+  const val = mangaGridSearchInput.value;
+  if (e.key === 'Enter') {
+      e.preventDefault();
+      doMangaSearch();
+  } else if (e.key === 'Backspace' && val === '' && mangaTagsArray.length > 0) {
+      removeMangaPill(mangaTagsArray.length - 1);
+      doMangaSearch();
+  } else if (e.key === ' ' && val.trim().includes(':')) {
+      e.preventDefault();
+      addMangaPill(val);
+  }
+});
+
+const mangaRandomBtn = document.getElementById('manga-random-btn');
+if (mangaRandomBtn) {
+  mangaRandomBtn.addEventListener('click', async () => {
+    try {
+      mangaRandomBtn.disabled = true;
+      mangaRandomBtn.textContent = '🎲 ...';
+      const url = `${MD_API_BASE}/manga/random?contentRating[]=erotica&contentRating[]=pornographic&includes[]=cover_art`;
+      const res = await fetch(PROXY + encodeURIComponent(url), mdFetchOptions);
+      const data = await res.json();
+      if (data && data.data && data.data.id) {
+        mangaGridSearchInput.value = data.data.id;
+        doMangaSearch();
+      }
+    } catch(e) {
+      console.error(e);
+    } finally {
+      mangaRandomBtn.disabled = false;
+      mangaRandomBtn.textContent = '🎲 Random';
+    }
+  });
+}
+
+// UI Controls logic
+const mangaSortSelect = document.getElementById('manga-sort-select');
+if (mangaSortSelect) {
+    mangaSortSelect.addEventListener('change', doMangaSearch);
+}
+
+const mangaRatingBtn = document.getElementById('manga-rating-btn');
+const mangaRatingMenu = document.getElementById('manga-rating-menu');
+const mangaRatingCbs = document.querySelectorAll('.manga-rating-cb');
+
+if (mangaRatingBtn) {
+    mangaRatingBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mangaRatingMenu.style.display = mangaRatingMenu.style.display === 'none' ? 'flex' : 'none';
+    });
+}
+if (mangaRatingMenu) {
+    mangaRatingMenu.addEventListener('click', (e) => e.stopPropagation());
+    mangaRatingCbs.forEach(cb => {
+        cb.addEventListener('change', () => {
+            let count = 0;
+            mangaRatingCbs.forEach(c => { if(c.checked) count++; });
+            mangaRatingBtn.innerHTML = `<span>🔞 Ratings (${count})</span> <span style="font-size: 0.8em;">▼</span>`;
+            doMangaSearch();
+        });
+    });
+}
+document.addEventListener('click', () => {
+    if (mangaRatingMenu) mangaRatingMenu.style.display = 'none';
 });
 
 const handleMangaScroll = debounce((entries) => {
@@ -672,6 +967,7 @@ async function fetchAndRenderChapters(mangaId) {
       mangaChapterList.innerHTML = `<span style="color:var(--muted); font-size: 0.9rem;">No chapters found for selected language.</span>`;
       return;
     }
+
 
     const progressObj = (await localforage.getItem('r34_manga_progress')) || {};
     const progressEntry = progressObj[mangaId];
@@ -792,6 +1088,7 @@ if (mangaSaveBtn) {
 }
 
 async function loadMangaChapter(chapterId) {
+  mangaPagesContainer.dataset.chapterId = chapterId;
   mangaPagesContainer.innerHTML = '<div class="spinner"></div><p style="color:white">Loading chapter pages...</p>';
   mangaReader.style.display = 'block';
   document.body.style.overflow = 'hidden';
@@ -825,14 +1122,18 @@ async function loadMangaChapter(chapterId) {
     mangaPagesContainer.innerHTML = '';
     const baseUrl = pageData.baseUrl;
     const hash = pageData.chapter.hash;
-    const pages = pageData.chapter.dataSaver;
+    const isHQ = mangaHqToggle && mangaHqToggle.checked;
+    const pages = isHQ ? pageData.chapter.data : pageData.chapter.dataSaver;
+    const qualityFolder = isHQ ? 'data' : 'data-saver';
 
     window.currentMangaPreloadSession = Date.now();
     const mySession = window.currentMangaPreloadSession;
     let preloadQueue = [];
 
+    const isPaged = mangaPagedToggle && mangaPagedToggle.checked;
+
     pages.forEach((p, idx) => {
-      let url = `${baseUrl}/data-saver/${hash}/${p}`;
+      let url = `${baseUrl}/${qualityFolder}/${hash}/${p}`;
 
       const img = document.createElement('img');
       // Instantly load first 3 pages. For the rest, only set data-src
@@ -844,9 +1145,45 @@ async function loadMangaChapter(chapterId) {
         preloadQueue.push(img);
       }
 
-      img.style.maxWidth = '100%';
-      img.style.height = 'auto';
-      img.style.marginBottom = '10px';
+      if (isPaged) {
+        if (idx !== 0) img.style.display = 'none';
+        img.style.maxHeight = 'calc(100vh - 40px)';
+        img.style.objectFit = 'contain';
+        img.style.cursor = 'pointer';
+        
+        img.onclick = (e) => {
+          const rect = img.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          if (clickX > rect.width / 2) {
+             const nextImg = mangaPagesContainer.querySelectorAll('img')[idx + 1];
+             if (nextImg) {
+                img.style.display = 'none';
+                nextImg.style.display = 'block';
+                if (nextImg.dataset.src) {
+                    nextImg.src = nextImg.dataset.src;
+                    nextImg.dataset.src = '';
+                }
+             } else {
+                const nextBtn = navContainer.querySelector('button.manga-nav-next');
+                if(nextBtn) nextBtn.click();
+             }
+          } else {
+             const prevImg = mangaPagesContainer.querySelectorAll('img')[idx - 1];
+             if (prevImg) {
+                img.style.display = 'none';
+                prevImg.style.display = 'block';
+             } else {
+                const prevBtn = navContainer.querySelector('button.manga-nav-prev');
+                if(prevBtn) prevBtn.click();
+             }
+          }
+        };
+      } else {
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.marginBottom = '10px';
+      }
+
       img.onerror = () => {
         // If QUIC or connection fails, attempt a retry to force a new TCP connection
         if (img.src && !img.src.includes('?retry') && img.src !== window.location.href) {
@@ -868,6 +1205,58 @@ async function loadMangaChapter(chapterId) {
 
       mangaPagesContainer.appendChild(img);
     });
+
+    // Add Chapter Navigation Controls
+    const navContainer = document.createElement('div');
+    navContainer.style.display = 'flex';
+    navContainer.style.justifyContent = 'center';
+    navContainer.style.gap = '20px';
+    navContainer.style.marginTop = '40px';
+    navContainer.style.marginBottom = '60px';
+    navContainer.style.width = '100%';
+
+    const currentIndex = currentMangaData.chaptersQueue.indexOf(chapterId);
+    const prevId = currentIndex > 0 ? currentMangaData.chaptersQueue[currentIndex - 1] : null;
+    const nextId = currentIndex < currentMangaData.chaptersQueue.length - 1 ? currentMangaData.chaptersQueue[currentIndex + 1] : null;
+
+    const btnStyle = 'background: #8b5cf6; color: white; border: none; padding: 12px 24px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: background 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
+
+    if (prevId) {
+      const prevBtn = document.createElement('button');
+      prevBtn.textContent = '← Previous Chapter';
+      prevBtn.className = 'manga-nav-prev';
+      prevBtn.style.cssText = btnStyle;
+      prevBtn.onmouseover = () => prevBtn.style.background = '#7c3aed';
+      prevBtn.onmouseout = () => prevBtn.style.background = '#8b5cf6';
+      prevBtn.onclick = () => {
+        mangaReader.scrollTo({top: 0, behavior: 'smooth'});
+        loadMangaChapter(prevId);
+      };
+      navContainer.appendChild(prevBtn);
+    }
+    
+    if (nextId) {
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Next Chapter →';
+      nextBtn.className = 'manga-nav-next';
+      nextBtn.style.cssText = btnStyle;
+      nextBtn.onmouseover = () => nextBtn.style.background = '#7c3aed';
+      nextBtn.onmouseout = () => nextBtn.style.background = '#8b5cf6';
+      nextBtn.onclick = () => {
+        mangaReader.scrollTo({top: 0, behavior: 'smooth'});
+        loadMangaChapter(nextId);
+      };
+      navContainer.appendChild(nextBtn);
+    } else {
+      const finishBtn = document.createElement('button');
+      finishBtn.textContent = 'End of Available Chapters';
+      finishBtn.style.cssText = btnStyle;
+      finishBtn.style.background = '#374151';
+      finishBtn.style.cursor = 'default';
+      navContainer.appendChild(finishBtn);
+    }
+
+    mangaPagesContainer.appendChild(navContainer);
 
     // Background sequential preloader
     async function processMangaQueue() {
@@ -963,9 +1352,9 @@ async function renderMangaHistory() {
 
   historyItems.forEach(item => {
     const card = document.createElement('div');
-    card.style.cssText = 'flex: 0 0 140px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column;';
-    card.onmouseover = () => { card.style.transform = 'translateY(-2px)'; card.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'; };
-    card.onmouseout = () => { card.style.transform = 'translateY(0)'; card.style.boxShadow = 'none'; };
+    card.style.cssText = 'background: var(--surface); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; padding: 8px; gap: 12px;';
+    card.onmouseover = () => { card.style.background = 'var(--surface-hover)'; };
+    card.onmouseout = () => { card.style.background = 'var(--surface)'; };
     
     card.onclick = () => {
       const searchInput = document.getElementById('manga-grid-search-input');
@@ -978,11 +1367,11 @@ async function renderMangaHistory() {
 
     const img = document.createElement('img');
     img.src = item.coverUrl;
-    img.style.cssText = 'width: 100%; height: 200px; object-fit: cover; border-bottom: 1px solid var(--border);';
-    img.onerror = () => { img.src = 'https://via.placeholder.com/140x200?text=No+Cover'; };
+    img.style.cssText = 'width: 60px; height: 80px; object-fit: cover; border-radius: 4px; flex-shrink: 0;';
+    img.onerror = () => { img.src = 'https://via.placeholder.com/60x80?text=No+Cover'; };
 
     const titleEl = document.createElement('div');
-    titleEl.style.cssText = 'padding: 8px; font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);';
+    titleEl.style.cssText = 'font-size: 0.85rem; font-weight: bold; color: var(--text); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; flex: 1;';
     titleEl.textContent = item.title || 'Unknown Title';
 
     card.appendChild(img);
@@ -994,4 +1383,65 @@ async function renderMangaHistory() {
 // Initial render
 document.addEventListener('DOMContentLoaded', () => {
   renderMangaHistory();
+  renderMangaLibrary();
 });
+
+async function renderMangaLibrary() {
+    const libBox = document.getElementById('manga-library');
+    const libList = document.getElementById('manga-library-list');
+    if (!libBox || !libList) return;
+    
+    const favsObj = (await localforage.getItem('r34_manga_favorites')) || {};
+    const favsArr = Object.values(favsObj).sort((a, b) => b.timestamp - a.timestamp);
+    
+    if (favsArr.length === 0) {
+        libBox.style.display = 'none';
+        return;
+    }
+    
+    libBox.style.display = 'block';
+    libList.innerHTML = '';
+    
+    favsArr.forEach(item => {
+        const card = document.createElement('div');
+        card.style.cssText = 'background: var(--surface); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; padding: 8px; gap: 12px;';
+        card.onmouseover = () => { card.style.background = 'var(--surface-hover)'; };
+        card.onmouseout = () => { card.style.background = 'var(--surface)'; };
+        
+        card.onclick = () => {
+            const searchInput = document.getElementById('manga-grid-search-input');
+            const searchBtn = document.getElementById('manga-grid-search-btn');
+            if (searchInput && searchBtn) {
+              searchInput.value = item.id;
+              searchBtn.click();
+            }
+        };
+
+        const img = document.createElement('img');
+        img.src = item.coverUrl;
+        img.style.cssText = 'width: 60px; height: 80px; object-fit: cover; border-radius: 4px; flex-shrink: 0;';
+        img.onerror = () => { img.src = 'https://via.placeholder.com/60x80?text=No+Cover'; };
+
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-size: 0.85rem; font-weight: bold; color: var(--text); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; flex: 1;';
+        titleEl.textContent = item.title || 'Unknown Title';
+
+        card.appendChild(img);
+        card.appendChild(titleEl);
+        libList.appendChild(card);
+    });
+}
+
+// Ensure library is rendered when navigating to Manga tab
+const mangaViewObserver = new MutationObserver((mutations) => {
+  mutations.forEach((mutation) => {
+    if (mutation.target.id === 'view-manga' && mutation.target.style.display !== 'none') {
+       if (typeof renderMangaHistory === 'function') renderMangaHistory();
+       if (typeof renderMangaLibrary === 'function') renderMangaLibrary();
+    }
+  });
+});
+const viewMangaEl = document.getElementById('view-manga');
+if (viewMangaEl) {
+  mangaViewObserver.observe(viewMangaEl, { attributes: true, attributeFilter: ['style'] });
+}

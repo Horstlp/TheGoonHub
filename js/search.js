@@ -188,27 +188,14 @@ input.addEventListener('keydown', (e) => {
 
 const helpersToggle = document.getElementById('helpers-toggle');
 const helpersPanel  = document.getElementById('helpers-panel');
-const historyToggle = document.getElementById('history-toggle');
-const historyPanel  = document.getElementById('history-panel');
 
 if(helpersToggle) {
   helpersToggle.addEventListener('click', () => {
-    historyPanel.classList.remove('open');
-    historyToggle.classList.remove('open');
     const open = helpersPanel.classList.toggle('open');
     helpersToggle.classList.toggle('open', open);
   });
 }
 
-if(historyToggle) {
-  historyToggle.addEventListener('click', () => {
-    helpersPanel.classList.remove('open');
-    helpersToggle.classList.remove('open');
-    const open = historyPanel.classList.toggle('open');
-    historyToggle.classList.toggle('open', open);
-    if(open) renderHistoryAndPins();
-  });
-}
 
 function renderHistoryAndPins() {
   const recentBox = document.getElementById('recent-chips-box');
@@ -254,8 +241,6 @@ function renderHistoryAndPins() {
 function loadSavedSearch(str) {
   tagsArray = str.split(/\s+/).filter(Boolean);
   renderPills();
-  historyPanel.classList.remove('open');
-  historyToggle.classList.remove('open');
   if (typeof disableVaultViewMode === 'function') disableVaultViewMode();
   if (typeof doSearch === 'function') doSearch();
 }

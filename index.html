@@ -48,9 +48,6 @@
     <!-- IMAGES VIEW (Default) -->
     <!-- Semantic HTML: Use <section> for views instead of <div> -->
     <section id="view-images" class="app-view" aria-labelledby="images-title">
-      <header>
-        <h1 id="images-title">The Better Rule 34</h1>
-      </header>
 
       <!-- Accessibility & Modern Best Practice: Wrap search inputs in <form> with role="search" -->
       <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
@@ -97,9 +94,7 @@
         <button class="helpers-toggle" id="helpers-toggle" aria-expanded="false" aria-controls="helpers-panel">
           <span class="arrow" aria-hidden="true">▶</span> Search syntax helpers
         </button>
-        <button class="helpers-toggle" id="history-toggle" aria-expanded="false" aria-controls="history-panel">
-          <span class="arrow" aria-hidden="true">▶</span> Saved &amp; History
-        </button>
+
         <button class="helpers-toggle" id="vault-toggle" style="display: none;" aria-hidden="true">
           💖 My Vault (0)
         </button>
@@ -135,17 +130,6 @@
         </div>
       </section>
 
-      <!-- Recent & Pinned Searches Panel -->
-      <section class="helpers-panel" id="history-panel" style="max-width: 720px; margin: 12px auto 0;" aria-label="Search History">
-        <div>
-          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">📌 Pinned Configurations</h2>
-          <div class="chips" id="pinned-chips-box"></div>
-        </div>
-        <div style="margin-top: 6px;">
-          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">🕰️ Recent Search History</h2>
-          <div class="chips" id="recent-chips-box"></div>
-        </div>
-      </section>
 
       <!-- Accessibility: aria-live ensures screen readers announce pagination updates -->
       <div class="meta-row" id="meta-row" style="display:none" aria-live="polite">
@@ -190,46 +174,55 @@
 
     <!-- MANGA VIEW -->
     <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
-      <header>
-        <h1 id="manga-title">MangaDex Browser</h1>
-        <p>Infinite scrolling manga grid and direct ID reader via MangaDex API.</p>
-      </header>
+          <!-- Manga Grid Search -->
+          <form class="search-wrap" role="search" onsubmit="event.preventDefault();" style="margin-bottom: 24px;">
+            <div class="search-row">
+              <div class="search-input-container" id="manga-search-container">
+                <div id="manga-tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;" aria-live="polite"></div>
+                <input id="manga-grid-search-input" type="search" placeholder="Add modifiers (e.g. tag:yuri) or search titles..." style="flex: 1; background: transparent; border: none; color: var(--text); outline: none; min-width: 150px;" autocomplete="off" aria-label="Search manga grid" />
+                <div class="autocomplete-dropdown" id="manga-autocomplete-box" role="listbox" aria-label="Manga search suggestions"></div>
+              </div>
+              <button id="manga-grid-search-btn" type="submit" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search Grid</button>
+              <button id="manga-random-btn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;" title="Surprise Me (Random Manga)">🎲 Random</button>
+            </div>
+            
+            <fieldset class="filter-row" style="border: none; padding: 0; margin: 12px 0 0 0; display: flex; gap: 12px; align-items: center;">
+              <legend class="sr-only" style="display: none;">Manga Search Filters</legend>
+              <select id="manga-sort-select" class="filter-select" aria-label="Sort order">
+                <option value="relevance">🤖 Relevance</option>
+                <option value="rating">🏆 Highest Rating</option>
+                <option value="latest">🆕 Latest Uploads</option>
+                <option value="popular">🔥 Most Follows</option>
+                <option value="new">🕰 Newest Titles</option>
+              </select>
 
-      <!-- Continue Reading History -->
-      <div id="manga-history" style="display: none; margin-bottom: 24px;">
-        <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 1.1rem;">Continue Reading</h3>
-        <div id="manga-history-list" style="display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;">
-          <!-- History cards injected here -->
-        </div>
-      </div>
+              <div style="position: relative;" id="manga-rating-dropdown-container">
+                <button type="button" id="manga-rating-btn" class="filter-select" style="background: var(--surface); color: var(--text); cursor: pointer; text-align: left; min-width: 140px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>🔞 Ratings (2)</span> <span style="font-size: 0.8em;">▼</span>
+                </button>
+                <div id="manga-rating-menu" style="display: none; position: absolute; top: calc(100% + 8px); left: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.5); min-width: 180px; flex-direction: column; gap: 8px;">
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="safe" class="manga-rating-cb"> Safe</label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="suggestive" class="manga-rating-cb"> Suggestive</label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="erotica" class="manga-rating-cb" checked> Erotica</label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="pornographic" class="manga-rating-cb" checked> Pornographic</label>
+                </div>
+              </div>
+            </fieldset>
+          </form>
 
-      
-      <!-- Manga Grid Search -->
-      <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
-        <div class="search-row">
-          <div class="search-input-container">
-            <input id="manga-grid-search-input" type="search" placeholder="Search titles... (e.g. naruto tag:romance tag:yuri)" style="flex: 1; background: transparent; border: none; color: var(--text); outline: none;" autocomplete="off" aria-label="Search manga grid" />
+          <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="grid" aria-label="Manga Results"></div>
+          
+          <div id="manga-grid-status" style="text-align: center; color: var(--muted); padding: 20px;" aria-live="polite">
+            <span class="icon" aria-hidden="true">🔍</span> Search to load comic covers...
           </div>
-          <button id="manga-grid-search-btn" type="submit" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search Grid</button>
-        </div>
-      </form>
-      
-      <div id="manga-grid-status" style="text-align: center; color: var(--muted); padding: 20px;" aria-live="polite">
-        <span class="icon" aria-hidden="true">🔍</span> Search to load comic covers...
-      </div>
-      
-      <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 40px;" role="grid" aria-label="Manga Results"></div>
-      <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;" aria-hidden="true"></div>
+          <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;" aria-hidden="true"></div>
+
 
       <!-- The Manga details will now expand inline inside the grid! -->
     </section>
 
     <!-- ALGORITHM VIEW -->
     <section id="view-algo" class="app-view" style="display: none;" aria-labelledby="algo-title">
-      <header>
-        <h1 id="algo-title">Recommendation Engine</h1>
-        <p>A smart algorithm that analyzes your Vault and generates personalized feeds.</p>
-      </header>
       
       <div class="algo-panel" style="background: var(--surface); padding: 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
@@ -450,6 +443,14 @@
 
 <!-- Manga Reader Modal -->
 <div id="manga-reader" style="display: none; position: fixed; inset: 0; background: #000; z-index: 1000; overflow-y: auto; text-align: center; padding: 20px;" role="dialog" aria-modal="true" aria-label="Manga Reader">
+  <div id="manga-reader-settings" style="position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; z-index: 1010; backdrop-filter: blur(4px); display: flex; gap: 15px;">
+    <label style="color: white; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Use uncompressed images (consumes more bandwidth)">
+      <input type="checkbox" id="manga-hq-toggle"> High Quality
+    </label>
+    <label style="color: white; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Read one page at a time instead of continuous scrolling">
+      <input type="checkbox" id="manga-paged-toggle"> Single Page Mode
+    </label>
+  </div>
   <button id="manga-reader-close" style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; z-index: 1010; backdrop-filter: blur(4px);" aria-label="Close Manga Reader">✕ Close Reader</button>
   <div id="manga-pages-container" style="display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 1000px; margin: 0 auto;" aria-live="polite"></div>
 </div>

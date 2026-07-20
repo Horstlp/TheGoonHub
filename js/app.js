@@ -824,6 +824,13 @@ async function search(tags, page, append = false) {
   
   btn.disabled = false;
   isLoading = false;
+
+  if (hasMore && typeof scrollSentinel !== 'undefined' && scrollSentinel) {
+      const sentinelRect = scrollSentinel.getBoundingClientRect();
+      if (sentinelRect.top < window.innerHeight && sentinelRect.top > 0) {
+          if (typeof loadNextPage === 'function') loadNextPage();
+      }
+  }
 }
 
 function syncVaultCounterDisplay() {
