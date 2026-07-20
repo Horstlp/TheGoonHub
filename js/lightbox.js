@@ -37,10 +37,45 @@ function openLightbox(index) {
   };
   lbDlBtn.onclick  = (e) => { e.stopPropagation(); forceBinaryAssetDownload(fileUrl, post.id); };
   const tags = (post.tags || '').split(/\s+/).filter(Boolean);
+  
+  let artists = [];
+  let others = [];
+  
   tags.forEach(t => {
-    const s = document.createElement('span'); s.className = 'lb-stream-tag'; s.textContent = t;
-    s.onclick = (e) => { e.stopPropagation(); disableVaultViewMode(); addPill(t); };
-    lbTagsStreamBox.appendChild(s);
+      const type = (typeof algoTagsCache !== 'undefined' && algoTagsCache[t]) ? algoTagsCache[t] : null;
+      if (type === 'artist') artists.push(t);
+      else others.push({ tag: t, type: type || 'general' });
+      
+      if (!type && typeof window.queueTagForResolution === 'function') {
+          window.queueTagForResolution(t);
+      }
+  });
+  
+  artists.forEach(t => {
+      const s = document.createElement('span'); 
+      s.className = 'lb-stream-tag'; 
+      s.dataset.tag = t;
+      s.textContent = t;
+      s.style.borderColor = '#fbbf24'; // Yellow for artist
+      s.onclick = (e) => { e.stopPropagation(); disableVaultViewMode(); addPill(t); };
+      lbTagsStreamBox.appendChild(s);
+  });
+  
+  if (artists.length > 0 && others.length > 0) {
+      const sep = document.createElement('div');
+      sep.style.width = '100%'; sep.style.height = '1px'; sep.style.background = 'rgba(255,255,255,0.1)'; sep.style.margin = '6px 0';
+      lbTagsStreamBox.appendChild(sep);
+  }
+  
+  others.forEach(obj => {
+      const s = document.createElement('span'); 
+      s.className = 'lb-stream-tag'; 
+      s.dataset.tag = obj.tag;
+      s.textContent = obj.tag;
+      if (obj.type === 'character') s.style.borderColor = '#34d399';
+      if (obj.type === 'copyright') s.style.borderColor = '#a78bfa';
+      s.onclick = (e) => { e.stopPropagation(); disableVaultViewMode(); addPill(obj.tag); };
+      lbTagsStreamBox.appendChild(s);
   });
   lbPrevBtn.style.display = currentPostIndex > 0 ? 'flex' : 'none';
   lbNextBtn.style.display = currentPostIndex < cachedPosts.length - 1 ? 'flex' : 'none';

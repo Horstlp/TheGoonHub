@@ -173,13 +173,17 @@ input.addEventListener('keydown', (e) => {
         const chosenText = items[activeSuggestionIdx].querySelector('span').textContent;
         addPill(activePrefixModifier + chosenText);
       } else {
-        addPill(input.value);
+        if (input.value.trim() !== '') addPill(input.value);
       }
+      if (typeof doSearch === 'function') doSearch();
     } else if (e.key === 'Escape') hideAutocomplete();
   } else {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
-      addPill(input.value);
+      if (input.value.trim() !== '') addPill(input.value);
+      if (e.key === 'Enter') {
+        if (typeof doSearch === 'function') doSearch();
+      }
     } else if (e.key === 'Backspace' && input.value === '' && tagsArray.length > 0) {
       removePill(tagsArray.length - 1);
     }
@@ -246,13 +250,16 @@ function loadSavedSearch(str) {
 }
 
 function renderFilterBadges(days, sortVal) {
+  if (!activeFilters) return;
   const badges = [];
   if(isViewingVault) {
     badges.push(`🔒 Saved Storage Mode`);
     activeFilters.innerHTML = badges.map(b => `<span class="meta-badge" style="background:rgba(244,63,94,0.15); border-color:#f43f5e; color:#fb7185">${b}</span>`).join(' ');
     return;
   }
-  if (days !== 'all') badges.push(`📅 ${timeframeSelect.options[timeframeSelect.selectedIndex].text.replace(/^.+ /,'')}`);
-  if (sortVal) badges.push(`⚙️ ${sortSelect.options[sortSelect.selectedIndex].text.replace(/^.+ /,'')}`);
+  if (days !== 'all' && timeframeSelect && timeframeSelect.selectedIndex >= 0) badges.push(`📅 ${timeframeSelect.options[timeframeSelect.selectedIndex].text.replace(/^.+ /,'')}`);
+  if (sortVal && sortSelect && sortSelect.selectedIndex >= 0 && sortSelect.options[sortSelect.selectedIndex]) {
+    badges.push(`⚙️ ${sortSelect.options[sortSelect.selectedIndex].text.replace(/^.+ /,'')}`);
+  }
   activeFilters.innerHTML = badges.map(b => `<span class="meta-badge">${b}</span>`).join(' ');
 }

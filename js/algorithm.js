@@ -230,13 +230,11 @@ async function fetchR34Posts(query, limit, page = 0) {
     }
     
     const url = `${baseUrl}&limit=${limit}&pid=${page}&tags=${encodeURIComponent(finalQuery)}&json=1&cb=${Date.now()}`;
-    console.log(`[TIKTOK-DEBUG] fetchR34Posts URL:`, url);
     try {
         const res = await throttledFetch(PROXY + encodeURIComponent(url));
         const text = await res.text();
         if (!text.trim()) {
-            console.log(`[TIKTOK-DEBUG] fetchR34Posts Empty response for query:`, finalQuery);
-            return [];
+            return null;
         }
         const parsed = JSON.parse(text);
         if (!Array.isArray(parsed)) {
@@ -407,7 +405,7 @@ let isAlgoPreloading = false;
 let currentAlgoPreloadPage = 0;
 const ALGO_PRELOAD_BUFFER_SIZE = 3;
 
-async function generateRawAlgoBatch(pageIndex, enforceVideo = false) {
+async function generateRawAlgoBatch(pageIndex) {
     const batchSize = parseInt(algoValBatch.value || 30);
     const ratio = parseInt(algoValRatio.value || 50) / 100;
     const fetchAmount = parseInt(algoValFetches.value || 9);
@@ -445,7 +443,6 @@ async function generateRawAlgoBatch(pageIndex, enforceVideo = false) {
         }
     });
     
-    console.log(`[TIKTOK-DEBUG] analyzeVaultTags returned ${sortedTags.length} tags. subjectTags: ${subjectTags.length}, modifierTags: ${modifierTags.length}`);
     
     // Update Insights UI (Only visually updates when it resolves, which is fine)
     const allWeighted = [...subjectTags, ...modifierTags].sort((a,b) => b.weight - a.weight);
@@ -466,15 +463,9 @@ async function generateRawAlgoBatch(pageIndex, enforceVideo = false) {
         const isFresh = Math.random() < freshnessRatio;
         let q = isFresh ? '' : 'sort:random';
         if (baseSearch) q = isFresh ? baseSearch : `${baseSearch} sort:random`;
-        if (enforceVideo) {
-            q += (q ? ' ' : '') + 'score:>=50 animated';
-        } else {
-            q += (q ? ' ' : '') + 'score:>=300';
-        }
-        console.log(`[TIKTOK-DEBUG] Queuing random fetch. Query:`, q);
+        q += (q ? ' ' : '') + 'score:>=300';
         fetchPromises.push((async () => {
             const res = await fetchR34Posts(q, randomCount, pageIndex);
-            console.log(`[TIKTOK-DEBUG] Random fetch returned ${res ? res.length : 0} posts for query:`, q);
             return res;
         })());
     }
@@ -482,7 +473,6 @@ async function generateRawAlgoBatch(pageIndex, enforceVideo = false) {
     if (targetedCount > 0) {
         const primaryPool = subjectTags.length > 0 ? subjectTags : modifierTags;
         const tagsToQuery = selectWeightedTags(primaryPool, fetchAmount);
-        console.log(`[TIKTOK-DEBUG] primaryPool length: ${primaryPool.length}, fetchAmount: ${fetchAmount}, tagsToQuery length: ${tagsToQuery.length}`);
         
         if (tagsToQuery.length > 0) {
             const countPerTag = Math.ceil(targetedCount / tagsToQuery.length);
@@ -492,12 +482,10 @@ async function generateRawAlgoBatch(pageIndex, enforceVideo = false) {
                     while (maxRetries > 0) {
                         let q = tag;
                         
-                        // For videos: Try with modifiers on the first try (maxRetries === 3). If it fails, drop the modifiers.
-                        // For images: Try with modifiers on retries 3 and 2.
+                        // Try with modifiers on retries 3 and 2
                         let applyMod = false;
                         if (subjectTags.length > 0 && modifierTags.length > 0 && Math.random() > 0.5) {
-                            if (enforceVideo && maxRetries === 3) applyMod = true;
-                            if (!enforceVideo && maxRetries > 1) applyMod = true;
+                            if (maxRetries > 1) applyMod = true;
                         }
                         
                         if (applyMod) {
@@ -509,27 +497,17 @@ async function generateRawAlgoBatch(pageIndex, enforceVideo = false) {
                         if (!isFresh) q += ' sort:random';
                         if (baseSearch) q = `${baseSearch} ${q}`;
                         
-                        if (enforceVideo) {
-                            if (maxRetries === 3) q += ' score:>=100 animated';
-                            else if (maxRetries === 2) q += ' score:>=20 animated';
-                            else q += ' animated';
-                        } else {
-                            q += ' score:>=300';
-                        }
-                        console.log(`[TIKTOK-DEBUG] Queuing targeted fetch (Retry ${4 - maxRetries}/3). Query:`, q);
+                        q += ' score:>=300';
                         const res = await fetchR34Posts(q, countPerTag, pageIndex);
-                        console.log(`[TIKTOK-DEBUG] Targeted fetch returned ${res ? res.length : 0} posts for query:`, q);
                         if (res && res.length > 0) return res;
                         maxRetries--;
                     }
-                    console.log(`[TIKTOK-DEBUG] Exhausted retries for targeted fetch. tag:`, tag);
                     return [];
                 })());
             });
         }
     }
     
-    console.log(`[TIKTOK-DEBUG] Waiting for ${fetchPromises.length} promises...`);
     const resultsArrays = await Promise.all(fetchPromises);
     const flatResults = resultsArrays.flat();
     
@@ -539,7 +517,6 @@ async function generateRawAlgoBatch(pageIndex, enforceVideo = false) {
         [flatResults[i], flatResults[j]] = [flatResults[j], flatResults[i]];
     }
     
-    console.log(`[TIKTOK-DEBUG] generateRawAlgoBatch total items across all promises:`, flatResults.length);
     return flatResults;
 }
 
@@ -587,7 +564,7 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
         algoGridPage = 0;
         targetStatus.style.display = 'block';
         if(bottomStatusEl) bottomStatusEl.style.display = 'none';
-        targetStatus.innerHTML = '<div class="spinner"></div>Analyzing Vault & Generating Feed...';
+        targetStatus.innerHTML = '<div class="heart-loader"></div>Analyzing Vault & Generating Feed...';
         
         isAlgoPreloading = false;
         algoPreloadQueue = [];

@@ -1,35 +1,74 @@
 let currentTags = '';
 let currentPage = 0;
-let cachedPosts = [];    
-let currentPostIndex = -1; 
+let cachedPosts = [];
+let currentPostIndex = -1;
 
 let tagsArray = [];
 let autocompleteTimeout;
 let activeSuggestionIdx = -1;
-let activePrefixModifier = ''; 
+let activePrefixModifier = '';
 const tagCategoriesMap = new Map();
-let isViewingVault  = false;
+let isViewingVault = false;
 let isLoading = false; // State to prevent multiple simultaneous loads
 let hasMore = true; // State to track if there are more results to load
 
-const searchContainer   = document.getElementById('search-container');
-const tagPillsList      = document.getElementById('tag-pills-list');
-const input             = document.getElementById('search-input');
-const autocompleteBox   = document.getElementById('autocomplete-box');
-const btn              = document.getElementById('search-btn');
-const timeframeSelect   = document.getElementById('timeframe-select');
-const sortSelect        = document.getElementById('sort-select');
-const grid             = document.getElementById('grid');
-const statusEl         = document.getElementById('status');
-const metaRow          = document.getElementById('meta-row');
-const resultCount      = document.getElementById('result-count');
-const activeFilters    = document.getElementById('active-filters'); // Keep this for filter badges
-const paginationBox    = document.getElementById('pagination-controls-box');
-const scrollSentinel   = document.getElementById('scroll-sentinel'); // Element to observe for infinite scroll
-const vaultToggleBtn   = document.getElementById('vault-toggle');
+// --- Background Tag Resolver for Coloring ---
+const tagResolverQueue = new Set();
+let isResolvingTags = false;
+
+async function processTagResolverQueue() {
+  if (tagResolverQueue.size === 0) {
+    isResolvingTags = false;
+    return;
+  }
+  isResolvingTags = true;
+
+  const tag = tagResolverQueue.values().next().value;
+  tagResolverQueue.delete(tag);
+
+  if (typeof algoTagsCache !== 'undefined' && !algoTagsCache[tag] && typeof fetchTagType === 'function') {
+    await fetchTagType(tag);
+    if (typeof localforage !== 'undefined') {
+      localforage.setItem('r34_tag_types', algoTagsCache);
+    }
+
+    // Re-color DOM elements dynamically if they are still visible
+    document.querySelectorAll(`.lb-stream-tag[data-tag="${tag}"]`).forEach(el => {
+      const type = algoTagsCache[tag];
+      if (type === 'character') el.style.borderColor = '#34d399';
+      if (type === 'artist') el.style.borderColor = '#fbbf24';
+      if (type === 'copyright') el.style.borderColor = '#a78bfa';
+    });
+  }
+
+  setTimeout(processTagResolverQueue, 1500); // Very slow to avoid rate limits (1.5s)
+}
+
+window.queueTagForResolution = function (tag) {
+  if (typeof algoTagsCache !== 'undefined' && !algoTagsCache[tag]) {
+    tagResolverQueue.add(tag);
+    if (!isResolvingTags) processTagResolverQueue();
+  }
+};
+
+const searchContainer = document.getElementById('search-container');
+const tagPillsList = document.getElementById('tag-pills-list');
+const input = document.getElementById('search-input');
+const autocompleteBox = document.getElementById('autocomplete-box');
+const btn = document.getElementById('search-btn');
+const timeframeSelect = document.getElementById('timeframe-select');
+const sortSelect = document.getElementById('sort-select');
+const grid = document.getElementById('grid');
+const statusEl = document.getElementById('status');
+const metaRow = document.getElementById('meta-row');
+const resultCount = document.getElementById('result-count');
+const activeFilters = document.getElementById('active-filters'); // Keep this for filter badges
+const paginationBox = document.getElementById('pagination-controls-box');
+const scrollSentinel = document.getElementById('scroll-sentinel'); // Element to observe for infinite scroll
+const vaultToggleBtn = document.getElementById('vault-toggle');
 
 
-const toast            = document.getElementById('toast');
+const toast = document.getElementById('toast');
 
 let toastTimer;
 function triggerToastNotification(msg) {
@@ -43,7 +82,7 @@ function triggerToastNotification(msg) {
 function resizeGridItem(item) {
   const rowHeight = 10; // Matches grid-auto-rows in CSS
   const rowGap = 16;    // Matches gap in CSS
-  
+
   // Calculate how many 10px rows the card needs to fit its content
   const rowSpan = Math.ceil((item.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
   item.style.gridRowEnd = `span ${rowSpan}`;
@@ -58,12 +97,12 @@ const masonryObserver = new ResizeObserver(entries => {
 /** Infinite Scroll Observer **/
 const handleScroll = debounce((entries) => {
   if (entries[0].isIntersecting && !isLoading && hasMore && !isViewingVault) {
-    if(typeof loadNextPage === 'function') loadNextPage();
+    if (typeof loadNextPage === 'function') loadNextPage();
   }
 }, 250);
 
-const scrollObserver = new IntersectionObserver(handleScroll, { 
-  rootMargin: '400px' 
+const scrollObserver = new IntersectionObserver(handleScroll, {
+  rootMargin: '400px'
 });
 
 scrollObserver.observe(scrollSentinel);
@@ -74,7 +113,7 @@ let likedPosts = JSON.parse(localStorage.getItem('r34_liked_v2') || '[]');
 
 function togglePostLikeStatus(postId) {
   const idx = likedPosts.indexOf(String(postId));
-  if(idx > -1) {
+  if (idx > -1) {
     likedPosts.splice(idx, 1);
   } else {
     likedPosts.push(String(postId));
@@ -86,55 +125,55 @@ let currentVaultFolder = 'All';
 
 function getVaultFolders() {
   const folders = new Set(vaultedFolders);
-  vaultedPosts.forEach(p => { if(p.folder) folders.add(p.folder); });
-  
+  vaultedPosts.forEach(p => { if (p.folder) folders.add(p.folder); });
+
   const newFoldersArray = Array.from(folders);
   if (newFoldersArray.length !== vaultedFolders.length) {
-      vaultedFolders = newFoldersArray;
-      localforage.setItem('r34_folders_v2', vaultedFolders);
+    vaultedFolders = newFoldersArray;
+    localforage.setItem('r34_folders_v2', vaultedFolders);
   }
   return newFoldersArray;
 }
 
 function renderVaultFoldersNav() {
   const nav = document.getElementById('vault-folders-nav');
-  if(!nav) return;
+  if (!nav) return;
   nav.innerHTML = '';
   const folders = ['All', ...getVaultFolders()];
-  
+
   folders.forEach(f => {
     const btn = document.createElement('div');
     btn.className = 'folder-stack-btn' + (f === currentVaultFolder ? ' active' : '');
-    
+
     // Find images for this stack
     let stackImages = [];
     let count = 0;
-    
+
     if (f === 'All') {
-        stackImages = vaultedPosts.slice(0, 4);
-        count = vaultedPosts.length;
+      stackImages = vaultedPosts.slice(0, 4);
+      count = vaultedPosts.length;
     } else if (f === 'Default') {
-        const defPosts = vaultedPosts.filter(p => !p.folder || p.folder === 'Default');
-        stackImages = defPosts.slice(0, 4);
-        count = defPosts.length;
+      const defPosts = vaultedPosts.filter(p => !p.folder || p.folder === 'Default');
+      stackImages = defPosts.slice(0, 4);
+      count = defPosts.length;
     } else {
-        const customPosts = vaultedPosts.filter(p => p.folder === f);
-        stackImages = customPosts.slice(0, 4);
-        count = customPosts.length;
+      const customPosts = vaultedPosts.filter(p => p.folder === f);
+      stackImages = customPosts.slice(0, 4);
+      count = customPosts.length;
     }
-    
+
     let imgHTML = '';
     stackImages.forEach((p, i) => {
-        const url = p.preview_url || p.sample_url || p.file_url;
-        if(url) {
-            imgHTML += `<img src="${url}" class="stack-img-${4-i}" loading="lazy" />`;
-        }
+      const url = p.preview_url || p.sample_url || p.file_url;
+      if (url) {
+        imgHTML += `<img src="${url}" class="stack-img-${4 - i}" loading="lazy" />`;
+      }
     });
-    
+
     if (stackImages.length === 0) {
-        imgHTML = `<div style="width:76px;height:76px;background:var(--surface);border-radius:10px;border:1px dashed var(--border);position:absolute;top:4px;left:17px;z-index:1;"></div>`;
+      imgHTML = `<div style="width:76px;height:76px;background:var(--surface);border-radius:10px;border:1px dashed var(--border);position:absolute;top:4px;left:17px;z-index:1;"></div>`;
     }
-    
+
     btn.innerHTML = `
       <div class="stack-images">
         ${imgHTML}
@@ -149,26 +188,26 @@ function renderVaultFoldersNav() {
       </div>
       <div class="folder-stack-count">${count} items</div>
     `;
-    
+
     const editBtn = btn.querySelector('.folder-edit-btn');
     if (editBtn) {
-        editBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const nameField = document.getElementById('new-folder-name');
-            nameField.value = f;
-            nameField.readOnly = true;
-            nameField.style.opacity = '0.6';
-            document.getElementById('new-folder-title').textContent = 'Folder Settings';
-            
-            const settings = vaultFolderSettings[f] || { isPublic: false, useInAlgo: true };
-            document.getElementById('new-folder-visibility').value = settings.isPublic ? 'public' : 'private';
-            document.getElementById('new-folder-algo').checked = settings.useInAlgo !== false;
-            
-            document.getElementById('new-folder-submit').textContent = 'Save Settings';
-            newFolderModal.style.display = 'flex';
-        });
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const nameField = document.getElementById('new-folder-name');
+        nameField.value = f;
+        nameField.readOnly = true;
+        nameField.style.opacity = '0.6';
+        document.getElementById('new-folder-title').textContent = 'Folder Settings';
+
+        const settings = vaultFolderSettings[f] || { isPublic: false, useInAlgo: true };
+        document.getElementById('new-folder-visibility').value = settings.isPublic ? 'public' : 'private';
+        document.getElementById('new-folder-algo').checked = settings.useInAlgo !== false;
+
+        document.getElementById('new-folder-submit').textContent = 'Save Settings';
+        newFolderModal.style.display = 'flex';
+      });
     }
-    
+
     btn.addEventListener('click', () => {
       currentVaultFolder = f;
       renderVaultGridToDedicatedView();
@@ -212,12 +251,12 @@ if (newFolderSubmitBtn) {
     const nameInput = document.getElementById('new-folder-name').value.trim();
     const visibility = document.getElementById('new-folder-visibility').value;
     const useAlgo = document.getElementById('new-folder-algo').checked;
-    
+
     if (!nameInput) {
       alert("Please enter a folder name.");
       return;
     }
-    
+
     // Save to settings
     vaultFolderSettings[nameInput] = {
       isPublic: visibility === 'public',
@@ -229,7 +268,7 @@ if (newFolderSubmitBtn) {
       vaultedFolders.push(nameInput);
       localforage.setItem('r34_folders_v2', vaultedFolders);
     }
-    
+
     currentVaultFolder = nameInput;
     renderVaultGridToDedicatedView();
     renderVaultFoldersNav();
@@ -249,10 +288,10 @@ const saveModalNewInput = document.getElementById('save-modal-new-input');
 const saveModalNewBtn = document.getElementById('save-modal-new-btn');
 
 function renderSaveModalFolders(filterText = '') {
-  if(!saveModalFolders) return;
+  if (!saveModalFolders) return;
   saveModalFolders.innerHTML = '';
   const folders = getVaultFolders();
-  
+
   folders.filter(f => f.toLowerCase().includes(filterText.toLowerCase())).forEach(f => {
     const item = document.createElement('button');
     item.className = 'save-folder-item';
@@ -262,88 +301,88 @@ function renderSaveModalFolders(filterText = '') {
     item.style.width = '100%';
     item.style.padding = '12px 16px';
     item.style.borderRadius = '8px';
-    
+
     const isSavedInHere = vaultedPosts.some(p => String(p.id) === String(currentSavePost.id) && (p.folder || 'Default') === f);
-    
+
     item.innerHTML = `<span>${f}</span><span style="color: ${isSavedInHere ? 'var(--accent-purple)' : 'var(--muted)'}; font-weight: bold;">${isSavedInHere ? 'Saved' : 'Save'}</span>`;
-    
+
     item.addEventListener('click', (ev) => {
-       ev.stopPropagation();
-       
-       const idx = vaultedPosts.findIndex(p => String(p.id) === String(currentSavePost.id));
-       if(idx > -1) vaultedPosts.splice(idx, 1);
-       
-       if (!isSavedInHere) {
-         currentSavePost.folder = f;
-         vaultedPosts.unshift(currentSavePost);
-       }
-       
-       localforage.setItem('r34_vault_v2', vaultedPosts);
-       syncVaultCounterDisplay();
-       const isNowSaved = vaultedPosts.some(p => String(p.id) === String(currentSavePost.id));
-       
-       if (currentSaveCallback) {
-           currentSaveCallback(isNowSaved, currentSaveAnchor);
-       } else {
-           currentSaveAnchor.textContent = isNowSaved ? 'Saved' : 'Save';
-           currentSaveAnchor.style.backgroundColor = isNowSaved ? '#8b5cf6' : '#ff5e97';
-       }
-       
-       renderSaveModalFolders(saveModalSearch.value); 
-       
-       const viewVault = document.getElementById('view-vault');
-       if(viewVault && viewVault.style.display !== 'none') {
-         renderVaultGridToDedicatedView();
-         renderVaultFoldersNav();
-       }
+      ev.stopPropagation();
+
+      const idx = vaultedPosts.findIndex(p => String(p.id) === String(currentSavePost.id));
+      if (idx > -1) vaultedPosts.splice(idx, 1);
+
+      if (!isSavedInHere) {
+        currentSavePost.folder = f;
+        vaultedPosts.unshift(currentSavePost);
+      }
+
+      localforage.setItem('r34_vault_v2', vaultedPosts);
+      syncVaultCounterDisplay();
+      const isNowSaved = vaultedPosts.some(p => String(p.id) === String(currentSavePost.id));
+
+      if (currentSaveCallback) {
+        currentSaveCallback(isNowSaved, currentSaveAnchor);
+      } else {
+        currentSaveAnchor.textContent = isNowSaved ? 'Saved' : 'Save';
+        currentSaveAnchor.style.backgroundColor = isNowSaved ? '#8b5cf6' : '#ff5e97';
+      }
+
+      renderSaveModalFolders(saveModalSearch.value);
+
+      const viewVault = document.getElementById('view-vault');
+      if (viewVault && viewVault.style.display !== 'none') {
+        renderVaultGridToDedicatedView();
+        renderVaultFoldersNav();
+      }
     });
     saveModalFolders.appendChild(item);
   });
 }
 
-if(saveModalClose) saveModalClose.addEventListener('click', () => saveModalOverlay.style.display = 'none');
-if(saveModalSearch) saveModalSearch.addEventListener('input', (e) => renderSaveModalFolders(e.target.value));
-if(saveModalOverlay) saveModalOverlay.addEventListener('click', (e) => { if(e.target === saveModalOverlay) saveModalOverlay.style.display = 'none'; });
+if (saveModalClose) saveModalClose.addEventListener('click', () => saveModalOverlay.style.display = 'none');
+if (saveModalSearch) saveModalSearch.addEventListener('input', (e) => renderSaveModalFolders(e.target.value));
+if (saveModalOverlay) saveModalOverlay.addEventListener('click', (e) => { if (e.target === saveModalOverlay) saveModalOverlay.style.display = 'none'; });
 
-if(saveModalNewBtn) {
+if (saveModalNewBtn) {
   saveModalNewBtn.addEventListener('click', () => {
-      const newFolder = saveModalNewInput.value.trim();
-      if (newFolder) {
-         if (!vaultedFolders.includes(newFolder)) {
-             vaultedFolders.push(newFolder);
-             localforage.setItem('r34_folders_v2', vaultedFolders);
-         }
-         
-         const idx = vaultedPosts.findIndex(p => String(p.id) === String(currentSavePost.id));
-         if(idx > -1) vaultedPosts.splice(idx, 1);
-         
-         currentSavePost.folder = newFolder;
-         vaultedPosts.unshift(currentSavePost);
-         localforage.setItem('r34_vault_v2', vaultedPosts);
-         syncVaultCounterDisplay();
-         
-         if (currentSaveCallback) {
-             currentSaveCallback(true, currentSaveAnchor);
-         } else {
-             currentSaveAnchor.textContent = 'Saved';
-             currentSaveAnchor.style.backgroundColor = '#8b5cf6';
-         }
-         
-         saveModalNewInput.value = '';
-         renderSaveModalFolders();
-         
-         const viewVault = document.getElementById('view-vault');
-         if(viewVault && viewVault.style.display !== 'none') {
-           renderVaultGridToDedicatedView();
-           renderVaultFoldersNav();
-         }
+    const newFolder = saveModalNewInput.value.trim();
+    if (newFolder) {
+      if (!vaultedFolders.includes(newFolder)) {
+        vaultedFolders.push(newFolder);
+        localforage.setItem('r34_folders_v2', vaultedFolders);
       }
+
+      const idx = vaultedPosts.findIndex(p => String(p.id) === String(currentSavePost.id));
+      if (idx > -1) vaultedPosts.splice(idx, 1);
+
+      currentSavePost.folder = newFolder;
+      vaultedPosts.unshift(currentSavePost);
+      localforage.setItem('r34_vault_v2', vaultedPosts);
+      syncVaultCounterDisplay();
+
+      if (currentSaveCallback) {
+        currentSaveCallback(true, currentSaveAnchor);
+      } else {
+        currentSaveAnchor.textContent = 'Saved';
+        currentSaveAnchor.style.backgroundColor = '#8b5cf6';
+      }
+
+      saveModalNewInput.value = '';
+      renderSaveModalFolders();
+
+      const viewVault = document.getElementById('view-vault');
+      if (viewVault && viewVault.style.display !== 'none') {
+        renderVaultGridToDedicatedView();
+        renderVaultFoldersNav();
+      }
+    }
   });
 }
 
-if(saveModalNewInput) {
+if (saveModalNewInput) {
   saveModalNewInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') saveModalNewBtn.click();
+    if (e.key === 'Enter') saveModalNewBtn.click();
   });
 }
 
@@ -352,12 +391,12 @@ function openFolderMenu(e, post, anchorBtn, onUpdateCallback = null) {
   currentSavePost = post;
   currentSaveAnchor = anchorBtn;
   currentSaveCallback = onUpdateCallback;
-  
-  if(saveModalSearch) saveModalSearch.value = '';
-  if(saveModalNewInput) saveModalNewInput.value = '';
+
+  if (saveModalSearch) saveModalSearch.value = '';
+  if (saveModalNewInput) saveModalNewInput.value = '';
   renderSaveModalFolders();
-  
-  if(saveModalOverlay) saveModalOverlay.style.display = 'flex';
+
+  if (saveModalOverlay) saveModalOverlay.style.display = 'flex';
 }
 
 function injectPostCardsIntoGrid(data, targetContainer = grid) {
@@ -369,26 +408,26 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     const previewUrl = post.preview_url || post.sample_url || post.file_url;
     if (!fileUrl) return;
     const ext = fileUrl.split('.').pop().toLowerCase();
-    const isVideo = ['mp4','webm'].includes(ext);
+    const isVideo = ['mp4', 'webm'].includes(ext);
     const card = document.createElement('div');
     card.className = 'card';
-    
+
     // Detect extreme vertical aspect ratios (comic strips) to prevent layout breakage
     if (post.height && post.width && (post.height / post.width > 2.5)) {
       card.classList.add('comic-strip');
     }
-    
+
     const img = document.createElement('img');
-    img.src = previewUrl; 
+    img.src = previewUrl;
     img.loading = 'lazy';
     img.decoding = 'async'; // Offload image decoding from main thread
-    
+
     // Performance: Pre-allocate image height using aspect-ratio so the DOM 
     // doesn't have to wait for the image to download to calculate the layout.
     if (post.width && post.height) {
-        img.style.aspectRatio = `${post.width} / ${post.height}`;
+      img.style.aspectRatio = `${post.width} / ${post.height}`;
     }
-    
+
     card.classList.add('skeleton-loader');
     img.style.opacity = '0';
     img.style.transition = 'opacity 0.3s ease';
@@ -398,7 +437,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       img.style.opacity = '1';
     };
 
-    img.onerror = () => { 
+    img.onerror = () => {
       card.classList.remove('skeleton-loader');
       img.style.display = 'none';
       const errorMsg = document.createElement('div');
@@ -418,7 +457,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
         const v = document.createElement('video');
         v.src = fileUrl; v.muted = true; v.loop = true; v.playsInline = true; v.disablePictureInPicture = true; v.controlsList = "nodownload noplaybackrate"; v.className = 'hover-video';
         v.style.pointerEvents = 'none'; // Block Opera UI injections
-        card.appendChild(v); v.play().catch(() => {});
+        card.appendChild(v); v.play().catch(() => { });
       });
       card.addEventListener('mouseleave', () => {
         const v = card.querySelector('.hover-video'); if (v) v.remove();
@@ -433,7 +472,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     const likeBtn = document.createElement('button');
     likeBtn.className = 'grid-action-btn btn-like';
     const isLiked = likedPosts.includes(String(post.id));
-    if(isLiked) likeBtn.classList.add('liked');
+    if (isLiked) likeBtn.classList.add('liked');
     likeBtn.textContent = isLiked ? '♥ Liked' : '♡ Like';
     likeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -448,28 +487,58 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     saveBtn.className = 'grid-action-btn btn-save';
     const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
     saveBtn.textContent = isSaved ? 'Saved' : 'Save';
-    if(isSaved) saveBtn.style.backgroundColor = '#8b5cf6';
-    
+    if (isSaved) saveBtn.style.backgroundColor = '#8b5cf6';
+
     saveBtn.addEventListener('click', (e) => openFolderMenu(e, post, saveBtn));
 
     actionBadges.appendChild(likeBtn);
     actionBadges.appendChild(saveBtn);
     card.appendChild(actionBadges);
 
+    // Figure out the best title for the card
+    const rawTags = (post.tags || '').split(/\s+/).filter(Boolean);
+    let cardTitle = '';
+
+    // Only display Artist or Character on the grid
+    const artistTag = rawTags.find(t => typeof algoTagsCache !== 'undefined' && algoTagsCache[t] === 'artist');
+    const charTag = rawTags.find(t => typeof algoTagsCache !== 'undefined' && algoTagsCache[t] === 'character');
+
+    if (artistTag) cardTitle = artistTag;
+    else if (charTag) cardTitle = charTag;
+
+    if (cardTitle) {
+      cardTitle = cardTitle.replace(/_/g, ' ');
+      cardTitle = cardTitle.charAt(0).toUpperCase() + cardTitle.slice(1);
+    }
+
     const footer = document.createElement('div');
-    footer.className = 'card-footer';
-    footer.innerHTML = `<span class="score">▲ ${post.score ?? 0}</span><span>${ext.toUpperCase()}</span>`;
+    footer.className = 'pinterest-card-footer';
+    footer.innerHTML = `
+      <div class="pinterest-card-title">${cardTitle}</div>
+      <button class="pinterest-card-options" aria-label="More options">
+         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+         </svg>
+      </button>
+    `;
+
+    const optionsBtn = footer.querySelector('.pinterest-card-options');
+    optionsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      alert(`Details for: ${cardTitle}\nScore: ${post.score}\nFormat: ${ext.toUpperCase()}`);
+    });
+
     card.appendChild(footer);
     card.addEventListener('click', (e) => {
       const isVaultView = targetContainer && targetContainer.id === 'vault-grid';
       if (typeof isVaultBulkMode !== 'undefined' && isVaultBulkMode && isVaultView) {
         const postIdStr = String(post.id);
         if (selectedVaultPosts.has(postIdStr)) {
-           selectedVaultPosts.delete(postIdStr);
-           card.classList.remove('bulk-selected');
+          selectedVaultPosts.delete(postIdStr);
+          card.classList.remove('bulk-selected');
         } else {
-           selectedVaultPosts.add(postIdStr);
-           card.classList.add('bulk-selected');
+          selectedVaultPosts.add(postIdStr);
+          card.classList.add('bulk-selected');
         }
         const countEl = document.getElementById('bulk-selection-count');
         if (countEl) countEl.textContent = `${selectedVaultPosts.size} items selected`;
@@ -480,7 +549,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       const actualIndex = targetArray.findIndex(p => String(p.id) === String(post.id));
       if (actualIndex > -1) openLightbox(actualIndex);
     });
-    
+
     // Observe card for width changes (responsiveness) to update rowSpan
     masonryObserver.observe(card);
     fragment.appendChild(card);
@@ -493,13 +562,13 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
   // Synchronized Batch Read-then-Write to completely eliminate layout thrashing
   // Phase 1: Read Phase
   const cardHeights = newCards.map(card => card.getBoundingClientRect().height);
-  
+
   // Phase 2: Write Phase
   const rowHeight = 10;
   const rowGap = 16;
   newCards.forEach((card, i) => {
-      const rowSpan = Math.ceil((cardHeights[i] + rowGap) / (rowHeight + rowGap));
-      card.style.gridRowEnd = `span ${rowSpan}`;
+    const rowSpan = Math.ceil((cardHeights[i] + rowGap) / (rowHeight + rowGap));
+    card.style.gridRowEnd = `span ${rowSpan}`;
   });
 }
 
@@ -519,47 +588,47 @@ document.addEventListener('keyup', (e) => {
 let activeVaultTab = 'images';
 
 document.getElementById('vault-main-tabs')?.addEventListener('click', (e) => {
-    if (e.target.classList.contains('vault-tab-btn')) {
-        document.querySelectorAll('.vault-tab-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        activeVaultTab = e.target.dataset.tab;
-        
-        // Toggle UI elements if needed
-        const folderNav = document.getElementById('vault-folders-nav');
-        // We keep folder nav for both!
-        
-        renderVaultGridToDedicatedView();
-    }
+  if (e.target.classList.contains('vault-tab-btn')) {
+    document.querySelectorAll('.vault-tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    activeVaultTab = e.target.dataset.tab;
+
+    // Toggle UI elements if needed
+    const folderNav = document.getElementById('vault-folders-nav');
+    // We keep folder nav for both!
+
+    renderVaultGridToDedicatedView();
+  }
 });
 
 function renderVaultGridToDedicatedView() {
   const vaultGrid = document.getElementById('vault-grid');
   const vaultStatus = document.getElementById('vault-status');
   vaultGrid.innerHTML = '';
-  
+
   // Apply Tab filter first
   let tabFilteredPosts = vaultedPosts.filter(p => {
-      const isManga = !!p.mangaObject;
-      if (activeVaultTab === 'bookshelf') return isManga;
-      return !isManga;
+    const isManga = !!p.mangaObject;
+    if (activeVaultTab === 'bookshelf') return isManga;
+    return !isManga;
   });
 
   const delBtn = document.getElementById('vault-delete-folder-btn');
   if (delBtn) {
-     delBtn.style.display = (currentVaultFolder === 'Default' || currentVaultFolder === 'All') ? 'none' : 'block';
+    delBtn.style.display = (currentVaultFolder === 'Default' || currentVaultFolder === 'All') ? 'none' : 'block';
   }
 
   if (tabFilteredPosts.length === 0) {
     vaultStatus.style.display = 'block';
-    vaultStatus.innerHTML = activeVaultTab === 'bookshelf' 
+    vaultStatus.innerHTML = activeVaultTab === 'bookshelf'
       ? '<span class="icon">📚</span>Your bookshelf is empty. Save some manga!'
       : '<span class="icon">💔</span>Your media vault is empty.';
     return;
   }
-  
-  let filteredPosts = currentVaultFolder === 'All' 
+
+  let filteredPosts = currentVaultFolder === 'All'
     ? tabFilteredPosts
-    : currentVaultFolder === 'Default' 
+    : currentVaultFolder === 'Default'
       ? tabFilteredPosts.filter(p => !p.folder || p.folder === 'Default')
       : tabFilteredPosts.filter(p => p.folder === currentVaultFolder);
 
@@ -581,26 +650,26 @@ function renderVaultGridToDedicatedView() {
     vaultStatus.innerHTML = `<span class="icon">📁</span>No matching media found in ${currentVaultFolder} folder.`;
     return;
   }
-  
+
   const sortSelect = document.getElementById('vault-sort-select');
   const sortVal = sortSelect ? sortSelect.value : 'newest';
-  
+
   if (sortVal === 'oldest') {
-      filteredPosts.reverse();
+    filteredPosts.reverse();
   } else if (sortVal === 'highest') {
-      filteredPosts.sort((a,b) => (b.score||0) - (a.score||0));
+    filteredPosts.sort((a, b) => (b.score || 0) - (a.score || 0));
   } else if (sortVal === 'lowest') {
-      filteredPosts.sort((a,b) => (a.score||0) - (b.score||0));
+    filteredPosts.sort((a, b) => (a.score || 0) - (b.score || 0));
   }
-  
+
   vaultStatus.style.display = 'none';
   cachedPosts = [...filteredPosts]; // Update cachedPosts so lightbox works from Vault
-  
+
   if (activeVaultTab === 'bookshelf' && typeof injectPhysicalBookshelf === 'function') {
-      injectPhysicalBookshelf(filteredPosts, vaultGrid);
+    injectPhysicalBookshelf(filteredPosts, vaultGrid);
   } else {
-      vaultGrid.className = 'vault-grid-layout'; // restore original class if switching back
-      injectPostCardsIntoGrid(filteredPosts, vaultGrid);
+    vaultGrid.className = 'vault-grid-layout'; // restore original class if switching back
+    injectPostCardsIntoGrid(filteredPosts, vaultGrid);
   }
 }
 
@@ -615,82 +684,82 @@ const bulkActionsFooter = document.getElementById('vault-bulk-actions');
 const bulkCancelBtn = document.getElementById('bulk-cancel-btn');
 
 function toggleBulkMode() {
-    isVaultBulkMode = !isVaultBulkMode;
-    selectedVaultPosts.clear();
-    
-    if (bulkEditBtn) {
-        bulkEditBtn.style.background = isVaultBulkMode ? 'rgba(239, 68, 68, 0.15)' : '';
-        bulkEditBtn.style.borderColor = isVaultBulkMode ? '#ef4444' : '';
+  isVaultBulkMode = !isVaultBulkMode;
+  selectedVaultPosts.clear();
+
+  if (bulkEditBtn) {
+    bulkEditBtn.style.background = isVaultBulkMode ? 'rgba(239, 68, 68, 0.15)' : '';
+    bulkEditBtn.style.borderColor = isVaultBulkMode ? '#ef4444' : '';
+  }
+
+  if (bulkActionsFooter) {
+    bulkActionsFooter.style.display = isVaultBulkMode ? 'flex' : 'none';
+    if (isVaultBulkMode) {
+      const folderSelect = document.getElementById('bulk-folder-select');
+      if (folderSelect) {
+        folderSelect.innerHTML = '';
+        getVaultFolders().forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f;
+          opt.textContent = f;
+          folderSelect.appendChild(opt);
+        });
+      }
     }
-    
-    if (bulkActionsFooter) {
-        bulkActionsFooter.style.display = isVaultBulkMode ? 'flex' : 'none';
-        if (isVaultBulkMode) {
-            const folderSelect = document.getElementById('bulk-folder-select');
-            if (folderSelect) {
-                folderSelect.innerHTML = '';
-                getVaultFolders().forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f;
-                    opt.textContent = f;
-                    folderSelect.appendChild(opt);
-                });
-            }
-        }
-    }
-    
-    const countEl = document.getElementById('bulk-selection-count');
-    if (countEl) countEl.textContent = `0 items selected`;
-    
-    renderVaultGridToDedicatedView(); // Re-render to clear any active selections visually
+  }
+
+  const countEl = document.getElementById('bulk-selection-count');
+  if (countEl) countEl.textContent = `0 items selected`;
+
+  renderVaultGridToDedicatedView(); // Re-render to clear any active selections visually
 }
 
 if (bulkEditBtn) bulkEditBtn.addEventListener('click', toggleBulkMode);
 if (bulkCancelBtn) bulkCancelBtn.addEventListener('click', toggleBulkMode);
 
 document.getElementById('bulk-move-btn')?.addEventListener('click', () => {
-    if (selectedVaultPosts.size === 0) return triggerToastNotification("No items selected.");
-    const folderSelect = document.getElementById('bulk-folder-select');
-    const targetFolder = folderSelect ? folderSelect.value : 'Default';
-    
-    vaultedPosts.forEach(p => {
-        if (selectedVaultPosts.has(String(p.id))) {
-            p.folder = targetFolder;
-        }
-    });
-    
-    localforage.setItem('r34_vault_v2', vaultedPosts);
-    triggerToastNotification(`Moved ${selectedVaultPosts.size} items to ${targetFolder}.`);
-    toggleBulkMode();
+  if (selectedVaultPosts.size === 0) return triggerToastNotification("No items selected.");
+  const folderSelect = document.getElementById('bulk-folder-select');
+  const targetFolder = folderSelect ? folderSelect.value : 'Default';
+
+  vaultedPosts.forEach(p => {
+    if (selectedVaultPosts.has(String(p.id))) {
+      p.folder = targetFolder;
+    }
+  });
+
+  localforage.setItem('r34_vault_v2', vaultedPosts);
+  triggerToastNotification(`Moved ${selectedVaultPosts.size} items to ${targetFolder}.`);
+  toggleBulkMode();
 });
 
 document.getElementById('bulk-delete-btn')?.addEventListener('click', () => {
-    if (selectedVaultPosts.size === 0) return triggerToastNotification("No items selected.");
-    if (!confirm(`Are you sure you want to delete ${selectedVaultPosts.size} items from your vault?`)) return;
-    
-    vaultedPosts = vaultedPosts.filter(p => !selectedVaultPosts.has(String(p.id)));
-    localforage.setItem('r34_vault_v2', vaultedPosts);
-    
-    triggerToastNotification(`Deleted ${selectedVaultPosts.size} items.`);
-    syncVaultCounterDisplay();
-    toggleBulkMode();
+  if (selectedVaultPosts.size === 0) return triggerToastNotification("No items selected.");
+  if (!confirm(`Are you sure you want to delete ${selectedVaultPosts.size} items from your vault?`)) return;
+
+  vaultedPosts = vaultedPosts.filter(p => !selectedVaultPosts.has(String(p.id)));
+  localforage.setItem('r34_vault_v2', vaultedPosts);
+
+  triggerToastNotification(`Deleted ${selectedVaultPosts.size} items.`);
+  syncVaultCounterDisplay();
+  toggleBulkMode();
 });
 
 document.getElementById('vault-delete-folder-btn')?.addEventListener('click', () => {
-    if (currentVaultFolder === 'Default') return;
-    if (confirm(`Delete the folder "${currentVaultFolder}"? All items will be moved to Default.`)) {
-        vaultedPosts.forEach(p => {
-            if (p.folder === currentVaultFolder) p.folder = 'Default';
-        });
-        localforage.setItem('r34_vault_v2', vaultedPosts);
-        
-        vaultedFolders = vaultedFolders.filter(f => f !== currentVaultFolder);
-        localforage.setItem('r34_folders_v2', vaultedFolders);
-        
-        currentVaultFolder = 'Default';
-        renderVaultFoldersNav();
-        renderVaultGridToDedicatedView();
-    }
+  if (currentVaultFolder === 'Default') return;
+  if (confirm(`Delete the folder "${currentVaultFolder}"? All items will be moved to Default.`)) {
+    vaultedPosts.forEach(p => {
+      if (p.folder === currentVaultFolder) p.folder = 'Default';
+    });
+    localforage.setItem('r34_vault_v2', vaultedPosts);
+
+    vaultedFolders = vaultedFolders.filter(f => f !== currentVaultFolder);
+    localforage.setItem('r34_folders_v2', vaultedFolders);
+
+    currentVaultFolder = 'Default';
+    renderVaultFoldersNav();
+    renderVaultGridToDedicatedView();
+  }
 });
 
 let preloadedPagesQueue = [];
@@ -700,7 +769,7 @@ let currentPreloadPage = 0;
 const PRELOAD_BUFFER_SIZE = 3;
 
 async function fetchStandardBatch(tagsParam, page) {
-  const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g,'+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
+  const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g, '+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
   try {
     const res = await throttledFetch(PROXY + encodeURIComponent(url));
     const responseText = await res.text();
@@ -712,38 +781,38 @@ async function fetchStandardBatch(tagsParam, page) {
 }
 
 async function startContinuousPreload(tagsParam, startPage) {
-    // If already preloading for this EXACT query ahead of the requested start page, let it keep running
-    if (isPreloading && currentPreloadTags === tagsParam && currentPreloadPage >= startPage) return;
-    
-    isPreloading = true;
-    currentPreloadTags = tagsParam;
-    currentPreloadPage = startPage;
-    
-    while(isPreloading && currentPreloadTags === tagsParam) {
-        if (preloadedPagesQueue.length < PRELOAD_BUFFER_SIZE && hasMore) {
-            const data = await fetchStandardBatch(tagsParam, currentPreloadPage);
-            
-            // If the search was cancelled or changed while fetching, discard
-            if (!isPreloading || currentPreloadTags !== tagsParam) break;
-            
-            if (data && data.length > 0) {
-                preloadedPagesQueue.push(data);
-                currentPreloadPage++;
-                if (data.length < PER_PAGE) {
-                    hasMore = false;
-                    break;
-                }
-            } else {
-                hasMore = false;
-                break;
-            }
-        } else if (!hasMore) {
-            break;
-        } else {
-            // Buffer is full, wait a bit before checking again
-            await new Promise(r => setTimeout(r, 500));
+  // If already preloading for this EXACT query ahead of the requested start page, let it keep running
+  if (isPreloading && currentPreloadTags === tagsParam && currentPreloadPage >= startPage) return;
+
+  isPreloading = true;
+  currentPreloadTags = tagsParam;
+  currentPreloadPage = startPage;
+
+  while (isPreloading && currentPreloadTags === tagsParam) {
+    if (preloadedPagesQueue.length < PRELOAD_BUFFER_SIZE && hasMore) {
+      const data = await fetchStandardBatch(tagsParam, currentPreloadPage);
+
+      // If the search was cancelled or changed while fetching, discard
+      if (!isPreloading || currentPreloadTags !== tagsParam) break;
+
+      if (data && data.length > 0) {
+        preloadedPagesQueue.push(data);
+        currentPreloadPage++;
+        if (data.length < PER_PAGE) {
+          hasMore = false;
+          break;
         }
+      } else {
+        hasMore = false;
+        break;
+      }
+    } else if (!hasMore) {
+      break;
+    } else {
+      // Buffer is full, wait a bit before checking again
+      await new Promise(r => setTimeout(r, 500));
     }
+  }
 }
 
 async function search(tags, page, append = false) {
@@ -756,24 +825,24 @@ async function search(tags, page, append = false) {
   if (!append) {
     grid.innerHTML = ''; // Clear grid only for new searches
     cachedPosts = []; // Clear cached posts for new searches
-    metaRow.style.display = 'none';
+    if (metaRow) metaRow.style.display = 'none';
     statusEl.style.display = 'block';
-    if(bottomStatusEl) bottomStatusEl.style.display = 'none';
+    if (bottomStatusEl) bottomStatusEl.style.display = 'none';
     statusEl.innerHTML = '<div class="spinner"></div>Crunching requested parameters...';
     hasMore = true; // Assume there's more for a new search
-    
+
     // STOP OLD PRELOAD LOOP AND CLEAR QUEUE
     isPreloading = false;
     preloadedPagesQueue = [];
   } else {
-    if(bottomStatusEl) bottomStatusEl.style.display = 'block'; // Show spinner at bottom
+    if (bottomStatusEl) bottomStatusEl.style.display = 'block'; // Show spinner at bottom
   }
-  
+
   const days = timeframeSelect.value;
   const sortVal = sortSelect.value;
   let tagParts = tags.trim() ? tags.trim().split(/\s+/) : [];
   if (sortVal) tagParts.push(sortVal);
-  
+
   if (typeof globalBlacklist !== 'undefined' && globalBlacklist.length > 0) {
     globalBlacklist.forEach(t => tagParts.push(`-${t}`));
   }
@@ -786,9 +855,9 @@ async function search(tags, page, append = false) {
     if (range) { tagParts.push(`id:>=${range.min}`); tagParts.push(`id:<=${range.max}`); }
   }
   const tagsParam = tagParts.join('+') || 'all';
-  
+
   let data = null;
-  
+
   try {
     if (append && preloadedPagesQueue.length > 0) {
       // PROMISE BUFFER ARCHITECTURE: Instantly resolve from the memory queue!
@@ -808,29 +877,29 @@ async function search(tags, page, append = false) {
   } else {
     cacheSuccessfulSearch(tags);
     cachedPosts = append ? cachedPosts.concat(data) : data; // Append or replace cached posts
-    statusEl.style.display = 'none'; 
+    statusEl.style.display = 'none';
     if (bottomStatusEl) bottomStatusEl.style.display = 'none';
-    metaRow.style.display = 'flex';
-    resultCount.textContent = `${cachedPosts.length} items loaded dynamically`; // Update total count
+    if (metaRow) metaRow.style.display = 'flex';
+    if (resultCount) resultCount.textContent = `${cachedPosts.length} items loaded dynamically`; // Update total count
     hasMore = data.length === PER_PAGE; // If less than PER_PAGE, assume no more pages
-    
+
     renderFilterBadges(days, sortVal);
     injectPostCardsIntoGrid(data);
 
     // KICK OFF OR RESUME BACKGROUND PRELOAD FOR THE NEXT PAGES
     if (hasMore) {
-        startContinuousPreload(tagsParam, page + 1);
+      startContinuousPreload(tagsParam, page + 1);
     }
   }
-  
+
   btn.disabled = false;
   isLoading = false;
 
   if (hasMore && typeof scrollSentinel !== 'undefined' && scrollSentinel) {
-      const sentinelRect = scrollSentinel.getBoundingClientRect();
-      if (sentinelRect.top < window.innerHeight && sentinelRect.top > 0) {
-          if (typeof loadNextPage === 'function') loadNextPage();
-      }
+    const sentinelRect = scrollSentinel.getBoundingClientRect();
+    if (sentinelRect.top < window.innerHeight && sentinelRect.top > 0) {
+      if (typeof loadNextPage === 'function') loadNextPage();
+    }
   }
 }
 
@@ -848,17 +917,17 @@ function disableVaultViewMode() {
 
 function togglePostFavoriteStatus(post) {
   const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
-  if(idx > -1) {
+  if (idx > -1) {
     vaultedPosts.splice(idx, 1); lbFavBtn.classList.remove('favorited'); lbFavBtn.textContent = '🤍 Favorite';
   } else {
     vaultedPosts.unshift(post); lbFavBtn.classList.add('favorited'); lbFavBtn.textContent = '❤️ Favorited';
   }
   localforage.setItem('r34_vault_v2', vaultedPosts);
-  syncVaultCounterDisplay(); 
-  
+  syncVaultCounterDisplay();
+
   // Re-render the vault grid if we are currently looking at it
   const viewVault = document.getElementById('view-vault');
-  if(viewVault && viewVault.style.display !== 'none' && typeof renderVaultGridToDedicatedView === 'function') {
+  if (viewVault && viewVault.style.display !== 'none' && typeof renderVaultGridToDedicatedView === 'function') {
     renderVaultGridToDedicatedView();
   }
 }
@@ -877,28 +946,267 @@ function loadNextPage() {
 }
 
 function doSearch() {
-  if(input.value.trim() !== '') addPill(input.value);
+  if (input.value.trim() !== '') addPill(input.value);
   disableVaultViewMode();
   scrollSentinel.style.display = 'flex'; // Ensure sentinel is visible for new searches
   currentTags = tagsArray.join(' ');
   currentPage = 0; // Reset page for a new search
-  
+
+  // Toggle sorting & timeframe capsules visibility based on whether tags/search is active
+  const sortContainer = document.getElementById('search-sort-container');
+  const timeframeContainer = document.getElementById('search-timeframe-container');
+  if (currentTags.trim() === '') {
+    if (sortContainer) sortContainer.style.display = 'none';
+    if (timeframeContainer) timeframeContainer.style.display = 'none';
+  } else {
+    if (sortContainer) sortContainer.style.display = 'flex';
+    if (timeframeContainer) timeframeContainer.style.display = 'flex';
+  }
+
   // Auto-switch away from algorithm if user is making a specific custom search
   if (sortSelect && sortSelect.value === 'algo:discover' && currentTags !== '') {
-      sortSelect.value = ''; // switch to default order
+    sortSelect.value = ''; // switch to default order
+    if (typeof updateSortButtonsUI === 'function') {
+      updateSortButtonsUI('');
+    }
   }
-  
+
   if (sortSelect && sortSelect.value === 'algo:discover') {
     if (typeof pullBlendedBatch === 'function') {
       pullBlendedBatch(false, true);
       return;
     }
   }
-  
+
   search(currentTags, currentPage, false); // Start a new search, not appending
 }
 
+// Reset to algorithm feed (triggered when clicking the Images tab again or on load)
+function resetToAlgorithmFeed() {
+  tagsArray = [];
+  if (typeof renderPills === 'function') {
+    renderPills();
+  }
+  if (input) {
+    input.value = '';
+  }
+  currentTags = '';
+
+  if (sortSelect) {
+    sortSelect.value = 'algo:discover';
+  }
+  if (typeof updateSortButtonsUI === 'function') {
+    updateSortButtonsUI('algo:discover');
+  }
+
+  if (timeframeSelect) {
+    timeframeSelect.value = 'all';
+  }
+  if (typeof updateTimeframeUI === 'function') {
+    updateTimeframeUI('all');
+  }
+
+  const sortContainer = document.getElementById('search-sort-container');
+  if (sortContainer) {
+    sortContainer.style.display = 'none';
+  }
+
+  const timeframeContainer = document.getElementById('search-timeframe-container');
+  if (timeframeContainer) {
+    timeframeContainer.style.display = 'none';
+  }
+
+  doSearch();
+}
+
+// Listen to Image Tab clicks to reset to algorithm feed
+const navImagesBtn = document.getElementById('nav-images');
+if (navImagesBtn) {
+  navImagesBtn.addEventListener('click', () => {
+    resetToAlgorithmFeed();
+  });
+}
+
 btn.addEventListener('click', doSearch);
+
+// Search Sort Capsule Logic
+const sortBtnScore = document.getElementById('sort-btn-score');
+const sortBtnTime = document.getElementById('sort-btn-time');
+const sortBtnRandom = document.getElementById('sort-btn-random');
+const sortToggleBtn = document.getElementById('sort-toggle-btn');
+const sortContainer = document.getElementById('search-sort-container');
+
+// Define custom image paths for sorting options
+const SORT_ICONS = {
+  'algo:discover': 'Icons/icons8-dice-32.png',
+  'sort:score:desc': 'Icons/icons8-star-48.png',
+  'sort:score:asc': 'Icons/icons8-star-48.png',
+  'sort:id:desc': 'Icons/icons8-clock-30.png',
+  'sort:id:asc': 'Icons/icons8-clock-30.png',
+  'sort:random': 'Icons/icons8-dice-32.png'
+};
+
+function updateSortButtonsUI(value) {
+  if (!sortBtnScore || !sortBtnTime || !sortBtnRandom || !sortToggleBtn) return;
+
+  // Remove active and reversed classes from all buttons and their child images
+  [sortBtnScore, sortBtnTime, sortBtnRandom].forEach(btn => {
+    btn.classList.remove('active');
+    const img = btn.querySelector('img');
+    if (img) img.classList.remove('reversed');
+  });
+
+  const toggleImg = sortToggleBtn.querySelector('img');
+  if (toggleImg) toggleImg.classList.remove('reversed');
+
+  let activeIconKey = 'sort:id:desc'; // Default fallback
+
+  if (value === 'algo:discover') {
+    activeIconKey = 'algo:discover';
+  } else if (value.startsWith('sort:score:')) {
+    sortBtnScore.classList.add('active');
+    activeIconKey = value;
+    const img = sortBtnScore.querySelector('img');
+    const isReversed = (value === 'sort:score:asc');
+    if (img) {
+      img.src = SORT_ICONS[value] || SORT_ICONS['sort:score:desc'];
+      if (isReversed) img.classList.add('reversed');
+    }
+  } else if (value.startsWith('sort:id:') || value === '') {
+    sortBtnTime.classList.add('active');
+    const valKey = value || 'sort:id:desc';
+    activeIconKey = valKey;
+    const img = sortBtnTime.querySelector('img');
+    const isReversed = (valKey === 'sort:id:asc');
+    if (img) {
+      img.src = SORT_ICONS[valKey] || SORT_ICONS['sort:id:desc'];
+      if (isReversed) img.classList.add('reversed');
+    }
+  } else if (value === 'sort:random') {
+    sortBtnRandom.classList.add('active');
+    activeIconKey = 'sort:random';
+  }
+
+  // Update the toggle button icon
+  if (toggleImg) {
+    toggleImg.src = SORT_ICONS[activeIconKey] || SORT_ICONS['sort:id:desc'];
+    // If the active sort is reversed, flip the toggle button's icon too
+    if (activeIconKey === 'sort:score:asc' || activeIconKey === 'sort:id:asc') {
+      toggleImg.classList.add('reversed');
+    }
+  }
+
+  // Update titles
+  if (value === 'sort:score:desc') {
+    sortBtnScore.title = 'Sort by Score (Highest First)';
+  } else if (value === 'sort:score:asc') {
+    sortBtnScore.title = 'Sort by Score (Lowest First)';
+  }
+
+  if (value === 'sort:id:desc') {
+    sortBtnTime.title = 'Sort by Time (Newest First)';
+  } else if (value === 'sort:id:asc') {
+    sortBtnTime.title = 'Sort by Time (Oldest First)';
+  }
+
+  if (sortSelect) {
+    sortSelect.value = value;
+  }
+}
+
+if (sortToggleBtn && sortContainer) {
+  sortToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sortContainer.classList.toggle('expanded');
+    // Collapse timeframe capsule when sort is opened
+    const timeframeContainer = document.getElementById('search-timeframe-container');
+    if (timeframeContainer) timeframeContainer.classList.remove('expanded');
+  });
+}
+
+if (sortBtnScore) {
+  sortBtnScore.addEventListener('click', (e) => {
+    e.stopPropagation();
+    let currentVal = sortSelect ? sortSelect.value : 'sort:score:desc';
+    let newVal = 'sort:score:desc';
+    if (currentVal === 'sort:score:desc') {
+      newVal = 'sort:score:asc';
+    }
+    updateSortButtonsUI(newVal);
+    doSearch();
+  });
+}
+
+if (sortBtnTime) {
+  sortBtnTime.addEventListener('click', (e) => {
+    e.stopPropagation();
+    let currentVal = sortSelect ? sortSelect.value : 'sort:id:desc';
+    let newVal = 'sort:id:desc';
+    if (currentVal === 'sort:id:desc') {
+      newVal = 'sort:id:asc';
+    }
+    updateSortButtonsUI(newVal);
+    doSearch();
+  });
+}
+
+if (sortBtnRandom) {
+  sortBtnRandom.addEventListener('click', (e) => {
+    e.stopPropagation();
+    updateSortButtonsUI('sort:random');
+    doSearch();
+  });
+}
+
+// Search Timeframe Capsule Logic
+const timeframeToggleBtn = document.getElementById('timeframe-toggle-btn');
+const timeframeContainer = document.getElementById('search-timeframe-container');
+const timeframeOptions = document.querySelectorAll('.timeframe-option-btn');
+
+function updateTimeframeUI(value) {
+  if (!timeframeContainer || !timeframeToggleBtn || !timeframeSelect) return;
+
+  // Remove active classes from options
+  timeframeOptions.forEach(btn => btn.classList.remove('active'));
+
+  // Find the button with this value and activate it
+  const targetBtn = Array.from(timeframeOptions).find(btn => btn.dataset.value === value);
+  if (targetBtn) {
+    targetBtn.classList.add('active');
+  }
+
+  // Update backend select dropdown value
+  timeframeSelect.value = value;
+}
+
+if (timeframeToggleBtn && timeframeContainer) {
+  timeframeToggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    timeframeContainer.classList.toggle('expanded');
+    // Collapse sort capsule when timeframe is opened
+    if (sortContainer) sortContainer.classList.remove('expanded');
+  });
+}
+
+timeframeOptions.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const val = btn.dataset.value;
+    updateTimeframeUI(val);
+    timeframeContainer.classList.remove('expanded');
+    doSearch();
+  });
+});
+
+// Close sorting and timeframe capsules on click outside
+document.addEventListener('click', (e) => {
+  if (sortContainer && !sortContainer.contains(e.target)) {
+    sortContainer.classList.remove('expanded');
+  }
+  if (timeframeContainer && !timeframeContainer.contains(e.target)) {
+    timeframeContainer.classList.remove('expanded');
+  }
+});
 
 
 
@@ -913,6 +1221,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   syncVaultCounterDisplay();
   if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
   if (typeof initAlgoCache === 'function') await initAlgoCache(); // Preload algorithm cache
+  if (sortSelect) {
+    updateSortButtonsUI(sortSelect.value);
+  }
   doSearch(); // Automatically generate the feed on startup
 });
 
@@ -920,9 +1231,9 @@ const vaultExportBtn = document.getElementById('vault-export-btn');
 const vaultImportBtn = document.getElementById('vault-import-btn');
 const vaultImportInput = document.getElementById('vault-import-input');
 
-if(vaultExportBtn) vaultExportBtn.addEventListener('click', exportVault);
-if(vaultImportBtn) vaultImportBtn.addEventListener('click', () => vaultImportInput.click());
-if(vaultImportInput) vaultImportInput.addEventListener('change', (e) => {
+if (vaultExportBtn) vaultExportBtn.addEventListener('click', exportVault);
+if (vaultImportBtn) vaultImportBtn.addEventListener('click', () => vaultImportInput.click());
+if (vaultImportInput) vaultImportInput.addEventListener('change', (e) => {
   if (e.target.files.length > 0) importVault(e.target.files[0]);
 });
 
@@ -947,7 +1258,7 @@ if (globalSettingsClose) {
 
 function renderWhitelist() {
   const container = document.getElementById('whitelist-tags');
-  if(!container) return;
+  if (!container) return;
   container.innerHTML = '';
   globalWhitelist.forEach(tag => {
     const pill = document.createElement('span');
@@ -968,7 +1279,7 @@ function renderWhitelist() {
 
 function renderBlacklist() {
   const container = document.getElementById('blacklist-tags');
-  if(!container) return;
+  if (!container) return;
   container.innerHTML = '';
   globalBlacklist.forEach(tag => {
     const pill = document.createElement('span');
@@ -1007,19 +1318,19 @@ function renderSettingsAutocomplete(items, targetBox, inputElement, listType) {
     row.onclick = async () => {
       targetBox.style.display = 'none';
       inputElement.value = ''; // clear input immediately
-      
+
       if (listType === 'whitelist') {
-         if (!globalWhitelist.includes(value)) {
-           globalWhitelist.push(value);
-           await localforage.setItem('r34_whitelist', globalWhitelist);
-           renderWhitelist();
-         }
+        if (!globalWhitelist.includes(value)) {
+          globalWhitelist.push(value);
+          await localforage.setItem('r34_whitelist', globalWhitelist);
+          renderWhitelist();
+        }
       } else if (listType === 'blacklist') {
-         if (!globalBlacklist.includes(value)) {
-           globalBlacklist.push(value);
-           await localforage.setItem('r34_blacklist', globalBlacklist);
-           renderBlacklist();
-         }
+        if (!globalBlacklist.includes(value)) {
+          globalBlacklist.push(value);
+          await localforage.setItem('r34_blacklist', globalBlacklist);
+          renderBlacklist();
+        }
       }
     };
     targetBox.appendChild(row);
@@ -1030,14 +1341,14 @@ function renderSettingsAutocomplete(items, targetBox, inputElement, listType) {
 function setupSettingsAutocomplete(inputId, boxId, listType) {
   const input = document.getElementById(inputId);
   const box = document.getElementById(boxId);
-  if(!input || !box) return;
+  if (!input || !box) return;
   let timeout;
-  
+
   input.addEventListener('input', (e) => {
     clearTimeout(timeout);
     let text = e.target.value.trim();
-    if(text.startsWith('-')) text = text.slice(1);
-    if(text.length < 2) {
+    if (text.startsWith('-')) text = text.slice(1);
+    if (text.length < 2) {
       box.style.display = 'none';
       return;
     }
@@ -1047,11 +1358,11 @@ function setupSettingsAutocomplete(inputId, boxId, listType) {
       }
     }, 250);
   });
-  
+
   // Hide on click outside
   document.addEventListener('click', (e) => {
     if (e.target !== input && e.target !== box && !box.contains(e.target)) {
-       box.style.display = 'none';
+      box.style.display = 'none';
     }
   });
 }
@@ -1065,15 +1376,15 @@ class Slideshow {
     this.interval = 4000;
     this.isPlaying = false;
     this.btn = document.getElementById('slideshow-btn');
-    if(this.btn) {
+    if (this.btn) {
       this.btn.addEventListener('click', () => this.toggle());
     }
-    
+
     // Pause if user interacts with lightbox
-    const stopInteract = () => { if(this.isPlaying) this.stop(); };
-    if(typeof lbPrevBtn !== 'undefined') lbPrevBtn.addEventListener('click', stopInteract);
-    if(typeof lbNextBtn !== 'undefined') lbNextBtn.addEventListener('click', stopInteract);
-    if(typeof lbClose !== 'undefined') lbClose.addEventListener('click', stopInteract);
+    const stopInteract = () => { if (this.isPlaying) this.stop(); };
+    if (typeof lbPrevBtn !== 'undefined') lbPrevBtn.addEventListener('click', stopInteract);
+    if (typeof lbNextBtn !== 'undefined') lbNextBtn.addEventListener('click', stopInteract);
+    if (typeof lbClose !== 'undefined') lbClose.addEventListener('click', stopInteract);
   }
 
   toggle() {
@@ -1090,16 +1401,16 @@ class Slideshow {
       return;
     }
     this.isPlaying = true;
-    if(this.btn) {
+    if (this.btn) {
       this.btn.innerHTML = '⏸ Stop';
       this.btn.style.background = '#f43f5e';
     }
     triggerToastNotification("Slideshow started");
-    
-    if(!lightbox.classList.contains('open')) {
+
+    if (!lightbox.classList.contains('open')) {
       openLightbox(0);
     }
-    
+
     this.timer = setInterval(() => {
       if (!lightbox.classList.contains('open')) {
         this.stop();
@@ -1112,7 +1423,7 @@ class Slideshow {
           loadNextPage();
           // wait a bit for it to load, then next
           setTimeout(() => {
-             if (currentPostIndex < cachedPosts.length - 1) lbNextBtn.click();
+            if (currentPostIndex < cachedPosts.length - 1) lbNextBtn.click();
           }, 1500);
         } else {
           this.stop();
@@ -1124,9 +1435,9 @@ class Slideshow {
 
   stop() {
     this.isPlaying = false;
-    if(this.timer) clearInterval(this.timer);
+    if (this.timer) clearInterval(this.timer);
     this.timer = null;
-    if(this.btn) {
+    if (this.btn) {
       this.btn.innerHTML = '▶ Play';
       this.btn.style.background = 'var(--accent-purple)';
     }

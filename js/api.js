@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     proxySaveBtn.addEventListener('click', () => {
       let val = proxyInput.value.trim();
       if (val && !val.endsWith('url=')) {
-         val += (val.includes('?') ? '&url=' : '?url=');
+        val += (val.includes('?') ? '&url=' : '?url=');
       }
       if (val) {
         localStorage.setItem('r34_proxy_url', val);
@@ -34,30 +34,52 @@ let latestPostId = null;
 let idCalibrated = false;
 
 // --- Rate Limiting & Throttler ---
-let fetchQueue = [];
+let highPriorityQueue = [];
+let lowPriorityQueue = [];
 let isFetchingQueue = false;
-const FETCH_DELAY_MS = 300; // Limit to ~3 requests per second with API key
+let currentFetchDelay = 400; // Safer 2 requests per second baseline
+let queueTimeoutId = null;
 
 function processFetchQueue() {
-  if (fetchQueue.length === 0) {
+  if (highPriorityQueue.length === 0 && lowPriorityQueue.length === 0) {
     isFetchingQueue = false;
     return;
   }
   isFetchingQueue = true;
 
-  const { url, options, resolve, reject } = fetchQueue.shift();
+  const isHighPriority = highPriorityQueue.length > 0;
+  const req = isHighPriority ? highPriorityQueue.shift() : lowPriorityQueue.shift();
 
-  fetch(url, options)
-    .then(res => resolve(res))
-    .catch(err => reject(err))
-    .finally(() => {
-      setTimeout(processFetchQueue, FETCH_DELAY_MS);
-    });
+  // Launch fetch without blocking the queue
+  fetch(req.url, req.options)
+    .then(res => {
+      if (res.status === 429) {
+        console.warn(`[RATE LIMIT] 429 Too Many Requests. Backing off for 3 seconds...`);
+        // Re-insert at the front of the queue it came from
+        if (isHighPriority) highPriorityQueue.unshift(req);
+        else lowPriorityQueue.unshift(req);
+
+        clearTimeout(queueTimeoutId);
+        queueTimeoutId = setTimeout(processFetchQueue, 3000); // 3 second backoff
+        return;
+      }
+      req.resolve(res);
+    })
+    .catch(err => req.reject(err));
+
+  // Schedule the next pull from the queue (unless a 429 overrides it)
+  clearTimeout(queueTimeoutId);
+  queueTimeoutId = setTimeout(processFetchQueue, currentFetchDelay);
 }
 
-function throttledFetch(url, options = {}) {
+function throttledFetch(url, options = {}, isBackground = false) {
   return new Promise((resolve, reject) => {
-    fetchQueue.push({ url, options, resolve, reject });
+    const req = { url, options, resolve, reject };
+    if (isBackground) {
+      lowPriorityQueue.push(req);
+    } else {
+      highPriorityQueue.push(req);
+    }
     if (!isFetchingQueue) {
       processFetchQueue();
     }

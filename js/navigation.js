@@ -1,5 +1,5 @@
 window.handleViewSwitch = function(view) {
-    const validViews = ['images', 'videos', 'manga', 'vault', 'algo'];
+    const validViews = ['images', 'manga', 'vault', 'algo'];
     if (!validViews.includes(view)) view = 'images'; // Default fallback
 
     // Update active nav button
@@ -22,13 +22,7 @@ window.handleViewSwitch = function(view) {
         targetView.classList.add('active-view');
     }
 
-    // Trigger specific logic when navigating
-    if (view === 'videos') {
-        document.body.classList.add('video-mode');
-        if (typeof initVideoScroller === 'function') initVideoScroller();
-    } else {
-        document.body.classList.remove('video-mode');
-    }
+
     
     if (view === 'vault') {
         if (typeof renderVaultGridToDedicatedView === 'function') renderVaultGridToDedicatedView();
@@ -48,7 +42,7 @@ window.handleViewSwitch = function(view) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  const views = ['images', 'videos', 'manga', 'vault', 'algo'];
+  const views = ['images', 'manga', 'vault', 'algo'];
   
   // Set up click listeners to push state to URL Hash instead of immediate DOM manipulation
   views.forEach(view => {

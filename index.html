@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Accessibility & SEO: Added meta description for better indexing and context -->
   <meta name="description" content="R34 Media Hub Pro - Advanced Media Browser">
   <title>R34 Media Hub Pro</title>
-  
+
   <!-- Performance: Preconnect to APIs to shave off DNS & TCP handshake time -->
   <link rel="preconnect" href="https://api.rule34.xxx">
   <link rel="dns-prefetch" href="https://api.rule34.xxx">
   <link rel="preconnect" href="https://frosty-forest-2c7f.markus4free.workers.dev">
   <link rel="dns-prefetch" href="https://frosty-forest-2c7f.markus4free.workers.dev">
-  
+
   <!-- Performance: Preload main stylesheet to avoid render-blocking delay -->
   <link rel="preload" href="css/style.css" as="style">
   <link rel="stylesheet" href="css/style.css">
-  
+
   <!-- Performance: Defer scripts so they don't block HTML parsing, keeping them in <head> -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" defer></script>
   <script src="js/api.js" defer></script>
@@ -25,505 +26,594 @@
   <script src="js/search.js" defer></script>
   <script src="js/lightbox.js" defer></script>
   <script src="js/navigation.js" defer></script>
-  <script src="js/videos.js" defer></script>
   <script src="js/manga.js" defer></script>
   <script src="js/algorithm.js" defer></script>
 </head>
+
 <body>
 
-<div class="app-container">
-  <!-- Accessibility & Semantic HTML: Use <nav> and aria-label for navigation -->
-  <nav class="sidebar" aria-label="Primary Navigation">
-    <div class="sidebar-nav" role="menubar">
-      <!-- Accessibility: Add aria-label and explicit role to emoji buttons -->
-      <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images" role="menuitem">🖼️</button>
-      <button class="sidebar-item" id="nav-videos" title="Videos" aria-label="View Videos" role="menuitem">🎬</button>
-      <button class="sidebar-item" id="nav-manga" title="Manga" aria-label="View Manga" role="menuitem">📖</button>
-      <button class="sidebar-item" id="nav-algo" title="Algorithm" aria-label="View Algorithm" role="menuitem">🤖</button>
-      <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" role="menuitem">💖</button>
-    </div>
-  </nav>
-
-  <main class="main-content">
-    <!-- IMAGES VIEW (Default) -->
-    <!-- Semantic HTML: Use <section> for views instead of <div> -->
-    <section id="view-images" class="app-view" aria-labelledby="images-title">
-
-      <!-- Accessibility & Modern Best Practice: Wrap search inputs in <form> with role="search" -->
-      <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
-        <div class="search-row">
-          <div class="search-input-container" id="search-container">
-            <!-- Accessibility: aria-live="polite" announces dynamic changes to tags -->
-            <div id="tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;" aria-live="polite"></div>
-            <!-- Accessibility: Use type="search", aria-autocomplete, and aria-controls -->
-            <input id="search-input" type="search" placeholder="Add tags..." autocomplete="off" aria-label="Search tags" aria-autocomplete="list" aria-controls="autocomplete-box" />
-            <div class="autocomplete-dropdown" id="autocomplete-box" role="listbox" aria-label="Search suggestions"></div>
-          </div>
-          <!-- Accessibility: Explicit type="submit" -->
-          <button id="search-btn" type="submit" aria-label="Execute search">Search</button>
-
-        </div>
-
-        <!-- Accessibility: Group select filters semantically -->
-        <fieldset class="filter-row" style="border: none; padding: 0; margin: 0;">
-          <legend class="sr-only" style="display: none;">Search Filters</legend>
-          <select id="timeframe-select" class="filter-select" aria-label="Filter by time period">
-            <option value="all">🕐 All time</option>
-            <option value="7">📅 Last 7 days</option>
-            <option value="30">📅 Last month</option>
-            <option value="90">📅 Last 3 months</option>
-            <option value="180">📅 Last 6 months</option>
-            <option value="365">📅 Last year</option>
-          </select>
-
-          <select id="sort-select" class="filter-select" aria-label="Sort order">
-            <option value="algo:discover" selected>🤖 Algorithmic Discovery</option>
-            <option value="">⚡ Default order</option>
-            <option value="sort:score:desc">🏆 Highest score</option>
-            <option value="sort:score:asc">📉 Lowest score</option>
-            <option value="sort:id:desc">🆕 Newest first</option>
-            <option value="sort:id:asc">🕰 Oldest first</option>
-            <option value="sort:updated:desc">🔄 Recently updated</option>
-            <option value="sort:random">🎲 Random</option>
-          </select>
-        </fieldset>
-      </form>
-
-      <div class="helpers-wrap" aria-label="Helper toggles">
-        <!-- Accessibility: Use aria-expanded and aria-controls for expandable panels -->
-        <button class="helpers-toggle" id="helpers-toggle" aria-expanded="false" aria-controls="helpers-panel">
-          <span class="arrow" aria-hidden="true">▶</span> Search syntax helpers
-        </button>
-
-        <button class="helpers-toggle" id="vault-toggle" style="display: none;" aria-hidden="true">
-          💖 My Vault (0)
-        </button>
+  <div class="app-container">
+    <!-- Accessibility & Semantic HTML: Use <nav> and aria-label for navigation -->
+    <nav class="sidebar" aria-label="Primary Navigation">
+      <div class="sidebar-nav" role="menubar">
+        <!-- Accessibility: Add aria-label and explicit role to emoji buttons -->
+        <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images"
+          role="menuitem">🖼️</button>
+        <button class="sidebar-item" id="nav-manga" title="Manga" aria-label="View Manga" role="menuitem">📖</button>
+        <button class="sidebar-item" id="nav-algo" title="Algorithm" aria-label="View Algorithm"
+          role="menuitem">🤖</button>
+        <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" role="menuitem">💖</button>
       </div>
+    </nav>
 
-      <!-- Syntax Helpers Dashboard Panel -->
-      <section class="helpers-panel" id="helpers-panel" style="max-width: 720px; margin: 12px auto 0;" aria-label="Syntax Helpers">
+    <main class="main-content">
+      <!-- IMAGES VIEW (Default) -->
+      <!-- Semantic HTML: Use <section> for views instead of <div> -->
+      <section id="view-images" class="app-view" aria-labelledby="images-title">
 
-        <div>
-          <!-- Semantic HTML: Replace div labels with headings -->
-          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Combining tags</h2>
-          <div class="chips">
-            <button class="chip" data-insert="tag1 tag2"><span class="chip-syntax">tag1 tag2</span><span class="chip-desc">AND both tags</span></button>
-            <button class="chip" data-insert="( tag1 ~ tag2 )"><span class="chip-syntax">( tag1 ~ tag2 )</span><span class="chip-desc">OR either tag</span></button>
-            <button class="chip" data-insert="-tag1"><span class="chip-syntax">-tag1</span><span class="chip-desc">exclude tag</span></button>
+        <!-- Accessibility & Modern Best Practice: Wrap search inputs in <form> with role="search" -->
+        <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
+          <div class="search-row">
+            <div class="search-input-container" id="search-container">
+              <!-- Accessibility: aria-live="polite" announces dynamic changes to tags -->
+              <div id="tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;"
+                aria-live="polite"></div>
+              <!-- Accessibility: Use type="search", aria-autocomplete, and aria-controls -->
+              <input id="search-input" type="search" placeholder="Add tags..." autocomplete="off"
+                aria-label="Search tags" aria-autocomplete="list" aria-controls="autocomplete-box" />
+              <div class="autocomplete-dropdown" id="autocomplete-box" role="listbox" aria-label="Search suggestions">
+              </div>
+
+              <!-- Inline Search Timeframe Capsule -->
+              <div class="search-timeframe-container" id="search-timeframe-container" style="display: none;">
+                <button type="button" id="timeframe-toggle-btn" class="timeframe-toggle-btn" title="Choose Timeframe">
+                  <img src="Icons/icons8-calendar-32.png" alt="" aria-hidden="true" width="20" height="20">
+                </button>
+                <div class="search-timeframe-options" id="search-timeframe-options">
+                  <button type="button" class="timeframe-option-btn active" data-value="all" title="All time">All</button>
+                  <button type="button" class="timeframe-option-btn" data-value="7" title="Last 7 days">7d</button>
+                  <button type="button" class="timeframe-option-btn" data-value="30" title="Last month">30d</button>
+                  <button type="button" class="timeframe-option-btn" data-value="90" title="Last 3 months">90d</button>
+                  <button type="button" class="timeframe-option-btn" data-value="180" title="Last 6 months">180d</button>
+                  <button type="button" class="timeframe-option-btn" data-value="365" title="Last year">1y</button>
+                </div>
+              </div>
+
+              <!-- Inline Search Sort Capsule -->
+              <div class="search-sort-container" id="search-sort-container" style="display: none;">
+                <button type="button" id="sort-toggle-btn" class="sort-toggle-btn" title="Choose Sort Order">
+                  <img src="Icons\icons8-dice-32.png" alt="" aria-hidden="true" width="20" height="20">
+                </button>
+                <div class="search-sort-options" id="search-sort-options">
+                  <button type="button" id="sort-btn-score" class="sort-option-btn"
+                    title="Sort by Score (Highest First)">
+                    <img src="Icons\icons8-star-48.png" alt="" aria-hidden="true" width="20" height="20">
+                  </button>
+                  <button type="button" id="sort-btn-time" class="sort-option-btn" title="Sort by Time (Newest First)">
+                    <img src="Icons\icons8-clock-30.png" alt="" aria-hidden="true" width="20" height="20">
+                  </button>
+                  <button type="button" id="sort-btn-random" class="sort-option-btn" title="Sort by Random">
+                    <img src="Icons\icons8-dice-32.png" alt="" aria-hidden="true" width="20" height="20">
+
+                  </button>
+                </div>
+              </div>
+            </div>
+            <!-- Accessibility: Explicit type="submit" -->
+            <button id="search-btn" type="submit" aria-label="Execute search">
+              <svg aria-hidden="true" xmlns="Icons\icons8-search.svg" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+
+          </div>
+
+          <!-- Accessibility: Group select filters semantically -->
+          <fieldset class="filter-row" style="border: none; padding: 0; margin: 0;">
+            <legend class="sr-only" style="display: none;">Search Filters</legend>
+            <select id="timeframe-select" class="filter-select" aria-label="Filter by time period" style="display: none;">
+              <option value="all">🕐 All time</option>
+              <option value="7">📅 Last 7 days</option>
+              <option value="30">📅 Last month</option>
+              <option value="90">📅 Last 3 months</option>
+              <option value="180">📅 Last 6 months</option>
+              <option value="365">📅 Last year</option>
+            </select>
+
+            <select id="sort-select" class="filter-select" aria-label="Sort order" style="display: none;">
+              <option value="algo:discover" selected>🤖 Algorithmic Discovery</option>
+              <option value="">⚡ Default order</option>
+              <option value="sort:score:desc">🏆 Highest score</option>
+              <option value="sort:score:asc">📉 Lowest score</option>
+              <option value="sort:id:desc">🆕 Newest first</option>
+              <option value="sort:id:asc">🕰 Oldest first</option>
+              <option value="sort:updated:desc">🔄 Recently updated</option>
+              <option value="sort:random">🎲 Random</option>
+            </select>
+          </fieldset>
+        </form>
+
+
+
+        <div id="status" aria-live="polite">
+          <span class="icon" aria-hidden="true">🔍</span>
+          Enter tags above to start scanning files
+        </div>
+
+        <div id="grid" aria-label="Image Results Grid" role="grid"></div>
+
+        <!-- Infinite Scroll Bottom Indicator -->
+        <div id="bottom-status"
+          style="display:none; text-align: center; padding: 40px 20px; color: var(--muted); width: 100%; clear: both;"
+          aria-live="polite">
+          <div class="heart-loader"></div>
+          Loading next batch...
+        </div>
+
+        <div id="scroll-sentinel" aria-hidden="true"></div>
+      </section>
+
+      <!-- MANGA VIEW -->
+      <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
+        <!-- Manga Grid Search -->
+        <form class="search-wrap" role="search" onsubmit="event.preventDefault();" style="margin-bottom: 24px;">
+          <div class="search-row">
+            <div class="search-input-container" id="manga-search-container">
+              <div id="manga-tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;"
+                aria-live="polite"></div>
+              <input id="manga-grid-search-input" type="search"
+                placeholder="Add modifiers (e.g. tag:yuri) or search titles..."
+                style="flex: 1; background: transparent; border: none; color: var(--text); outline: none; min-width: 150px;"
+                autocomplete="off" aria-label="Search manga grid" />
+              <div class="autocomplete-dropdown" id="manga-autocomplete-box" role="listbox"
+                aria-label="Manga search suggestions"></div>
+            </div>
+            <button id="manga-grid-search-btn" type="submit"
+              style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search
+              Grid</button>
+            <button id="manga-random-btn" type="button"
+              style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;"
+              title="Surprise Me (Random Manga)">🎲 Random</button>
+          </div>
+
+          <fieldset class="filter-row"
+            style="border: none; padding: 0; margin: 12px 0 0 0; display: flex; gap: 12px; align-items: center;">
+            <legend class="sr-only" style="display: none;">Manga Search Filters</legend>
+            <select id="manga-sort-select" class="filter-select" aria-label="Sort order">
+              <option value="relevance">🤖 Relevance</option>
+              <option value="rating">🏆 Highest Rating</option>
+              <option value="latest">🆕 Latest Uploads</option>
+              <option value="popular">🔥 Most Follows</option>
+              <option value="new">🕰 Newest Titles</option>
+            </select>
+
+            <div style="position: relative;" id="manga-rating-dropdown-container">
+              <button type="button" id="manga-rating-btn" class="filter-select"
+                style="background: var(--surface); color: var(--text); cursor: pointer; text-align: left; min-width: 140px; display: flex; justify-content: space-between; align-items: center;">
+                <span>🔞 Ratings (2)</span> <span style="font-size: 0.8em;">▼</span>
+              </button>
+              <div id="manga-rating-menu"
+                style="display: none; position: absolute; top: calc(100% + 8px); left: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.5); min-width: 180px; flex-direction: column; gap: 8px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
+                    type="checkbox" value="safe" class="manga-rating-cb"> Safe</label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
+                    type="checkbox" value="suggestive" class="manga-rating-cb"> Suggestive</label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
+                    type="checkbox" value="erotica" class="manga-rating-cb" checked> Erotica</label>
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
+                    type="checkbox" value="pornographic" class="manga-rating-cb" checked> Pornographic</label>
+              </div>
+            </div>
+          </fieldset>
+        </form>
+
+        <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="grid"
+          aria-label="Manga Results"></div>
+
+        <div id="manga-grid-status" style="text-align: center; color: var(--muted); padding: 20px;" aria-live="polite">
+          <span class="icon" aria-hidden="true">🔍</span> Search to load comic covers...
+        </div>
+        <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;" aria-hidden="true"></div>
+
+
+        <!-- The Manga details will now expand inline inside the grid! -->
+      </section>
+
+      <!-- ALGORITHM VIEW -->
+      <section id="view-algo" class="app-view" style="display: none;" aria-labelledby="algo-title">
+
+        <div class="algo-panel"
+          style="background: var(--surface); padding: 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
+
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">🧑‍🦰 Character Weight (x)</label>
+                <input type="number" id="algo-val-char" value="2.5" step="0.1"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-char" min="0" max="3" step="0.1" value="2.5" style="width: 100%;">
+            </div>
+
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">🎨 Artist Weight (x)</label>
+                <input type="number" id="algo-val-artist" value="2.0" step="0.1"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-artist" min="0" max="3" step="0.1" value="2.0" style="width: 100%;">
+            </div>
+
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">📺 Series Weight (x)</label>
+                <input type="number" id="algo-val-series" value="1.0" step="0.1"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-series" min="0" max="3" step="0.1" value="1.0" style="width: 100%;">
+            </div>
+
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">🏷️ General Weight (x)</label>
+                <input type="number" id="algo-val-general" value="0.3" step="0.1"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-general" min="0" max="3" step="0.1" value="0.3" style="width: 100%;">
+            </div>
+
+          </div>
+
+          <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">📦 Batch Size</label>
+                <input type="number" id="algo-val-batch" value="30" step="10"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-batch" min="10" max="100" step="10" value="30" style="width: 100%;">
+            </div>
+
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">🎲 Discovery Ratio (%)</label>
+                <input type="number" id="algo-val-ratio" value="50" step="5"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-ratio" min="0" max="100" step="5" value="50" style="width: 100%;">
+            </div>
+
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">🌱 Freshness (%)</label>
+                <input type="number" id="algo-val-freshness" value="30" step="5"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-freshness" min="0" max="100" step="5" value="30" style="width: 100%;">
+            </div>
+
+            <div class="algo-control">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="font-weight: bold;">⚡ Concurrent Fetches</label>
+                <input type="number" id="algo-val-fetches" value="9" step="1"
+                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+              </div>
+              <input type="range" id="algo-weight-fetches" min="1" max="10" step="1" value="9" style="width: 100%;">
+            </div>
+
+            <div class="algo-control">
+              <label style="display: block; font-weight: bold; margin-bottom: 8px;">🔍 Base Search (Optional)</label>
+              <input type="text" id="algo-base-search" placeholder="e.g. yuri"
+                style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
+            </div>
+          </div>
+
+          <div id="algo-console"
+            style="background: #1e1e1e; color: #34d399; font-family: monospace; font-size: 0.85rem; padding: 12px; border-radius: 8px; height: 150px; overflow-y: auto; margin-bottom: 24px; border: 1px solid #333; display: flex; flex-direction: column; gap: 4px;">
+            <div>> Algorithm Engine Initialized...</div>
+          </div>
+
+          <details
+            style="margin-bottom: 24px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px;">
+            <summary style="padding: 12px; cursor: pointer; font-weight: bold;">🧬 View Algorithm DNA & Roulette Wheel
+            </summary>
+
+            <div
+              style="padding: 24px; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.1);">
+              <h3 style="margin-top: 0; margin-bottom: 4px;">Roulette Wheel Visualizer</h3>
+              <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; text-align: center;">This is the
+                exact mathematical wheel the algorithm spins to generate your feed.</p>
+              <div id="algo-roulette-wheel"
+                style="width: 250px; height: 250px; border-radius: 50%; background: #222; box-shadow: 0 4px 16px rgba(0,0,0,0.4); border: 4px solid var(--surface-light); transition: background 0.3s ease;">
+              </div>
+              <div id="algo-roulette-legend"
+                style="margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 0.8rem; max-width: 600px;">
+              </div>
+            </div>
+
+            <div style="padding: 12px; max-height: 400px; overflow-y: auto;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                <thead style="position: sticky; top: 0; background: var(--surface);">
+                  <tr>
+                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Tag</th>
+                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Type</th>
+                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Occurrences</th>
+                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Multiplier</th>
+                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Final Score</th>
+                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">% of DNA</th>
+                  </tr>
+                </thead>
+                <tbody id="algo-dna-table-body">
+                  <!-- Data injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <div style="text-align: center;">
+            <button id="algo-generate-btn"
+              style="background: var(--accent-purple); color: white; border: none; border-radius: 30px; padding: 12px 32px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(139,92,246,0.3);">
+              Generate Personalized Feed
+            </button>
           </div>
         </div>
-        <div>
-          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Wildcards &amp; fuzzy</h2>
-          <div class="chips">
-            <button class="chip" data-insert="ta*1"><span class="chip-syntax">ta*1</span><span class="chip-desc">wildcard match</span></button>
-            <button class="chip" data-insert="night~"><span class="chip-syntax">night~</span><span class="chip-desc">fuzzy match</span></button>
-          </div>
-        </div>
-        <div>
-          <h2 class="hgroup-label" style="font-size: 1rem; margin: 0;">Rating &amp; score</h2>
-          <div class="chips">
-            <button class="chip" data-insert="rating:safe"><span class="chip-syntax">rating:safe</span><span class="chip-desc">safe only</span></button>
-            <button class="chip" data-insert="rating:questionable"><span class="chip-syntax">rating:questionable</span><span class="chip-desc">questionable</span></button>
-            <button class="chip" data-insert="rating:explicit"><span class="chip-syntax">rating:explicit</span><span class="chip-desc">explicit</span></button>
-            <button class="chip" data-insert="score:>=10"><span class="chip-syntax">score:>=10</span><span class="chip-desc">min score</span></button>
-          </div>
+
+        <div id="algo-status" style="text-align: center; color: var(--muted); padding: 20px; display: none;"
+          aria-live="polite"></div>
+
+        <!-- Algo Insights Panel -->
+        <div id="algo-insights" style="margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
+
+        <div id="algo-grid" class="vault-grid-layout" role="grid" aria-label="Algorithm Results"></div>
+
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
+          <button id="algo-load-more-btn"
+            style="display: none; background: var(--surface-light); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 12px 32px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">
+            🔄 Load More Discoveries
+          </button>
         </div>
       </section>
 
+      <!-- VAULT VIEW -->
+      <section id="view-vault" class="app-view" style="display: none;" aria-labelledby="vault-title">
 
-      <!-- Accessibility: aria-live ensures screen readers announce pagination updates -->
-      <div class="meta-row" id="meta-row" style="display:none" aria-live="polite">
-        <div class="meta-info">
-          <span id="result-count"></span>
-          <span id="active-filters"></span>
-        </div>
-        <!-- Semantic HTML: Use <nav> for pagination controls -->
-        <nav class="pagination" id="pagination-controls-box" aria-label="Pagination">
-          <button class="page-btn" id="prev-btn" aria-label="Previous Page" disabled>← Prev</button>
-          <span id="page-indicator" aria-live="polite">Page 1</span>
-          <button class="page-btn" id="next-btn" aria-label="Next Page" disabled>Next →</button>
+        <!-- Profile Header -->
+        <header class="vault-profile-header">
+          <div class="profile-info">
+            <!-- Placeholder avatar from UI-Avatars -->
+            <img src="https://ui-avatars.com/api/?name=Vault+Admin&background=8b5cf6&color=fff&size=128"
+              class="profile-pic" alt="Profile" />
+            <div class="profile-text">
+              <h1 id="vault-title">Vault Admin</h1>
+              <p>Locally Secured Collection</p>
+            </div>
+          </div>
+          <div class="profile-actions">
+            <button id="vault-new-folder-btn" title="Create New Folder" aria-label="Create New Folder">➕</button>
+            <button id="vault-bulk-edit-btn" title="Bulk Edit Mode" aria-label="Bulk Edit Mode">✏️</button>
+            <button id="vault-settings-btn" title="Global Settings" aria-label="Global Settings">⚙️</button>
+            <button id="vault-delete-folder-btn"
+              style="display: none; background: rgba(244,63,94,0.15); color: #fb7185; border-color: #f43f5e;"
+              title="Delete Folder" aria-label="Delete Folder">🗑</button>
+          </div>
+        </header>
+
+        <nav class="vault-tabs" id="vault-main-tabs" style="display: flex; gap: 8px; margin-top: 16px;"
+          aria-label="Vault View Tabs">
+          <button class="vault-tab-btn active" data-tab="images"
+            style="padding: 8px 16px; border-radius: 20px; border: none; background: var(--accent-purple); color: white; cursor: pointer; font-weight: bold; transition: 0.2s;">🖼️
+            Images & Videos</button>
+          <button class="vault-tab-btn" data-tab="bookshelf"
+            style="padding: 8px 16px; border-radius: 20px; border: none; background: var(--surface); color: var(--text); cursor: pointer; font-weight: bold; transition: 0.2s;">📚
+            Manga Bookshelf</button>
         </nav>
-      </div>
 
-      <div id="status" aria-live="polite">
-        <span class="icon" aria-hidden="true">🔍</span>
-        Enter tags above to start scanning files
-      </div>
+        <nav class="folder-nav" id="vault-folders-nav"
+          style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 16px; min-height: 120px; align-items: flex-start;"
+          aria-label="Vault Folders">
+          <!-- Folders injected here -->
+        </nav>
 
-      <div id="grid" aria-label="Image Results Grid" role="grid"></div>
-      
-      <!-- Infinite Scroll Bottom Indicator -->
-      <div id="bottom-status" style="display:none; text-align: center; padding: 40px 20px; color: var(--muted); width: 100%; clear: both;" aria-live="polite">
-        <div class="spinner" style="width: 24px; height: 24px; margin: 0 auto 10px;"></div>
-        Loading next batch...
-      </div>
-      
-      <div id="scroll-sentinel" aria-hidden="true"></div>
-    </section>
+        <hr class="vault-divider" />
 
-    <!-- VIDEOS VIEW (TikTok Style) -->
-    <section id="view-videos" class="app-view" style="display: none; height: 100%;" aria-labelledby="video-status">
-      <div class="tiktok-container" id="tiktok-container" aria-label="Video Stream">
-        <!-- Videos will be injected here -->
-      </div>
-      <div id="video-status" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--muted); text-align: center; z-index: 10;" aria-live="polite">
-        <span class="icon" style="font-size: 2rem; display: block; margin-bottom: 10px;" aria-hidden="true">🎥</span>
-        Loading videos stream...
-      </div>
-    </section>
-
-    <!-- MANGA VIEW -->
-    <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
-          <!-- Manga Grid Search -->
-          <form class="search-wrap" role="search" onsubmit="event.preventDefault();" style="margin-bottom: 24px;">
-            <div class="search-row">
-              <div class="search-input-container" id="manga-search-container">
-                <div id="manga-tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;" aria-live="polite"></div>
-                <input id="manga-grid-search-input" type="search" placeholder="Add modifiers (e.g. tag:yuri) or search titles..." style="flex: 1; background: transparent; border: none; color: var(--text); outline: none; min-width: 150px;" autocomplete="off" aria-label="Search manga grid" />
-                <div class="autocomplete-dropdown" id="manga-autocomplete-box" role="listbox" aria-label="Manga search suggestions"></div>
-              </div>
-              <button id="manga-grid-search-btn" type="submit" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;">Search Grid</button>
-              <button id="manga-random-btn" type="button" style="background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 0 20px; cursor: pointer; transition: all 0.2s;" title="Surprise Me (Random Manga)">🎲 Random</button>
-            </div>
-            
-            <fieldset class="filter-row" style="border: none; padding: 0; margin: 12px 0 0 0; display: flex; gap: 12px; align-items: center;">
-              <legend class="sr-only" style="display: none;">Manga Search Filters</legend>
-              <select id="manga-sort-select" class="filter-select" aria-label="Sort order">
-                <option value="relevance">🤖 Relevance</option>
-                <option value="rating">🏆 Highest Rating</option>
-                <option value="latest">🆕 Latest Uploads</option>
-                <option value="popular">🔥 Most Follows</option>
-                <option value="new">🕰 Newest Titles</option>
-              </select>
-
-              <div style="position: relative;" id="manga-rating-dropdown-container">
-                <button type="button" id="manga-rating-btn" class="filter-select" style="background: var(--surface); color: var(--text); cursor: pointer; text-align: left; min-width: 140px; display: flex; justify-content: space-between; align-items: center;">
-                  <span>🔞 Ratings (2)</span> <span style="font-size: 0.8em;">▼</span>
-                </button>
-                <div id="manga-rating-menu" style="display: none; position: absolute; top: calc(100% + 8px); left: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.5); min-width: 180px; flex-direction: column; gap: 8px;">
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="safe" class="manga-rating-cb"> Safe</label>
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="suggestive" class="manga-rating-cb"> Suggestive</label>
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="erotica" class="manga-rating-cb" checked> Erotica</label>
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input type="checkbox" value="pornographic" class="manga-rating-cb" checked> Pornographic</label>
-                </div>
-              </div>
-            </fieldset>
-          </form>
-
-          <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="grid" aria-label="Manga Results"></div>
-          
-          <div id="manga-grid-status" style="text-align: center; color: var(--muted); padding: 20px;" aria-live="polite">
-            <span class="icon" aria-hidden="true">🔍</span> Search to load comic covers...
-          </div>
-          <div id="manga-scroll-sentinel" style="height: 10px; width: 100%;" aria-hidden="true"></div>
-
-
-      <!-- The Manga details will now expand inline inside the grid! -->
-    </section>
-
-    <!-- ALGORITHM VIEW -->
-    <section id="view-algo" class="app-view" style="display: none;" aria-labelledby="algo-title">
-      
-      <div class="algo-panel" style="background: var(--surface); padding: 24px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 24px;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
-          
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">🧑‍🦰 Character Weight (x)</label>
-              <input type="number" id="algo-val-char" value="2.5" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-char" min="0" max="3" step="0.1" value="2.5" style="width: 100%;">
-          </div>
-          
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">🎨 Artist Weight (x)</label>
-              <input type="number" id="algo-val-artist" value="2.0" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-artist" min="0" max="3" step="0.1" value="2.0" style="width: 100%;">
-          </div>
-          
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">📺 Series Weight (x)</label>
-              <input type="number" id="algo-val-series" value="1.0" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-series" min="0" max="3" step="0.1" value="1.0" style="width: 100%;">
-          </div>
-          
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">🏷️ General Weight (x)</label>
-              <input type="number" id="algo-val-general" value="0.3" step="0.1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-general" min="0" max="3" step="0.1" value="0.3" style="width: 100%;">
-          </div>
-          
+        <div class="vault-filter-row">
+          <input type="search" id="vault-search-input" placeholder="Search saved tags..."
+            style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 20px; outline: none; width: 200px;"
+            aria-label="Search Vault">
+          <select id="vault-sort-select" class="filter-select" aria-label="Sort vault"
+            style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 20px; outline: none; cursor: pointer;">
+            <option value="newest">🆕 Newest saved</option>
+            <option value="oldest">🕰 Oldest saved</option>
+            <option value="highest">🏆 Highest score</option>
+            <option value="lowest">📉 Lowest score</option>
+          </select>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">📦 Batch Size</label>
-              <input type="number" id="algo-val-batch" value="30" step="10" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-batch" min="10" max="100" step="10" value="30" style="width: 100%;">
-          </div>
+        <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
+        <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;"
+          aria-live="polite"></div>
 
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">🎲 Discovery Ratio (%)</label>
-              <input type="number" id="algo-val-ratio" value="50" step="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-ratio" min="0" max="100" step="5" value="50" style="width: 100%;">
-          </div>
+        <!-- Bulk Actions Sticky Footer -->
+        <div id="vault-bulk-actions"
+          style="display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-light); padding: 16px 24px; box-shadow: 0 -4px 16px rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; gap: 16px; border-top: 1px solid var(--border);">
+          <span id="bulk-selection-count" style="font-weight: bold; color: var(--text); margin-right: auto;">0 items
+            selected</span>
 
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">🌱 Freshness (%)</label>
-              <input type="number" id="algo-val-freshness" value="30" step="5" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-freshness" min="0" max="100" step="5" value="30" style="width: 100%;">
-          </div>
-
-          <div class="algo-control">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <label style="font-weight: bold;">⚡ Concurrent Fetches</label>
-              <input type="number" id="algo-val-fetches" value="9" step="1" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-            </div>
-            <input type="range" id="algo-weight-fetches" min="1" max="10" step="1" value="9" style="width: 100%;">
-          </div>
-          
-          <div class="algo-control">
-            <label style="display: block; font-weight: bold; margin-bottom: 8px;">🔍 Base Search (Optional)</label>
-            <input type="text" id="algo-base-search" placeholder="e.g. yuri" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-          </div>
+          <select id="bulk-folder-select"
+            style="background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; cursor: pointer;">
+            <!-- Populated dynamically -->
+          </select>
+          <button id="bulk-move-btn"
+            style="background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Move
+            to Folder</button>
+          <button id="bulk-delete-btn"
+            style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">🗑
+            Delete Selected</button>
+          <button id="bulk-cancel-btn"
+            style="background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Cancel</button>
         </div>
-        
-        <div id="algo-console" style="background: #1e1e1e; color: #34d399; font-family: monospace; font-size: 0.85rem; padding: 12px; border-radius: 8px; height: 150px; overflow-y: auto; margin-bottom: 24px; border: 1px solid #333; display: flex; flex-direction: column; gap: 4px;">
-            <div>> Algorithm Engine Initialized...</div>
-        </div>
+      </section>
 
-        <details style="margin-bottom: 24px; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px;">
-          <summary style="padding: 12px; cursor: pointer; font-weight: bold;">🧬 View Algorithm DNA & Roulette Wheel</summary>
-          
-          <div style="padding: 24px; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.1);">
-            <h3 style="margin-top: 0; margin-bottom: 4px;">Roulette Wheel Visualizer</h3>
-            <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; text-align: center;">This is the exact mathematical wheel the algorithm spins to generate your feed.</p>
-            <div id="algo-roulette-wheel" style="width: 250px; height: 250px; border-radius: 50%; background: #222; box-shadow: 0 4px 16px rgba(0,0,0,0.4); border: 4px solid var(--surface-light); transition: background 0.3s ease;"></div>
-            <div id="algo-roulette-legend" style="margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 0.8rem; max-width: 600px;"></div>
-          </div>
-
-          <div style="padding: 12px; max-height: 400px; overflow-y: auto;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
-              <thead style="position: sticky; top: 0; background: var(--surface);">
-                <tr>
-                  <th style="padding: 8px; border-bottom: 1px solid var(--border);">Tag</th>
-                  <th style="padding: 8px; border-bottom: 1px solid var(--border);">Type</th>
-                  <th style="padding: 8px; border-bottom: 1px solid var(--border);">Occurrences</th>
-                  <th style="padding: 8px; border-bottom: 1px solid var(--border);">Multiplier</th>
-                  <th style="padding: 8px; border-bottom: 1px solid var(--border);">Final Score</th>
-                  <th style="padding: 8px; border-bottom: 1px solid var(--border);">% of DNA</th>
-                </tr>
-              </thead>
-              <tbody id="algo-dna-table-body">
-                <!-- Data injected via JS -->
-              </tbody>
-            </table>
-          </div>
-        </details>
-        
-        <div style="text-align: center;">
-          <button id="algo-generate-btn" style="background: var(--accent-purple); color: white; border: none; border-radius: 30px; padding: 12px 32px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(139,92,246,0.3);">
-            Generate Personalized Feed
-          </button>
-        </div>
-      </div>
-      
-      <div id="algo-status" style="text-align: center; color: var(--muted); padding: 20px; display: none;" aria-live="polite"></div>
-      
-      <!-- Algo Insights Panel -->
-      <div id="algo-insights" style="margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 8px;"></div>
-      
-      <div id="algo-grid" class="vault-grid-layout" role="grid" aria-label="Algorithm Results"></div>
-      
-      <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
-        <button id="algo-load-more-btn" style="display: none; background: var(--surface-light); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 12px 32px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">
-          🔄 Load More Discoveries
-        </button>
-      </div>
-    </section>
-
-    <!-- VAULT VIEW -->
-    <section id="view-vault" class="app-view" style="display: none;" aria-labelledby="vault-title">
-      
-      <!-- Profile Header -->
-      <header class="vault-profile-header">
-        <div class="profile-info">
-          <!-- Placeholder avatar from UI-Avatars -->
-          <img src="https://ui-avatars.com/api/?name=Vault+Admin&background=8b5cf6&color=fff&size=128" class="profile-pic" alt="Profile" />
-          <div class="profile-text">
-            <h1 id="vault-title">Vault Admin</h1>
-            <p>Locally Secured Collection</p>
-          </div>
-        </div>
-        <div class="profile-actions">
-          <button id="vault-new-folder-btn" title="Create New Folder" aria-label="Create New Folder">➕</button>
-          <button id="vault-bulk-edit-btn" title="Bulk Edit Mode" aria-label="Bulk Edit Mode">✏️</button>
-          <button id="vault-settings-btn" title="Global Settings" aria-label="Global Settings">⚙️</button>
-          <button id="vault-delete-folder-btn" style="display: none; background: rgba(244,63,94,0.15); color: #fb7185; border-color: #f43f5e;" title="Delete Folder" aria-label="Delete Folder">🗑</button>
-        </div>
-      </header>
-
-      <nav class="vault-tabs" id="vault-main-tabs" style="display: flex; gap: 8px; margin-top: 16px;" aria-label="Vault View Tabs">
-        <button class="vault-tab-btn active" data-tab="images" style="padding: 8px 16px; border-radius: 20px; border: none; background: var(--accent-purple); color: white; cursor: pointer; font-weight: bold; transition: 0.2s;">🖼️ Images & Videos</button>
-        <button class="vault-tab-btn" data-tab="bookshelf" style="padding: 8px 16px; border-radius: 20px; border: none; background: var(--surface); color: var(--text); cursor: pointer; font-weight: bold; transition: 0.2s;">📚 Manga Bookshelf</button>
-      </nav>
-
-      <nav class="folder-nav" id="vault-folders-nav" style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 16px; min-height: 120px; align-items: flex-start;" aria-label="Vault Folders">
-        <!-- Folders injected here -->
-      </nav>
-
-      <hr class="vault-divider" />
-
-      <div class="vault-filter-row">
-        <input type="search" id="vault-search-input" placeholder="Search saved tags..." style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 20px; outline: none; width: 200px;" aria-label="Search Vault">
-        <select id="vault-sort-select" class="filter-select" aria-label="Sort vault" style="background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 20px; outline: none; cursor: pointer;">
-          <option value="newest">🆕 Newest saved</option>
-          <option value="oldest">🕰 Oldest saved</option>
-          <option value="highest">🏆 Highest score</option>
-          <option value="lowest">📉 Lowest score</option>
-        </select>
-      </div>
-
-      <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
-      <div id="vault-status" style="text-align: center; color: var(--muted); padding: 40px; display: none;" aria-live="polite"></div>
-      
-      <!-- Bulk Actions Sticky Footer -->
-      <div id="vault-bulk-actions" style="display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-light); padding: 16px 24px; box-shadow: 0 -4px 16px rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; gap: 16px; border-top: 1px solid var(--border);">
-        <span id="bulk-selection-count" style="font-weight: bold; color: var(--text); margin-right: auto;">0 items selected</span>
-        
-        <select id="bulk-folder-select" style="background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 8px 16px; border-radius: 8px; outline: none; cursor: pointer;">
-           <!-- Populated dynamically -->
-        </select>
-        <button id="bulk-move-btn" style="background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Move to Folder</button>
-        <button id="bulk-delete-btn" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">🗑 Delete Selected</button>
-        <button id="bulk-cancel-btn" style="background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Cancel</button>
-      </div>
-    </section>
-
-  </main>
-</div>
-
-<!-- Accessibility: role="alert" for immediate notifications -->
-<div id="toast" aria-live="assertive" role="alert"></div>
-
-<!-- Accessibility: Use role="dialog" and aria-modal for custom modals -->
-<div id="lightbox" role="dialog" aria-modal="true" aria-label="Image Lightbox">
-  <button id="lightbox-close" aria-label="Close Lightbox">✕ Close</button>
-  <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous Image">‹</button>
-  
-  <div class="lightbox-wrapper">
-    <div id="lightbox-media-container" aria-live="polite"></div>
+    </main>
   </div>
 
-  <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next Image">›</button>
-  
-  <div id="lightbox-info">
-    <div class="lb-meta-row">
-      <span id="lb-score"></span>
-      <span id="lb-size"></span>
-      
-      <button class="lb-action-btn" id="lb-fav-btn" aria-label="Favorite Image">🤍 Favorite</button>
-      <button class="lb-action-btn" id="lb-dl-btn" aria-label="Download Image">📥 Download</button>
+  <!-- Accessibility: role="alert" for immediate notifications -->
+  <div id="toast" aria-live="assertive" role="alert"></div>
+
+  <!-- Accessibility: Use role="dialog" and aria-modal for custom modals -->
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image Lightbox">
+    <button id="lightbox-close" aria-label="Close Lightbox">✕ Close</button>
+    <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous Image">‹</button>
+
+    <div class="lightbox-wrapper">
+      <div id="lightbox-media-container" aria-live="polite"></div>
     </div>
-    <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
-  </div>
-</div>
 
-<!-- Manga Reader Modal -->
-<div id="manga-reader" style="display: none; position: fixed; inset: 0; background: #000; z-index: 1000; overflow-y: auto; text-align: center; padding: 20px;" role="dialog" aria-modal="true" aria-label="Manga Reader">
-  <div id="manga-reader-settings" style="position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; z-index: 1010; backdrop-filter: blur(4px); display: flex; gap: 15px;">
-    <label style="color: white; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Use uncompressed images (consumes more bandwidth)">
-      <input type="checkbox" id="manga-hq-toggle"> High Quality
-    </label>
-    <label style="color: white; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; cursor: pointer;" title="Read one page at a time instead of continuous scrolling">
-      <input type="checkbox" id="manga-paged-toggle"> Single Page Mode
-    </label>
-  </div>
-  <button id="manga-reader-close" style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; z-index: 1010; backdrop-filter: blur(4px);" aria-label="Close Manga Reader">✕ Close Reader</button>
-  <div id="manga-pages-container" style="display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 1000px; margin: 0 auto;" aria-live="polite"></div>
-</div>
+    <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next Image">›</button>
 
-<!-- Global Save Modal (Pinterest Style) -->
-<div id="save-modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);" role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
-  <div id="save-modal-content" style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 320px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; max-height: 80vh;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h3 id="save-modal-title" style="margin: 0; font-size: 1.2rem;">Save to folder</h3>
-      <button id="save-modal-close" style="background: transparent; border: none; color: var(--text); cursor: pointer; font-size: 1.2rem;" aria-label="Close Save Modal">✕</button>
+    <div id="lightbox-info">
+      <div class="lb-meta-row">
+        <span id="lb-score"></span>
+        <span id="lb-size"></span>
+
+        <button class="lb-action-btn" id="lb-fav-btn" aria-label="Favorite Image">🤍 Favorite</button>
+        <button class="lb-action-btn" id="lb-dl-btn" aria-label="Download Image">📥 Download</button>
+      </div>
+      <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
     </div>
-    
-    <form class="search-input-container" style="margin-bottom: 12px; min-height: 40px; padding: 0 10px;" onsubmit="event.preventDefault();" role="search">
-      <input id="save-modal-search" type="search" placeholder="Search folders..." style="width: 100%; background: transparent; border: none; outline: none; color: var(--text);" autocomplete="off" aria-label="Search folders">
-    </form>
-
-    <div id="save-modal-folders" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding-right: 4px;" role="list" aria-label="Folder List">
-      <!-- Folder items injected here -->
-    </div>
-    
-    <form style="display: flex; gap: 8px;" onsubmit="event.preventDefault();">
-      <input id="save-modal-new-input" type="text" placeholder="Create folder..." style="flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 10px; border-radius: 8px; color: var(--text); outline: none;" aria-label="New folder name" required>
-      <button id="save-modal-new-btn" type="submit" style="background: var(--accent-purple); color: white; border: none; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: bold;">Create</button>
-    </form>
   </div>
-</div>
 
-<!-- Script tags already moved to <head> with defer attribute for performance -->
+  <!-- Manga Reader Modal -->
+  <div id="manga-reader"
+    style="display: none; position: fixed; inset: 0; background: #000; z-index: 1000; overflow-y: auto; text-align: center; padding: 20px;"
+    role="dialog" aria-modal="true" aria-label="Manga Reader">
+    <div id="manga-reader-settings"
+      style="position: fixed; top: 20px; left: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; z-index: 1010; backdrop-filter: blur(4px); display: flex; gap: 15px;">
+      <label style="color: white; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; cursor: pointer;"
+        title="Use uncompressed images (consumes more bandwidth)">
+        <input type="checkbox" id="manga-hq-toggle"> High Quality
+      </label>
+      <label style="color: white; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; cursor: pointer;"
+        title="Read one page at a time instead of continuous scrolling">
+        <input type="checkbox" id="manga-paged-toggle"> Single Page Mode
+      </label>
+    </div>
+    <button id="manga-reader-close"
+      style="position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; z-index: 1010; backdrop-filter: blur(4px);"
+      aria-label="Close Manga Reader">✕ Close Reader</button>
+    <div id="manga-pages-container"
+      style="display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 1000px; margin: 0 auto;"
+      aria-live="polite"></div>
+  </div>
+
+  <!-- Global Save Modal (Pinterest Style) -->
+  <div id="save-modal-overlay"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);"
+    role="dialog" aria-modal="true" aria-labelledby="save-modal-title">
+    <div id="save-modal-content"
+      style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 320px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; max-height: 80vh;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 id="save-modal-title" style="margin: 0; font-size: 1.2rem;">Save to folder</h3>
+        <button id="save-modal-close"
+          style="background: transparent; border: none; color: var(--text); cursor: pointer; font-size: 1.2rem;"
+          aria-label="Close Save Modal">✕</button>
+      </div>
+
+      <form class="search-input-container" style="margin-bottom: 12px; min-height: 40px; padding: 0 10px;"
+        onsubmit="event.preventDefault();" role="search">
+        <input id="save-modal-search" type="search" placeholder="Search folders..."
+          style="width: 100%; background: transparent; border: none; outline: none; color: var(--text);"
+          autocomplete="off" aria-label="Search folders">
+      </form>
+
+      <div id="save-modal-folders"
+        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding-right: 4px;"
+        role="list" aria-label="Folder List">
+        <!-- Folder items injected here -->
+      </div>
+
+      <form style="display: flex; gap: 8px;" onsubmit="event.preventDefault();">
+        <input id="save-modal-new-input" type="text" placeholder="Create folder..."
+          style="flex: 1; background: var(--surface); border: 1px solid var(--border); padding: 10px; border-radius: 8px; color: var(--text); outline: none;"
+          aria-label="New folder name" required>
+        <button id="save-modal-new-btn" type="submit"
+          style="background: var(--accent-purple); color: white; border: none; padding: 0 16px; border-radius: 8px; cursor: pointer; font-weight: bold;">Create</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Script tags already moved to <head> with defer attribute for performance -->
   <!-- New Folder Modal -->
-  <div id="new-folder-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);" role="dialog" aria-modal="true" aria-labelledby="new-folder-title">
-    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;">
+  <div id="new-folder-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);"
+    role="dialog" aria-modal="true" aria-labelledby="new-folder-title">
+    <div
+      style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2 id="new-folder-title" style="margin: 0; font-size: 1.2rem;">Folder Settings</h2>
-        <button id="new-folder-close" style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <button id="new-folder-close"
+          style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
       <div>
-        <label for="new-folder-name" style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Folder Name</label>
-        <input type="text" id="new-folder-name" placeholder="e.g. Favorites" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+        <label for="new-folder-name"
+          style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Folder Name</label>
+        <input type="text" id="new-folder-name" placeholder="e.g. Favorites"
+          style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
       </div>
       <div>
-        <label for="new-folder-visibility" style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Visibility</label>
-        <select id="new-folder-visibility" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+        <label for="new-folder-visibility"
+          style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Visibility</label>
+        <select id="new-folder-visibility"
+          style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
           <option value="private">Private (Only visible to you)</option>
           <option value="public">Public (Shareable)</option>
         </select>
       </div>
       <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-        <input type="checkbox" id="new-folder-algo" checked style="width: 18px; height: 18px; accent-color: var(--accent-purple); cursor: pointer;">
-        <label for="new-folder-algo" style="color: var(--text); cursor: pointer; font-size: 0.95rem;">Include in Discovery Algorithm</label>
+        <input type="checkbox" id="new-folder-algo" checked
+          style="width: 18px; height: 18px; accent-color: var(--accent-purple); cursor: pointer;">
+        <label for="new-folder-algo" style="color: var(--text); cursor: pointer; font-size: 0.95rem;">Include in
+          Discovery Algorithm</label>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
-        <button id="new-folder-cancel" style="padding: 10px 20px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Cancel</button>
-        <button id="new-folder-submit" style="padding: 10px 20px; background: var(--accent-purple); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Save Folder</button>
+        <button id="new-folder-cancel"
+          style="padding: 10px 20px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Cancel</button>
+        <button id="new-folder-submit"
+          style="padding: 10px 20px; background: var(--accent-purple); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Save
+          Folder</button>
       </div>
     </div>
   </div>
 
   <!-- Global Settings Modal -->
-  <div id="global-settings-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);" role="dialog" aria-modal="true" aria-labelledby="global-settings-title">
-    <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 600px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 24px; max-height: 85vh;">
+  <div id="global-settings-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);"
+    role="dialog" aria-modal="true" aria-labelledby="global-settings-title">
+    <div
+      style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 600px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 24px; max-height: 85vh;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2 id="global-settings-title" style="margin: 0; font-size: 1.4rem;">Global Settings</h2>
-        <button id="global-settings-close" style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <button id="global-settings-close"
+          style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
 
       <div style="overflow-y: auto; display: flex; flex-direction: column; gap: 24px; padding-right: 8px;">
         <!-- Data Backup Section -->
         <div class="settings-section">
           <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Data Backup</h3>
-          <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 0.9rem;">Export your Vault securely to a local JSON file or import a previous backup.</p>
+          <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 0.9rem;">Export your Vault securely to a local
+            JSON file or import a previous backup.</p>
           <div style="display: flex; gap: 12px;">
-            <button id="vault-export-btn" style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📤 Export Vault</button>
-            <button id="vault-import-btn" style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📥 Import Vault</button>
+            <button id="vault-export-btn"
+              style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📤
+              Export Vault</button>
+            <button id="vault-import-btn"
+              style="padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1;">📥
+              Import Vault</button>
             <input type="file" id="vault-import-input" accept=".json" style="display: none;">
           </div>
         </div>
@@ -531,35 +621,49 @@
         <!-- Network & Proxy Section -->
         <div class="settings-section">
           <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Network & Proxy Settings</h3>
-          <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 0.9rem;">Set a custom CORS proxy if the default one fails. Leave empty to use the default.</p>
+          <p style="margin: 0 0 12px 0; color: var(--muted); font-size: 0.9rem;">Set a custom CORS proxy if the default
+            one fails. Leave empty to use the default.</p>
           <div style="display: flex; gap: 12px; align-items: center;">
-            <input type="text" id="proxy-input" placeholder="https://your-proxy.workers.dev/?" style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
-            <button id="proxy-save-btn" style="padding: 10px 16px; background: var(--accent-purple); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;">Save Proxy</button>
+            <input type="text" id="proxy-input" placeholder="https://your-proxy.workers.dev/?"
+              style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+            <button id="proxy-save-btn"
+              style="padding: 10px 16px; background: var(--accent-purple); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;">Save
+              Proxy</button>
           </div>
         </div>
 
         <!-- Content Filtering Section -->
         <div class="settings-section">
           <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Content Filtering</h3>
-          
+
           <!-- Whitelist -->
           <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global Whitelist</label>
-            <p style="margin: 0 0 8px 0; color: var(--muted); font-size: 0.85rem;">Tags here are ALWAYS included in your searches globally.</p>
+            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global
+              Whitelist</label>
+            <p style="margin: 0 0 8px 0; color: var(--muted); font-size: 0.85rem;">Tags here are ALWAYS included in your
+              searches globally.</p>
             <div style="display: flex; gap: 8px; margin-bottom: 8px; position: relative;">
-              <input type="text" id="whitelist-input" placeholder="Start typing a tag to add..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
-              <div id="whitelist-autocomplete-box" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+              <input type="text" id="whitelist-input" placeholder="Start typing a tag to add..."
+                style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+              <div id="whitelist-autocomplete-box"
+                style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+              </div>
             </div>
             <div id="whitelist-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;"></div>
           </div>
 
           <!-- Blacklist -->
           <div>
-            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global Blacklist</label>
-            <p style="margin: 0 0 8px 0; color: var(--muted); font-size: 0.85rem;">Hide posts containing these tags from ALL searches globally.</p>
+            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global
+              Blacklist</label>
+            <p style="margin: 0 0 8px 0; color: var(--muted); font-size: 0.85rem;">Hide posts containing these tags from
+              ALL searches globally.</p>
             <div style="display: flex; gap: 8px; margin-bottom: 8px; position: relative;">
-              <input type="text" id="blacklist-input" placeholder="Start typing a tag to add..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
-              <div id="blacklist-autocomplete-box" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
+              <input type="text" id="blacklist-input" placeholder="Start typing a tag to add..."
+                style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
+              <div id="blacklist-autocomplete-box"
+                style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+              </div>
             </div>
             <div id="blacklist-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;"></div>
           </div>
@@ -569,4 +673,5 @@
   </div>
 
 </body>
+
 </html>
