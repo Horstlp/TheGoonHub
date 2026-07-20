@@ -23,8 +23,11 @@ window.handleViewSwitch = function(view) {
     }
 
     // Trigger specific logic when navigating
-    if (view === 'videos' && typeof initVideoScroller === 'function') {
-        initVideoScroller();
+    if (view === 'videos') {
+        document.body.classList.add('video-mode');
+        if (typeof initVideoScroller === 'function') initVideoScroller();
+    } else {
+        document.body.classList.remove('video-mode');
     }
     
     if (view === 'vault') {

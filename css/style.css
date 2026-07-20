@@ -1169,3 +1169,18 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
   border: 1px solid rgba(255,255,255,0.1);
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
+
+
+/* ── Video Mode Overrides ── */
+body.video-mode { overflow: hidden; }
+body.video-mode .main-content { padding: 0 !important; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+@media (max-width: 1024px) { body.video-mode .main-content { height: calc(100vh - 60px); height: calc(100dvh - 60px); } }
+
+/* Override original 100vh sizes and hide scrollbar */
+.tiktok-container {
+  height: 100% !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tiktok-container::-webkit-scrollbar { display: none; }
+.tiktok-wrapper { height: 100% !important; }

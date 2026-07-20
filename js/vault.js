@@ -6,6 +6,9 @@ let vaultFolderSettings = {};
 let globalBlacklist = [];
 let globalWhitelist = [];
 
+let vaultReadyResolve;
+const vaultReadyPromise = new Promise(r => vaultReadyResolve = r);
+
 async function initVault() {
   try {
     // Migration logic
@@ -21,17 +24,21 @@ async function initVault() {
       localStorage.removeItem('r34_history_v2');
       localStorage.removeItem('r34_pinned_v2');
       localStorage.removeItem('r34_folders_v2');
-      triggerToastNotification("Migration complete!");
+      triggerToastNotification("Vault migrated successfully.");
     }
-
+    
+    vaultedPosts = (await localforage.getItem('r34_vault_v2')) || [];
     recentSearches = (await localforage.getItem('r34_history_v2')) || [];
     pinnedSearches = (await localforage.getItem('r34_pinned_v2')) || [];
-    vaultedPosts   = (await localforage.getItem('r34_vault_v2')) || [];
     vaultedFolders = (await localforage.getItem('r34_folders_v2')) || ["Default"];
-    vaultFolderSettings = (await localforage.getItem('r34_folder_settings_v1')) || {};
+    vaultFolderSettings = (await localforage.getItem('r34_folder_settings_v2')) || {};
     globalBlacklist = (await localforage.getItem('r34_blacklist')) || [];
     globalWhitelist = (await localforage.getItem('r34_whitelist')) || [];
-
+    
+    // Resolve promise so other scripts know vault is ready
+    if (typeof vaultReadyResolve === 'function') vaultReadyResolve();
+    
+    if(typeof renderVault === 'function') renderVault();
     if (typeof renderHistoryAndPins === 'function') renderHistoryAndPins();
     if (typeof renderBlacklist === 'function') renderBlacklist();
   } catch (err) {

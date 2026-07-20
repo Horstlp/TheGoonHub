@@ -18,7 +18,7 @@ function openLightbox(index) {
   const fileUrl = isVideo ? post.file_url : (post.sample_url || post.file_url);
   
   if (isVideo) {
-    const v = document.createElement('video'); v.src = fileUrl; v.controls = true; v.autoplay = true; v.loop = true; v.playsInline = true; lbContainer.appendChild(v);
+    const v = document.createElement('video'); v.src = fileUrl; v.controls = true; v.autoplay = true; v.loop = true; v.playsInline = true; v.disablePictureInPicture = true; v.controlsList = "nodownload noplaybackrate"; lbContainer.appendChild(v);
   } else {
     const img = document.createElement('img'); img.src = fileUrl; lbContainer.appendChild(img);
   }

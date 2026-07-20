@@ -8,37 +8,42 @@ let currentVideoObserver = null;
 const seenVideoIds = new Set();
 
 async function initVideoScroller() {
+  if (typeof vaultReadyPromise !== 'undefined') {
+      await vaultReadyPromise;
+  }
   if (videoPosts.length === 0 && !isVideoLoading) {
     await loadMoreVideos();
   }
 }
 
+let videoPageIndex = 0;
+
 async function loadMoreVideos() {
   if (isVideoLoading) return;
+  
+  if (typeof generateRawAlgoBatch !== 'function') {
+      videoStatus.innerHTML = '<span class="icon">⚠️</span>Algorithm engine not ready yet.';
+      return;
+  }
+  
   isVideoLoading = true;
   videoStatus.style.display = 'block';
-
-  // Search for high score videos with a fresh cache-busting timestamp attached
-  let tagsParam = 'video sort:random score:>=300';
-  
-  if (typeof globalBlacklist !== 'undefined' && globalBlacklist.length > 0) {
-    globalBlacklist.forEach(t => tagsParam += ` -${t}`);
-  }
-  if (typeof globalWhitelist !== 'undefined' && globalWhitelist.length > 0) {
-    globalWhitelist.forEach(t => tagsParam += ` ${t}`);
-  }
-  
-  // FIXED: Removed incremental pid and added a live timestamp query parameter (&cb=) 
-  // We bump limit to 20 to ensure a thick cushion of items after filtering duplicates!
-  const url = `${API}&tags=${encodeURIComponent(tagsParam)}&limit=20&json=1&cb=${Date.now()}`;
   
   try {
-    const res = await throttledFetch(PROXY + encodeURIComponent(url));
-    const data = await res.json();
+    console.log(`[TIKTOK-DEBUG] Calling generateRawAlgoBatch(pageIndex=${videoPageIndex}, enforceVideo=true)`);
+    const rawBatch = await generateRawAlgoBatch(videoPageIndex, true);
+    console.log(`[TIKTOK-DEBUG] generateRawAlgoBatch returned ${rawBatch ? rawBatch.length : 0} items`);
     
-    if (data && data.length > 0) {
-      // Filter out any posts the user has already loaded during this session
-      const uniqueNewVideos = data.filter(post => !seenVideoIds.has(String(post.id)));
+    if (rawBatch && rawBatch.length > 0) {
+      // Filter out any posts the user has already loaded, AND filter for actual animated extensions
+      const uniqueNewVideos = rawBatch.filter(post => {
+          if (seenVideoIds.has(String(post.id))) return false;
+          const fileUrl = post.file_url || post.sample_url;
+          if (!fileUrl) return false;
+          const ext = fileUrl.split('.').pop().toLowerCase();
+          return ['mp4', 'webm', 'gif'].includes(ext);
+      });
+      console.log(`[TIKTOK-DEBUG] After deduplication and animated extension filter, ${uniqueNewVideos.length} actual animations remain`);
       
       if (uniqueNewVideos.length > 0) {
         // Register the new items into our session memory bank
@@ -47,16 +52,17 @@ async function loadMoreVideos() {
         videoStatus.style.display = 'none';
         videoPosts = videoPosts.concat(uniqueNewVideos);
         appendVideosToScroller(uniqueNewVideos);
+        videoPageIndex++; // Increment page on success
       } else {
-        // If the entire random batch was already seen, silently re-roll the fetch engine!
-        isVideoLoading = false;
-        await loadMoreVideos();
-        return;
+        // We found posts, but they were all duplicates (already seen).
+        // Instead of recursively re-rolling and risking a stack overflow, we just increment and allow the observer to trigger again if needed.
+        console.log(`[TIKTOK-DEBUG] All items were duplicates. Halting fetch to prevent loop (pageIndex=${videoPageIndex + 1})`);
+        videoPageIndex++;
       }
     } else {
-      if (videoPosts.length === 0) {
-        videoStatus.innerHTML = '<span class="icon">😶</span>No videos found matching current score thresholds.';
-      }
+        // Empty batch from API - likely hit the end of results for these tags.
+        console.log(`[TIKTOK-DEBUG] Batch was empty. Reached end of algorithm feed for pageIndex=${videoPageIndex}`);
+        videoStatus.innerHTML = '<span class="icon">😶</span>No more videos found matching your Vault DNA.';
     }
   } catch(err) {
     console.error(err);
@@ -71,18 +77,30 @@ function appendVideosToScroller(data) {
     const fileUrl = post.file_url || post.sample_url;
     if (!fileUrl) return;
     const ext = fileUrl.split('.').pop().toLowerCase();
-    if (!['mp4', 'webm'].includes(ext)) return;
+    if (!['mp4', 'webm', 'gif'].includes(ext)) return;
 
     const wrapper = document.createElement('div');
     wrapper.className = 'tiktok-wrapper';
-
-    const video = document.createElement('video');
-    video.src = fileUrl;
-    video.className = 'tiktok-video';
-    video.loop = true;
-    video.playsInline = true;
-    video.muted = window.globalTiktokMuted !== undefined ? window.globalTiktokMuted : true;
-    if (window.globalTiktokMuted === undefined) window.globalTiktokMuted = true;
+    wrapper.dataset.originalSrc = fileUrl;
+    
+    let mediaEl;
+    if (ext === 'gif') {
+        mediaEl = document.createElement('img');
+        mediaEl.src = fileUrl;
+        mediaEl.className = 'tiktok-video tiktok-gif'; // reuse class for styling
+        mediaEl.style.objectFit = 'contain';
+    } else {
+        mediaEl = document.createElement('video');
+        mediaEl.src = fileUrl;
+        mediaEl.className = 'tiktok-video';
+        mediaEl.loop = true;
+        mediaEl.playsInline = true;
+        mediaEl.disablePictureInPicture = true;
+        mediaEl.controlsList = "nodownload noplaybackrate";
+        mediaEl.style.pointerEvents = 'none'; // Block Opera UI injections
+        mediaEl.muted = window.globalTiktokMuted !== undefined ? window.globalTiktokMuted : true;
+        if (window.globalTiktokMuted === undefined) window.globalTiktokMuted = true;
+    }
     
     let clickTimeout;
     wrapper.addEventListener('click', (e) => {
@@ -94,10 +112,12 @@ function appendVideosToScroller(data) {
         clickTimeout = null;
       } else {
         clickTimeout = setTimeout(() => {
-          if(video.paused) {
-            video.play().catch(()=>{});
-          } else {
-            video.pause();
+          if (ext !== 'gif') {
+              if(mediaEl.paused) {
+                mediaEl.play().catch(()=>{});
+              } else {
+                mediaEl.pause();
+              }
           }
           clickTimeout = null;
         }, 250);
@@ -173,12 +193,15 @@ function appendVideosToScroller(data) {
       }
     });
 
-    // Mute Button
+    // Mute Button (only relevant for actual videos, but we'll show it for uniformity and just ignore clicks for gifs)
     const muteBtn = document.createElement('div');
     muteBtn.className = 'tiktok-circle-btn';
-    muteBtn.innerHTML = video.muted ? '🔇' : '🔊';
+    muteBtn.innerHTML = ext === 'gif' ? '🔇' : (mediaEl.muted ? '🔇' : '🔊');
+    if (ext === 'gif') muteBtn.style.opacity = '0.5';
     muteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (ext === 'gif') return;
+      
       window.globalTiktokMuted = !window.globalTiktokMuted;
       
       // Update all currently rendered videos
@@ -194,27 +217,11 @@ function appendVideosToScroller(data) {
       });
     });
 
-    // PiP Button
-    const pipBtn = document.createElement('div');
-    pipBtn.className = 'tiktok-circle-btn';
-    pipBtn.innerHTML = '⧉';
-    pipBtn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      try {
-        if (document.pictureInPictureElement) {
-          await document.exitPictureInPicture();
-        } else {
-          await video.requestPictureInPicture();
-        }
-      } catch (err) {
-        console.warn("PiP not supported or failed", err);
-      }
-    });
+    // Remove PiP Button to respect Opera restrictions and keep UI clean
 
     actionsRight.appendChild(likeBtn);
     actionsRight.appendChild(saveBtn);
     actionsRight.appendChild(muteBtn);
-    actionsRight.appendChild(pipBtn);
 
     // Timeline Scrubber
     const controlsWrap = document.createElement('div');
@@ -228,26 +235,29 @@ function appendVideosToScroller(data) {
     scrubberWrap.appendChild(scrubberFill);
     controlsWrap.appendChild(scrubberWrap);
 
-    video.addEventListener('timeupdate', () => {
-      if (video.duration) {
-        const percent = (video.currentTime / video.duration) * 100;
-        scrubberFill.style.width = `${percent}%`;
-      }
-    });
+    if (ext !== 'gif') {
+        mediaEl.addEventListener('timeupdate', () => {
+          if (mediaEl.duration) {
+            const percent = (mediaEl.currentTime / mediaEl.duration) * 100;
+            scrubberFill.style.width = `${percent}%`;
+          }
+        });
 
-    scrubberWrap.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const rect = scrubberWrap.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const width = rect.width;
-      const percent = clickX / width;
-      if (video.duration) {
-        video.currentTime = percent * video.duration;
-      }
-    });
+        scrubberWrap.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const rect = scrubberWrap.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          const width = rect.width;
+          const percent = clickX / width;
+          if (mediaEl.duration) {
+            mediaEl.currentTime = percent * mediaEl.duration;
+          }
+        });
+    } else {
+        controlsWrap.style.display = 'none';
+    }
 
-    wrapper.dataset.originalSrc = fileUrl;
-    wrapper.appendChild(video);
+    wrapper.appendChild(mediaEl);
     wrapper.appendChild(info);
     wrapper.appendChild(actionsRight);
     wrapper.appendChild(controlsWrap);
@@ -257,7 +267,8 @@ function appendVideosToScroller(data) {
     if (!window.virtualizeObserver) {
       window.virtualizeObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          const v = entry.target.querySelector('video');
+          const v = entry.target.querySelector('.tiktok-video');
+          if (!v) return;
           const originalSrc = entry.target.dataset.originalSrc;
           if (entry.isIntersecting) {
             if (!v.getAttribute('src')) {
@@ -265,7 +276,7 @@ function appendVideosToScroller(data) {
             }
           } else {
             v.removeAttribute('src');
-            v.load();
+            if (v.tagName.toLowerCase() === 'video') v.load();
           }
         });
       }, { rootMargin: '2000px 0px' });
@@ -278,14 +289,14 @@ function appendVideosToScroller(data) {
         entries.forEach(entry => {
           const v = entry.target.querySelector('video');
           if (entry.isIntersecting) {
-            v.play().catch(()=>console.log("Autoplay blocked by browser policy"));
+            if (v) v.play().catch(()=>console.log("Autoplay blocked by browser policy"));
             
             // Trigger pre-fetch pipeline when user reaches the final card in layout stack
             if (tiktokContainer.lastElementChild === entry.target) {
               loadMoreVideos();
             }
           } else {
-            v.pause();
+            if (v) v.pause();
           }
         });
       }, { threshold: 0.6 });
