@@ -19,8 +19,10 @@ function openLightbox(index) {
   
   if (isVideo) {
     const v = document.createElement('video'); v.src = fileUrl; v.controls = true; v.autoplay = true; v.loop = true; v.playsInline = true; v.disablePictureInPicture = true; v.controlsList = "nodownload noplaybackrate"; lbContainer.appendChild(v);
+    v.onloadedmetadata = () => document.getElementById('lightbox-info').style.height = `${v.clientHeight}px`;
   } else {
     const img = document.createElement('img'); img.src = fileUrl; lbContainer.appendChild(img);
+    img.onload = () => document.getElementById('lightbox-info').style.height = `${img.clientHeight}px`;
   }
   lbScore.textContent = `Score: ${post.score ?? 0}`;
   lbSize.textContent  = post.width ? `${post.width}×${post.height}` : '';

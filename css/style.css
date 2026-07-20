@@ -449,13 +449,12 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
 #lightbox-close:hover { border-color: var(--danger); color: var(--danger); }
 
 #lightbox-info {
-  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
   background: #111116; border: 1px solid var(--border); border-radius: 16px;
-  padding: 16px 24px; font-size: 0.85rem; color: var(--muted);
-  display: flex; flex-direction: column; gap: 12px; max-width: 600px; width: calc(100% - 64px);
-  z-index: 520; align-items: center;
+  padding: 24px; font-size: 0.85rem; color: var(--muted);
+  display: flex; flex-direction: column; gap: 16px; width: auto; min-width: 250px;
+  align-items: flex-start; margin-left: 24px; overflow: hidden;
 }
-.lb-meta-row { display: flex; gap: 20px; width: 100%; justify-content: center; align-items: center; }
+.lb-meta-row { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; justify-content: flex-start; align-items: center; }
 
 .lb-action-btn {
   background: var(--surface); border: 1px solid var(--border); color: var(--text);
@@ -466,13 +465,20 @@ header p { color: var(--muted); font-size: 0.85rem; font-weight: 400; }
 #lb-fav-btn.favorited { color: var(--accent); border-color: var(--accent); background: rgba(255, 94, 151, 0.05); }
 
 .lb-tags-stream {
-  display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
-  max-height: 65px; overflow-y: auto; width: 100%; padding-top: 8px; border-top: 1px solid var(--border);
+  display: flex; flex-wrap: wrap; gap: 8px; align-content: flex-start;
+  width: auto; padding-top: 16px; border-top: 1px solid var(--border);
+  flex-grow: 1; min-height: 0; overflow: hidden;
+  writing-mode: vertical-lr;
 }
 .lb-stream-tag {
   font-size: 0.75rem; background: #1c1c27; color: #b5b5c6;
   padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
   cursor: pointer; transition: all 0.15s;
+  writing-mode: horizontal-tb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 .lb-stream-tag:hover { border-color: var(--accent-purple); color: #fff; }
 
