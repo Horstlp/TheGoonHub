@@ -1,5 +1,7 @@
 // Recommendation Engine Logic
 
+window.algoTargetFolder = null;
+window.algoRequestVersion = 0;
 let algoTagsCache = {}; // { tag: type }
 let algoGridPage = 0;
 let isAlgoLoading = false;
@@ -112,12 +114,27 @@ async function initAlgoCache() {
     algoTagsCache = (await localforage.getItem('r34_tag_types')) || {};
 }
 
+let algoDnaCache = {}; // { folderKey: sortedTags }
+
+window.invalidateAlgoDnaCache = function() {
+    algoDnaCache = {};
+};
+
 // Analyze Vault and tally tag frequencies with chronological decay (Recency Bias)
-function analyzeVaultTags() {
+function analyzeVaultTags(folderName = null) {
+    const cacheKey = folderName || 'All';
+    if (algoDnaCache[cacheKey]) {
+        return algoDnaCache[cacheKey];
+    }
+
     const counts = {};
     
     const validPosts = vaultedPosts.filter(post => {
         const f = post.folder || 'Default';
+        if (folderName) {
+            if (folderName === 'All') return true;
+            return f === folderName;
+        }
         if (typeof vaultFolderSettings !== 'undefined' && vaultFolderSettings[f]) {
              if (vaultFolderSettings[f].useInAlgo === false) return false;
         }
@@ -138,7 +155,10 @@ function analyzeVaultTags() {
             counts[t] = (counts[t] || 0) + recencyWeight;
         });
     });
-    return Object.entries(counts).sort((a,b) => b[1] - a[1]);
+    
+    const result = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+    algoDnaCache[cacheKey] = result;
+    return result;
 }
 
 // Fetch tag type from Rule34 tags API (Bypasses global 500ms throttle for speed)
@@ -219,7 +239,7 @@ async function resolveTopTagTypes(sortedTags, limit = 100) {
 }
 
 // Fetch helper that normalizes the Rule34 JSON response
-async function fetchR34Posts(query, limit, page = 0) {
+async function fetchR34Posts(query, limit, page = 0, isBackground = false) {
     // We MUST use the API constant from api.js to ensure api_key and user_id are passed, otherwise it 403s.
     const baseUrl = typeof API !== 'undefined' ? API : 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index';
     
@@ -231,7 +251,7 @@ async function fetchR34Posts(query, limit, page = 0) {
     
     const url = `${baseUrl}&limit=${limit}&pid=${page}&tags=${encodeURIComponent(finalQuery)}&json=1&cb=${Date.now()}`;
     try {
-        const res = await throttledFetch(PROXY + encodeURIComponent(url));
+        const res = await throttledFetch(PROXY + encodeURIComponent(url), {}, isBackground);
         const text = await res.text();
         if (!text.trim()) {
             return null;
@@ -405,11 +425,16 @@ let isAlgoPreloading = false;
 let currentAlgoPreloadPage = 0;
 const ALGO_PRELOAD_BUFFER_SIZE = 3;
 
-async function generateRawAlgoBatch(pageIndex) {
+async function getAlgoBatchQueries(pageIndex, isBackground = false) {
     const batchSize = parseInt(algoValBatch.value || 30);
-    const ratio = parseInt(algoValRatio.value || 50) / 100;
+    const sortedTags = analyzeVaultTags(window.algoTargetFolder);
+    const hasTags = sortedTags.length > 0;
+    
+    // If a targeted folder is selected, turn down random content to 0 (100% targeted)
+    // If vault is empty, set ratio to 1.0 to load general discoveries
+    const ratio = hasTags ? (window.algoTargetFolder ? 0 : (parseInt(algoValRatio.value || 50) / 100)) : 1.0;
     const fetchAmount = parseInt(algoValFetches.value || 9);
-    const freshnessRatio = parseInt(algoValFreshness.value || 30) / 100;
+    const freshnessRatio = window.algoTargetFolder ? 0.1 : (parseInt(algoValFreshness.value || 30) / 100);
     const baseSearch = algoBaseSearch.value.trim();
     
     const randomCount = Math.round(batchSize * ratio);
@@ -417,7 +442,6 @@ async function generateRawAlgoBatch(pageIndex) {
     
     logAlgo(`[PRELOAD ${pageIndex}] Split: ${randomCount} random, ${targetedCount} targeted.`);
     
-    const sortedTags = analyzeVaultTags();
     await resolveTopTagTypes(sortedTags, 100);
     
     const multipliers = {
@@ -457,17 +481,17 @@ async function generateRawAlgoBatch(pageIndex) {
         algoInsights.appendChild(pill);
     });
 
-    const fetchPromises = [];
+    const queries = [];
     
     if (randomCount > 0) {
         const isFresh = Math.random() < freshnessRatio;
         let q = isFresh ? '' : 'sort:random';
         if (baseSearch) q = isFresh ? baseSearch : `${baseSearch} sort:random`;
         q += (q ? ' ' : '') + 'score:>=300';
-        fetchPromises.push((async () => {
-            const res = await fetchR34Posts(q, randomCount, pageIndex);
+        queries.push(async () => {
+            const res = await fetchR34Posts(q, randomCount, pageIndex, isBackground);
             return res;
-        })());
+        });
     }
     
     if (targetedCount > 0) {
@@ -477,7 +501,7 @@ async function generateRawAlgoBatch(pageIndex) {
         if (tagsToQuery.length > 0) {
             const countPerTag = Math.ceil(targetedCount / tagsToQuery.length);
             tagsToQuery.forEach(tag => {
-                fetchPromises.push((async () => {
+                queries.push(async () => {
                     let maxRetries = 3;
                     while (maxRetries > 0) {
                         let q = tag;
@@ -498,26 +522,17 @@ async function generateRawAlgoBatch(pageIndex) {
                         if (baseSearch) q = `${baseSearch} ${q}`;
                         
                         q += ' score:>=300';
-                        const res = await fetchR34Posts(q, countPerTag, pageIndex);
+                        const res = await fetchR34Posts(q, countPerTag, pageIndex, isBackground);
                         if (res && res.length > 0) return res;
                         maxRetries--;
                     }
                     return [];
-                })());
+                });
             });
         }
     }
     
-    const resultsArrays = await Promise.all(fetchPromises);
-    const flatResults = resultsArrays.flat();
-    
-    // Shuffle the final batch so random and targeted posts are nicely interleaved
-    for (let i = flatResults.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [flatResults[i], flatResults[j]] = [flatResults[j], flatResults[i]];
-    }
-    
-    return flatResults;
+    return queries;
 }
 
 async function startContinuousAlgoPreload(startPage) {
@@ -528,7 +543,9 @@ async function startContinuousAlgoPreload(startPage) {
     
     while(isAlgoPreloading) {
         if (algoPreloadQueue.length < ALGO_PRELOAD_BUFFER_SIZE) {
-            const data = await generateRawAlgoBatch(currentAlgoPreloadPage);
+            const queries = await getAlgoBatchQueries(currentAlgoPreloadPage, true);
+            const resultsArrays = await Promise.all(queries.map(q => q()));
+            const data = resultsArrays.flat().filter(p => p !== null && p !== undefined);
             
             if (!isAlgoPreloading) break;
             
@@ -547,90 +564,149 @@ async function startContinuousAlgoPreload(startPage) {
 }
 
 async function pullBlendedBatch(append = false, isMainGrid = false) {
-    if (isAlgoLoading) return;
+    if (append && isAlgoLoading) return;
     if (vaultedPosts.length === 0) {
-        triggerToastNotification('Save some images to your vault first to train the algorithm!');
-        return;
+        triggerToastNotification('Vault is empty. Save some images to train the algorithm!');
     }
+    
+    if (!append) {
+        isAlgoLoading = false;
+        if (typeof window.clearBackgroundFetchQueue === 'function') {
+            window.clearBackgroundFetchQueue();
+        }
+    }
+
     isAlgoLoading = true;
+    const myVersion = ++window.algoRequestVersion;
     logAlgo(append ? 'Pulling next chunk for infinite scroll...' : 'Initiating feed generation...');
     
     const targetGrid = isMainGrid ? document.getElementById('grid') : algoGrid;
     const targetStatus = isMainGrid ? document.getElementById('status') : algoStatus;
     const bottomStatusEl = document.getElementById('bottom-status');
     
-    if (!append) {
-        targetGrid.innerHTML = '';
-        algoGridPage = 0;
-        targetStatus.style.display = 'block';
-        if(bottomStatusEl) bottomStatusEl.style.display = 'none';
-        targetStatus.innerHTML = '<div class="heart-loader"></div>Analyzing Vault & Generating Feed...';
-        
-        isAlgoPreloading = false;
-        algoPreloadQueue = [];
-    } else {
-        if(bottomStatusEl) bottomStatusEl.style.display = 'block';
-        algoGridPage++; // Properly increment the central tracking state
-    }
-
-    let allPosts = [];
-    if (append && algoPreloadQueue.length > 0) {
-        allPosts = algoPreloadQueue.shift();
-    } else {
-        allPosts = await generateRawAlgoBatch(algoGridPage);
-    }
-    
-    logAlgo(`Received ${allPosts.length} total raw posts from API.`);
-    
-    const uniquePostsMap = new Map();
-    const existingIds = append ? new Set(cachedPosts.map(p => p.id)) : new Set();
-    
-    allPosts.forEach(post => {
-        if (!uniquePostsMap.has(post.id) && !existingIds.has(post.id)) {
-            uniquePostsMap.set(post.id, post);
-        }
-    });
-    
-    let finalBatch = Array.from(uniquePostsMap.values());
-    logAlgo(`Deduplicated array: ${finalBatch.length} unique posts remain.`);
-    
-    // Fisher-Yates Shuffle
-    for (let i = finalBatch.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [finalBatch[i], finalBatch[j]] = [finalBatch[j], finalBatch[i]];
-    }
-    
-    targetStatus.style.display = 'none';
-    if(bottomStatusEl) bottomStatusEl.style.display = 'none';
-    
-    if (finalBatch.length === 0 && !append) {
-        targetStatus.style.display = 'block';
-        targetStatus.innerHTML = 'No results found. Try clearing your Base Search or lowering weights.';
-        isAlgoLoading = false;
-        return;
-    }
-    
-    if (typeof injectPostCardsIntoGrid === 'function') {
-        if (!append) cachedPosts = [];
-        cachedPosts = append ? cachedPosts.concat(finalBatch) : finalBatch;
-        injectPostCardsIntoGrid(finalBatch, targetGrid);
-    }
-    
-    const loadMoreBtn = document.getElementById('algo-load-more-btn');
-    if (loadMoreBtn) {
-        if (finalBatch.length > 0) {
-            loadMoreBtn.style.display = 'inline-block';
-            loadMoreBtn.innerHTML = '🔄 Load More Discoveries';
-            loadMoreBtn.disabled = false;
+    try {
+        if (!append) {
+            targetGrid.innerHTML = '';
+            algoGridPage = 0;
+            targetStatus.style.display = 'block';
+            if(bottomStatusEl) bottomStatusEl.style.display = 'none';
+            targetStatus.innerHTML = '<div class="heart-loader"></div>Analyzing Vault & Generating Feed...';
+            
+            isAlgoPreloading = false;
+            algoPreloadQueue = [];
+            cachedPosts = [];
         } else {
-            loadMoreBtn.style.display = 'none';
+            if(bottomStatusEl) bottomStatusEl.style.display = 'block';
+            algoGridPage++; // Properly increment the central tracking state
         }
+
+        // If we have a preloaded queue element, render it immediately
+        if (append && algoPreloadQueue.length > 0) {
+            const preloadedPosts = algoPreloadQueue.shift().filter(p => p !== null && p !== undefined);
+            if (myVersion !== window.algoRequestVersion) return;
+
+            if (preloadedPosts.length > 0) {
+                const uniquePosts = [];
+                const renderedIds = new Set(cachedPosts.map(p => p.id));
+                preloadedPosts.forEach(post => {
+                    if (post && post.id && !renderedIds.has(post.id)) {
+                        renderedIds.add(post.id);
+                        uniquePosts.push(post);
+                    }
+                });
+
+                if (uniquePosts.length > 0) {
+                    targetStatus.style.display = 'none';
+                    if (bottomStatusEl) bottomStatusEl.style.display = 'none';
+                    cachedPosts = cachedPosts.concat(uniquePosts);
+                    if (typeof injectPostCardsIntoGrid === 'function') {
+                        injectPostCardsIntoGrid(uniquePosts, targetGrid);
+                    }
+                }
+            }
+            
+            isAlgoLoading = false;
+            startContinuousAlgoPreload(algoGridPage + 1);
+            setTimeout(() => {
+                if (typeof window.checkSentinelVisibility === 'function') {
+                    window.checkSentinelVisibility();
+                }
+            }, 300);
+            return;
+        }
+
+        // Otherwise, fetch progressively
+        const queries = await getAlgoBatchQueries(algoGridPage);
+        if (myVersion !== window.algoRequestVersion) return;
+
+        if (queries.length === 0) {
+            isAlgoLoading = false;
+            if (bottomStatusEl) bottomStatusEl.style.display = 'none';
+            if (!append) {
+                targetStatus.style.display = 'block';
+                targetStatus.innerHTML = 'No results found. Try clearing your Base Search or lowering weights.';
+            }
+            return;
+        }
+
+        const renderedIds = new Set(cachedPosts.map(p => p.id));
+        let activeRequests = queries.length;
+        let hasRenderedFirst = false;
+
+        // Run each fetch query progressively and append as they arrive!
+        queries.forEach(async (queryFn) => {
+            try {
+                const posts = await queryFn();
+                if (myVersion !== window.algoRequestVersion) return;
+
+                if (posts && posts.length > 0) {
+                    const uniquePosts = posts.filter(post => {
+                        if (post && post.id && !renderedIds.has(post.id)) {
+                            renderedIds.add(post.id);
+                            return true;
+                        }
+                        return false;
+                    });
+
+                    if (uniquePosts.length > 0) {
+                        if (!hasRenderedFirst && !append) {
+                            targetStatus.style.display = 'none';
+                            hasRenderedFirst = true;
+                        }
+
+                        cachedPosts = cachedPosts.concat(uniquePosts);
+                        if (typeof injectPostCardsIntoGrid === 'function') {
+                            injectPostCardsIntoGrid(uniquePosts, targetGrid);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Query execution failed", err);
+            } finally {
+                activeRequests--;
+                // When the final concurrent request resolves, clean up loading states
+                if (activeRequests === 0) {
+                    isAlgoLoading = false;
+                    if (bottomStatusEl) bottomStatusEl.style.display = 'none';
+                    if (!hasRenderedFirst && !append && cachedPosts.length === 0) {
+                        targetStatus.style.display = 'block';
+                        targetStatus.innerHTML = 'No results found. Try clearing your Base Search or lowering weights.';
+                    }
+                    startContinuousAlgoPreload(algoGridPage + 1);
+                    setTimeout(() => {
+                        if (typeof window.checkSentinelVisibility === 'function') {
+                            window.checkSentinelVisibility();
+                        }
+                    }, 300);
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Error inside pullBlendedBatch:", err);
+        isAlgoLoading = false;
+        if (bottomStatusEl) bottomStatusEl.style.display = 'none';
     }
-    
-    // KICK OFF OR RESUME CONTINUOUS PRELOAD FOR THE NEXT PAGES
-    startContinuousAlgoPreload(algoGridPage + 1);
-    
-    isAlgoLoading = false;
 }
 
 if (algoGenerateBtn) {

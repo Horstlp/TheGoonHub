@@ -37,7 +37,7 @@ let idCalibrated = false;
 let highPriorityQueue = [];
 let lowPriorityQueue = [];
 let isFetchingQueue = false;
-let currentFetchDelay = 400; // Safer 2 requests per second baseline
+let currentFetchDelay = 500; // Safer 2 requests per second baseline
 let queueTimeoutId = null;
 
 function processFetchQueue() {
@@ -86,6 +86,10 @@ function throttledFetch(url, options = {}, isBackground = false) {
   });
 }
 
+window.clearBackgroundFetchQueue = function () {
+  lowPriorityQueue = [];
+};
+
 // --- Debounce Utility ---
 function debounce(func, wait) {
   let timeout;
@@ -123,10 +127,19 @@ async function getIdRange(days) {
   return { min: minId, max: latest };
 }
 
+let autocompleteAbortController = null;
+
 async function queryAutocomplete(query, callback = null) {
+  if (autocompleteAbortController) {
+    autocompleteAbortController.abort();
+  }
+  autocompleteAbortController = new AbortController();
+
   const targetUrl = `${AUTOCOMPLETE_API}${encodeURIComponent(query)}`;
   try {
-    const res = await throttledFetch(PROXY + encodeURIComponent(targetUrl));
+    const res = await fetch(PROXY + encodeURIComponent(targetUrl), {
+      signal: autocompleteAbortController.signal
+    });
     const data = await res.json();
     if (callback) {
       callback(data);
@@ -134,6 +147,8 @@ async function queryAutocomplete(query, callback = null) {
       renderSuggestions(data);
     }
   } catch (err) {
-    console.error('Autocomplete fetch loop fail:', err);
+    if (err.name !== 'AbortError') {
+      console.error('Autocomplete fetch loop fail:', err);
+    }
   }
 }

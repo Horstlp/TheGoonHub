@@ -1,3 +1,4 @@
+window.searchRequestVersion = 0;
 let currentTags = '';
 let currentPage = 0;
 let cachedPosts = [];
@@ -96,7 +97,11 @@ const masonryObserver = new ResizeObserver(entries => {
 
 /** Infinite Scroll Observer **/
 const handleScroll = debounce((entries) => {
-  if (entries[0].isIntersecting && !isLoading && hasMore && !isViewingVault) {
+  const isAlgo = (sortSelect && sortSelect.value === 'algo:discover');
+  const isAlgoLoadingSafe = (typeof isAlgoLoading !== 'undefined') ? isAlgoLoading : false;
+  const loading = isAlgo ? isAlgoLoadingSafe : isLoading;
+
+  if (entries[0].isIntersecting && !loading && hasMore && !isViewingVault) {
     if (typeof loadNextPage === 'function') loadNextPage();
   }
 }, 250);
@@ -216,6 +221,72 @@ function renderVaultFoldersNav() {
     nav.appendChild(btn);
   });
 
+  if (typeof renderHomeFolderTabs === 'function') {
+    renderHomeFolderTabs();
+  }
+}
+
+function renderHomeFolderTabs() {
+  if (typeof window.invalidateAlgoDnaCache === 'function') {
+    window.invalidateAlgoDnaCache();
+  }
+  const container = document.getElementById('home-folders-nav');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const folders = ['All', ...getVaultFolders()];
+  
+  folders.forEach(f => {
+    // Determine active status: window.algoTargetFolder matches f, or f === 'All' and window.algoTargetFolder is null
+    const isActive = (f === 'All' && !window.algoTargetFolder) || (window.algoTargetFolder === f);
+    
+    // Calculate post count in this folder to verify if it has saved content
+    let folderCount = 0;
+    if (f === 'All') {
+      folderCount = vaultedPosts.length;
+    } else if (f === 'Default') {
+      folderCount = vaultedPosts.filter(p => !p.folder || p.folder === 'Default').length;
+    } else {
+      folderCount = vaultedPosts.filter(p => p.folder === f).length;
+    }
+    
+    // Only display folder tab if it actually contains items (All is always shown)
+    if (f !== 'All' && folderCount === 0) return;
+
+    const tab = document.createElement('div');
+    tab.className = 'home-folder-tab' + (isActive ? ' active' : '');
+    tab.textContent = f;
+    tab.title = f === 'All' ? 'Personalized algorithm feed' : `Recommendations matching ${f}`;
+
+    tab.addEventListener('click', () => {
+      // If clicking already active folder tab, toggle back to 'All'
+      if (isActive) {
+        if (f === 'All') return; // Clicking All again does nothing
+        window.algoTargetFolder = null;
+      } else {
+        window.algoTargetFolder = f === 'All' ? null : f;
+      }
+
+      // Clear search query
+      tagsArray = [];
+      if (typeof renderPills === 'function') renderPills();
+      if (input) input.value = '';
+      currentTags = '';
+
+      // Force sort select to algo:discover
+      if (sortSelect) {
+        sortSelect.value = 'algo:discover';
+      }
+      if (typeof updateSortButtonsUI === 'function') {
+        updateSortButtonsUI('algo:discover');
+      }
+
+      renderHomeFolderTabs(); // Re-render tabs to reflect active highlight
+      doSearch();
+    });
+
+    container.appendChild(tab);
+  });
 }
 
 // New Folder Modal Logic
@@ -768,10 +839,10 @@ let currentPreloadTags = '';
 let currentPreloadPage = 0;
 const PRELOAD_BUFFER_SIZE = 3;
 
-async function fetchStandardBatch(tagsParam, page) {
+async function fetchStandardBatch(tagsParam, page, isBackground = false) {
   const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g, '+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
   try {
-    const res = await throttledFetch(PROXY + encodeURIComponent(url));
+    const res = await throttledFetch(PROXY + encodeURIComponent(url), {}, isBackground);
     const responseText = await res.text();
     if (!res.ok || !responseText.trim()) return null;
     return JSON.parse(responseText);
@@ -790,7 +861,7 @@ async function startContinuousPreload(tagsParam, startPage) {
 
   while (isPreloading && currentPreloadTags === tagsParam) {
     if (preloadedPagesQueue.length < PRELOAD_BUFFER_SIZE && hasMore) {
-      const data = await fetchStandardBatch(tagsParam, currentPreloadPage);
+      const data = await fetchStandardBatch(tagsParam, currentPreloadPage, true);
 
       // If the search was cancelled or changed while fetching, discard
       if (!isPreloading || currentPreloadTags !== tagsParam) break;
@@ -816,8 +887,17 @@ async function startContinuousPreload(tagsParam, startPage) {
 }
 
 async function search(tags, page, append = false) {
-  if (isLoading) return; // Prevent multiple simultaneous requests
+  if (append && isLoading) return; // Prevent multiple simultaneous page loads
+  
+  if (!append) {
+    isLoading = false;
+    if (typeof window.clearBackgroundFetchQueue === 'function') {
+      window.clearBackgroundFetchQueue();
+    }
+  }
+
   isLoading = true;
+  const myVersion = ++window.searchRequestVersion;
   btn.disabled = true; // Disable search button during loading
 
   const bottomStatusEl = document.getElementById('bottom-status');
@@ -852,6 +932,11 @@ async function search(tags, page, append = false) {
   if (days !== 'all') {
     if (!append) statusEl.innerHTML = '<div class="spinner"></div>Calibrating target timeframe offsets...';
     let range = await getIdRange(parseInt(days));
+    if (myVersion !== window.searchRequestVersion) {
+      isLoading = false;
+      btn.disabled = false;
+      return;
+    }
     if (range) { tagParts.push(`id:>=${range.min}`); tagParts.push(`id:<=${range.max}`); }
   }
   const tagsParam = tagParts.join('+') || 'all';
@@ -864,10 +949,16 @@ async function search(tags, page, append = false) {
       data = preloadedPagesQueue.shift();
     } else {
       // Fallback or Initial fetch (if we scrolled faster than the buffer, or it's a new search)
-      data = await fetchStandardBatch(tagsParam, page);
+      data = await fetchStandardBatch(tagsParam, page, false);
     }
   } catch (err) {
     data = null;
+  }
+
+  if (myVersion !== window.searchRequestVersion) {
+    isLoading = false;
+    btn.disabled = false;
+    return;
   }
 
   if (!data || data.length === 0) {
@@ -895,12 +986,11 @@ async function search(tags, page, append = false) {
   btn.disabled = false;
   isLoading = false;
 
-  if (hasMore && typeof scrollSentinel !== 'undefined' && scrollSentinel) {
-    const sentinelRect = scrollSentinel.getBoundingClientRect();
-    if (sentinelRect.top < window.innerHeight && sentinelRect.top > 0) {
-      if (typeof loadNextPage === 'function') loadNextPage();
+  setTimeout(() => {
+    if (typeof window.checkSentinelVisibility === 'function') {
+      window.checkSentinelVisibility();
     }
-  }
+  }, 300);
 }
 
 function syncVaultCounterDisplay() {
@@ -924,6 +1014,9 @@ function togglePostFavoriteStatus(post) {
   }
   localforage.setItem('r34_vault_v2', vaultedPosts);
   syncVaultCounterDisplay();
+  if (typeof renderHomeFolderTabs === 'function') {
+    renderHomeFolderTabs();
+  }
 
   // Re-render the vault grid if we are currently looking at it
   const viewVault = document.getElementById('view-vault');
@@ -932,7 +1025,23 @@ function togglePostFavoriteStatus(post) {
   }
 }
 
+window.checkSentinelVisibility = function() {
+  if (isViewingVault) return;
+  
+  const isAlgo = (sortSelect && sortSelect.value === 'algo:discover');
+  const isAlgoLoadingSafe = (typeof isAlgoLoading !== 'undefined') ? isAlgoLoading : false;
+  const loading = isAlgo ? isAlgoLoadingSafe : isLoading;
+  if (loading || !hasMore) return;
 
+  if (scrollSentinel) {
+    const rect = scrollSentinel.getBoundingClientRect();
+    if (rect.top < window.innerHeight + 150) {
+      if (typeof loadNextPage === 'function') {
+        loadNextPage();
+      }
+    }
+  }
+};
 
 function loadNextPage() {
   currentPage++;
@@ -951,6 +1060,11 @@ function doSearch() {
   scrollSentinel.style.display = 'flex'; // Ensure sentinel is visible for new searches
   currentTags = tagsArray.join(' ');
   currentPage = 0; // Reset page for a new search
+
+  if (currentTags.trim() !== '') {
+    window.algoTargetFolder = null;
+    if (typeof renderHomeFolderTabs === 'function') renderHomeFolderTabs();
+  }
 
   // Toggle sorting & timeframe capsules visibility based on whether tags/search is active
   const sortContainer = document.getElementById('search-sort-container');
@@ -991,6 +1105,11 @@ function resetToAlgorithmFeed() {
     input.value = '';
   }
   currentTags = '';
+
+  window.algoTargetFolder = null;
+  if (typeof renderHomeFolderTabs === 'function') {
+    renderHomeFolderTabs();
+  }
 
   if (sortSelect) {
     sortSelect.value = 'algo:discover';
@@ -1048,6 +1167,13 @@ const SORT_ICONS = {
 
 function updateSortButtonsUI(value) {
   if (!sortBtnScore || !sortBtnTime || !sortBtnRandom || !sortToggleBtn) return;
+
+  if (value !== 'algo:discover') {
+    window.algoTargetFolder = null;
+    if (typeof renderHomeFolderTabs === 'function') {
+      renderHomeFolderTabs();
+    }
+  }
 
   // Remove active and reversed classes from all buttons and their child images
   [sortBtnScore, sortBtnTime, sortBtnRandom].forEach(btn => {

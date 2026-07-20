@@ -2185,3 +2185,43 @@ body.video-mode .main-content {
 .search-timeframe-container.expanded .timeframe-toggle-btn {
   transform: rotate(360deg);
 }
+
+/* ── Pinterest-style Home Folder Tabs ── */
+.home-folders-nav {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 8px 0 16px;
+  margin-bottom: 12px;
+  scrollbar-width: none; /* Firefox */
+}
+
+.home-folders-nav::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Edge */
+}
+
+.home-folder-tab {
+  background: #1c1c24;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.home-folder-tab:hover {
+  background: var(--surface-hover);
+  border-color: var(--muted);
+}
+
+.home-folder-tab.active {
+  background: var(--accent); /* Rose Pink highlight */
+  color: #ffffff;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(233, 94, 140, 0.35);
+}
