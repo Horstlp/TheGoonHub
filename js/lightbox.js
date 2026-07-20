@@ -10,8 +10,16 @@ const lbFavBtn         = document.getElementById('lb-fav-btn');
 const lbDlBtn          = document.getElementById('lb-dl-btn');
 const lbTagsStreamBox  = document.getElementById('lb-tags-stream-box');
 
+function getLightboxPosts() {
+  const isVault = (document.getElementById('view-vault') && document.getElementById('view-vault').style.display !== 'none');
+  return isVault ? (window.cachedVaultPosts || []) : (window.cachedPosts || cachedPosts || []);
+}
+
+window.lightboxOpenInView = null;
+
 function openLightbox(index) {
-  currentPostIndex = index; const post = cachedPosts[index];
+  const posts = getLightboxPosts();
+  currentPostIndex = index; const post = posts[index];
   lbContainer.innerHTML = ''; lbTagsStreamBox.innerHTML = '';
   const originalExt = (post.file_url || '').split('.').pop().toLowerCase();
   const isVideo = ['mp4','webm'].includes(originalExt);
@@ -51,7 +59,8 @@ function openLightbox(index) {
       }
   });
   
-  artists.forEach(t => {
+  for (let i = 0; i < artists.length; i++) {
+      const t = artists[i];
       const s = document.createElement('span'); 
       s.className = 'lb-stream-tag'; 
       s.dataset.tag = t;
@@ -59,7 +68,7 @@ function openLightbox(index) {
       s.style.borderColor = '#fbbf24'; // Yellow for artist
       s.onclick = (e) => { e.stopPropagation(); disableVaultViewMode(); addPill(t); };
       lbTagsStreamBox.appendChild(s);
-  });
+  }
   
   if (artists.length > 0 && others.length > 0) {
       const sep = document.createElement('div');
@@ -78,17 +87,22 @@ function openLightbox(index) {
       lbTagsStreamBox.appendChild(s);
   });
   lbPrevBtn.style.display = currentPostIndex > 0 ? 'flex' : 'none';
-  lbNextBtn.style.display = currentPostIndex < cachedPosts.length - 1 ? 'flex' : 'none';
+  lbNextBtn.style.display = currentPostIndex < posts.length - 1 ? 'flex' : 'none';
+  
+  const activeView = document.querySelector('.app-view.active-view')?.id?.replace('view-', '') || 'images';
+  window.lightboxOpenInView = activeView;
+  
   lightbox.classList.add('open'); document.body.style.overflow = 'hidden';
 }
 
 function closeLightbox() {
   lightbox.classList.remove('open'); lbContainer.innerHTML = ''; document.body.style.overflow = '';
+  window.lightboxOpenInView = null;
 }
 
 function navigateLightbox(dir) {
   const tidx = currentPostIndex + dir;
-  if (tidx >= 0 && tidx < cachedPosts.length) openLightbox(tidx);
+  if (tidx >= 0 && tidx < getLightboxPosts().length) openLightbox(tidx);
 }
 
 lbClose.addEventListener('click', closeLightbox);

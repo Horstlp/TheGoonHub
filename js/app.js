@@ -2,6 +2,7 @@ window.searchRequestVersion = 0;
 let currentTags = '';
 let currentPage = 0;
 let cachedPosts = [];
+window.cachedVaultPosts = [];
 let currentPostIndex = -1;
 
 let tagsArray = [];
@@ -616,7 +617,8 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
         return;
       }
 
-      const targetArray = cachedPosts; // cachedPosts handles Vault mode dynamically
+      const isVaultContainer = (targetContainer && targetContainer.id === 'vault-grid');
+      const targetArray = isVaultContainer ? (window.cachedVaultPosts || []) : cachedPosts;
       const actualIndex = targetArray.findIndex(p => String(p.id) === String(post.id));
       if (actualIndex > -1) openLightbox(actualIndex);
     });
@@ -734,7 +736,7 @@ function renderVaultGridToDedicatedView() {
   }
 
   vaultStatus.style.display = 'none';
-  cachedPosts = [...filteredPosts]; // Update cachedPosts so lightbox works from Vault
+  window.cachedVaultPosts = [...filteredPosts]; // Save in vault-specific array so Images grid cachedPosts is never overwritten
 
   if (activeVaultTab === 'bookshelf' && typeof injectPhysicalBookshelf === 'function') {
     injectPhysicalBookshelf(filteredPosts, vaultGrid);
@@ -1138,13 +1140,7 @@ function resetToAlgorithmFeed() {
   doSearch();
 }
 
-// Listen to Image Tab clicks to reset to algorithm feed
-const navImagesBtn = document.getElementById('nav-images');
-if (navImagesBtn) {
-  navImagesBtn.addEventListener('click', () => {
-    resetToAlgorithmFeed();
-  });
-}
+// The nav-images listener has been moved to navigation.js to allow contextual refreshing
 
 btn.addEventListener('click', doSearch);
 
@@ -1522,7 +1518,8 @@ class Slideshow {
   }
 
   start() {
-    if (cachedPosts.length === 0) {
+    const posts = typeof getLightboxPosts === 'function' ? getLightboxPosts() : cachedPosts;
+    if (posts.length === 0) {
       triggerToastNotification("No images to play!");
       return;
     }
@@ -1542,14 +1539,16 @@ class Slideshow {
         this.stop();
         return;
       }
-      if (currentPostIndex < cachedPosts.length - 1) {
+      const posts = typeof getLightboxPosts === 'function' ? getLightboxPosts() : cachedPosts;
+      if (currentPostIndex < posts.length - 1) {
         lbNextBtn.click();
       } else {
         if (hasMore) {
           loadNextPage();
           // wait a bit for it to load, then next
           setTimeout(() => {
-            if (currentPostIndex < cachedPosts.length - 1) lbNextBtn.click();
+            const updatedPosts = typeof getLightboxPosts === 'function' ? getLightboxPosts() : cachedPosts;
+            if (currentPostIndex < updatedPosts.length - 1) lbNextBtn.click();
           }, 1500);
         } else {
           this.stop();

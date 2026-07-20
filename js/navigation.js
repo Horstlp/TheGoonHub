@@ -1,6 +1,17 @@
+window.viewScrollPositions = window.viewScrollPositions || {};
+
 window.handleViewSwitch = function(view) {
     const validViews = ['images', 'manga', 'vault', 'algo'];
     if (!validViews.includes(view)) view = 'images'; // Default fallback
+
+    const targetView = document.getElementById(`view-${view}`);
+
+    // Save scroll position for the current view before we hide it
+    const activeViewEl = document.querySelector('.app-view.active-view');
+    if (activeViewEl) {
+        const activeViewName = activeViewEl.id.replace('view-', '');
+        window.viewScrollPositions[activeViewName] = window.scrollY;
+    }
 
     // Update active nav button
     document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
@@ -14,12 +25,17 @@ window.handleViewSwitch = function(view) {
     });
 
     // Show targeted view
-    const targetView = document.getElementById(`view-${view}`);
     if (targetView) {
         targetView.style.display = 'block';
         // Force a reflow so the animation restarts if clicking the same view or navigating
         void targetView.offsetWidth; 
         targetView.classList.add('active-view');
+
+        // Restore scroll position instantly
+        window.scrollTo({
+            top: window.viewScrollPositions[view] || 0,
+            behavior: 'instant'
+        });
     }
 
 
@@ -33,11 +49,25 @@ window.handleViewSwitch = function(view) {
         if (typeof renderAlgoTable === 'function') renderAlgoTable();
     }
     
-    // Auto-close lightbox if open, so it doesn't leak into other views
+    // Toggle lightbox visibility based on which tab it was opened in so it doesn't deload
     const lightbox = document.getElementById('lightbox');
-    if (lightbox && lightbox.style.display === 'flex') {
-        if (typeof closeLightbox === 'function') closeLightbox();
-        else lightbox.style.display = 'none';
+    if (lightbox) {
+        const v = lightbox.querySelector('video');
+        if (window.lightboxOpenInView) {
+            if (window.lightboxOpenInView === view) {
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+                if (v) v.play().catch(e => console.log('Auto-play prevented:', e));
+            } else {
+                lightbox.classList.remove('open');
+                document.body.style.overflow = '';
+                if (v) v.pause();
+            }
+        } else {
+            lightbox.classList.remove('open');
+            document.body.style.overflow = '';
+            if (v) v.pause();
+        }
     }
 };
 
@@ -48,9 +78,19 @@ document.addEventListener('DOMContentLoaded', () => {
   views.forEach(view => {
     const btn = document.getElementById(`nav-${view}`);
     if (btn) {
-      btn.addEventListener('click', () => {
-          // Setting the hash will automatically trigger the 'hashchange' event listener below
-          window.location.hash = view;
+      btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          let currentHash = window.location.hash.replace('#', '') || 'images';
+          
+          if (view === currentHash) {
+              // If already on the view, trigger a refresh (currently only Images supports this)
+              if (view === 'images' && typeof resetToAlgorithmFeed === 'function') {
+                  resetToAlgorithmFeed();
+              }
+          } else {
+              // Setting the hash will automatically trigger the 'hashchange' event listener below
+              window.location.hash = view;
+          }
       });
     }
   });

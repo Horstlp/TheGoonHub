@@ -246,13 +246,11 @@ header p {
 /* ── Your Beautiful Custom Search Capsule Layout ── */
 .search-wrap {
   width: 100%;
-  margin: 0 0 25px 0;
 }
 
 .search-row {
   display: flex;
   gap: 15px;
-  margin-bottom: 15px;
   align-items: center;
 }
 
@@ -882,7 +880,10 @@ header p {
 
 /* ── Dynamic Lightbox Core Styling ── */
 #lightbox {
-  display: none;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
   position: fixed;
   inset: 0;
   background: rgba(6, 6, 9, 0.98);
@@ -891,10 +892,13 @@ header p {
   justify-content: center;
   padding: 32px;
   backdrop-filter: blur(20px);
+  transition: opacity 0.2s ease, visibility 0.2s ease;
 }
 
 #lightbox.open {
-  display: flex;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .lightbox-wrapper {
@@ -2191,8 +2195,7 @@ body.video-mode .main-content {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 8px 0 16px;
-  margin-bottom: 12px;
+  padding: 16px 0 24px;
   scrollbar-width: none; /* Firefox */
 }
 
@@ -2201,8 +2204,7 @@ body.video-mode .main-content {
 }
 
 .home-folder-tab {
-  background: #1c1c24;
-  border: 1px solid var(--border);
+  background: transparent;
   color: var(--text);
   padding: 8px 16px;
   border-radius: 20px;
