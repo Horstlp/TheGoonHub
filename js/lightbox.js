@@ -34,15 +34,64 @@ function openLightbox(index) {
   }
   lbScore.textContent = `Score: ${post.score ?? 0}`;
   lbSize.textContent  = post.width ? `${post.width}×${post.height}` : '';
-  const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-  lbFavBtn.classList.toggle('favorited', isSaved); lbFavBtn.textContent = isSaved ? '❤️ Favorited' : '🤍 Favorite';
-  lbFavBtn.onclick = (e) => { 
-    e.stopPropagation(); 
-    openFolderMenu(e, post, lbFavBtn, (isSavedNow) => {
-       lbFavBtn.classList.toggle('favorited', isSavedNow); 
-       lbFavBtn.textContent = isSavedNow ? '❤️ Favorited' : '🤍 Favorite';
-    });
-  };
+  const lbFolderWrapper = document.getElementById('lb-folder-select-wrapper');
+  const lbFolderBtn = document.getElementById('lb-folder-select');
+  const lbFolderOptions = document.getElementById('lb-folder-options');
+  const lbSaveBtn = document.getElementById('lb-save-btn');
+  
+  if (lbFolderWrapper && lbFolderBtn && lbFolderOptions && lbSaveBtn) {
+      // Populate options
+      lbFolderOptions.innerHTML = '';
+      const allFolders = typeof getVaultFolders === 'function' ? getVaultFolders() : (vaultedFolders || []);
+      const suggested = typeof suggestFolderForPost === 'function' ? suggestFolderForPost(post) : (allFolders[0] || 'Saved');
+      
+      const folderSet = new Set(allFolders);
+      folderSet.add(suggested);
+      
+      let selectedFolder = suggested;
+      lbFolderBtn.textContent = suggested;
+      lbFolderWrapper.dataset.value = suggested;
+
+      const buildOption = (f) => {
+        const li = document.createElement('li');
+        li.textContent = f;
+        if (f === suggested) li.classList.add('selected');
+        li.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectedFolder = f;
+          lbFolderWrapper.dataset.value = f;
+          lbFolderBtn.textContent = f;
+          lbFolderOptions.querySelectorAll('li').forEach(el => el.classList.remove('selected'));
+          li.classList.add('selected');
+          lbFolderWrapper.classList.remove('open');
+        });
+        lbFolderOptions.appendChild(li);
+      };
+
+      Array.from(folderSet).forEach(f => buildOption(f));
+
+      // Toggle open/close
+      lbFolderBtn.onclick = (e) => {
+        e.stopPropagation();
+        lbFolderWrapper.classList.toggle('open');
+      };
+
+      const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
+      if (isSaved) lbSaveBtn.classList.add('saved');
+      else lbSaveBtn.classList.remove('saved');
+      lbSaveBtn.textContent = isSaved ? 'Saved' : 'Merken';
+
+      // Remove old listeners to prevent duplication
+      const newSaveBtn = lbSaveBtn.cloneNode(true);
+      lbSaveBtn.parentNode.replaceChild(newSaveBtn, lbSaveBtn);
+      
+      newSaveBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (typeof savePostToFolder === 'function') {
+              savePostToFolder(post, lbFolderWrapper.dataset.value, newSaveBtn);
+          }
+      };
+  }
   lbDlBtn.onclick  = (e) => { e.stopPropagation(); forceBinaryAssetDownload(fileUrl, post.id); };
   const tags = (post.tags || '').split(/\s+/).filter(Boolean);
   
@@ -113,4 +162,10 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeLightbox();
   if (e.key === 'ArrowLeft') navigateLightbox(-1);
   if (e.key === 'ArrowRight') navigateLightbox(1);
+});
+
+// Close any open custom folder dropdowns when clicking outside
+document.addEventListener('click', () => {
+  document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
+  document.querySelectorAll('.card-folder-list.open').forEach(list => list.classList.remove('open'));
 });

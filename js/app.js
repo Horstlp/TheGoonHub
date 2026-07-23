@@ -458,6 +458,74 @@ if (saveModalNewInput) {
   });
 }
 
+window.suggestFolderForPost = function(post) {
+  const folders = typeof getVaultFolders === 'function' ? getVaultFolders() : vaultedFolders;
+  if (!folders || folders.length === 0) return 'Saved';
+  
+  const postTags = (post.tags || '').split(/\s+/).filter(Boolean);
+  if (postTags.length === 0) return folders[0] || 'Saved';
+
+  let bestFolder = folders[0] || 'Saved';
+  let bestScore = -1;
+
+  folders.forEach(folder => {
+    const postsInFolder = vaultedPosts.filter(p => p.folder === folder);
+    if (postsInFolder.length === 0) return;
+
+    let score = 0;
+    postsInFolder.forEach(fp => {
+      const fpTags = (fp.tags || '').split(/\s+/).filter(Boolean);
+      const matches = postTags.filter(t => fpTags.includes(t)).length;
+      score += matches;
+    });
+
+    const normalizedScore = score / postsInFolder.length;
+
+    if (normalizedScore > bestScore) {
+      bestScore = normalizedScore;
+      bestFolder = folder;
+    }
+  });
+
+  return bestScore > 0 ? bestFolder : (folders[0] || 'Saved');
+};
+
+window.savePostToFolder = function(post, folderName, btnElement) {
+  if (folderName === '_new_') {
+    const newName = prompt("Enter new folder name:");
+    if (!newName) return;
+    folderName = newName.trim();
+  }
+  
+  if (!vaultedFolders.includes(folderName)) {
+    vaultedFolders.push(folderName);
+    localforage.setItem('r34_folders_v2', vaultedFolders);
+  }
+
+  const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
+  if (idx > -1) vaultedPosts.splice(idx, 1);
+
+  post.folder = folderName;
+  vaultedPosts.unshift(post);
+  localforage.setItem('r34_vault_v2', vaultedPosts);
+  
+  if (typeof syncVaultCounterDisplay === 'function') syncVaultCounterDisplay();
+  
+  if (btnElement) {
+    btnElement.textContent = 'Saved';
+    btnElement.classList.add('saved');
+  }
+
+  const viewVault = document.getElementById('view-vault');
+  if (viewVault && viewVault.style.display !== 'none') {
+    if (typeof renderVaultGridToDedicatedView === 'function') renderVaultGridToDedicatedView();
+    if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
+  }
+  
+  // Re-render home folder nav so new/empty folders show up immediately once an item is added
+  if (typeof renderHomeFolderTabs === 'function') renderHomeFolderTabs();
+};
+
 function openFolderMenu(e, post, anchorBtn, onUpdateCallback = null) {
   e.stopPropagation();
   currentSavePost = post;
@@ -536,36 +604,126 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       });
     }
 
-    // Action Badges Container
-    const actionBadges = document.createElement('div');
-    actionBadges.className = 'action-badges';
+    // Pinterest Save Widget
+    const saveWidget = document.createElement('div');
+    saveWidget.className = 'pinterest-save-widget';
 
-    // Like Badge
-    const likeBtn = document.createElement('button');
-    likeBtn.className = 'grid-action-btn btn-like';
-    const isLiked = likedPosts.includes(String(post.id));
-    if (isLiked) likeBtn.classList.add('liked');
-    likeBtn.textContent = isLiked ? '♥ Liked' : '♡ Like';
-    likeBtn.addEventListener('click', (e) => {
+    const folderWrapper = document.createElement('div');
+    folderWrapper.className = 'custom-select-wrapper';
+
+    const folderBtn = document.createElement('button');
+    folderBtn.className = 'pinterest-folder-select';
+
+    // folderList is appended to saveWidget (not folderWrapper) so it can
+    // span the full width of the widget (folder btn left → Merken btn right)
+    const folderList = document.createElement('ul');
+    folderList.className = 'custom-options-list card-folder-list';
+
+    const suggestedInit = typeof suggestFolderForPost === 'function'
+      ? suggestFolderForPost(post)
+      : ((typeof getVaultFolders === 'function' ? getVaultFolders() : vaultedFolders)[0] || 'Saved');
+
+    folderBtn.textContent = suggestedInit;
+    folderWrapper.dataset.value = suggestedInit;
+
+    // Helper: (re)build the folder list from the live folder array each time the dropdown opens
+    const refreshFolderList = () => {
+      const currentFolders = typeof getVaultFolders === 'function' ? getVaultFolders() : vaultedFolders;
+      const currentValue = folderWrapper.dataset.value;
+      folderList.innerHTML = '';
+
+      // Ensure the currently selected value is always present
+      const folderSet = new Set(currentFolders);
+      folderSet.add(currentValue);
+
+      Array.from(folderSet).forEach(f => {
+        // Find the first (oldest) image added to this folder
+        let folderPost = null;
+        for (let i = vaultedPosts.length - 1; i >= 0; i--) {
+          if ((vaultedPosts[i].folder || 'Default') === f) {
+            folderPost = vaultedPosts[i];
+            break;
+          }
+        }
+        const thumbUrl = folderPost ? (folderPost.preview_url || folderPost.sample_url || folderPost.file_url) : null;
+
+        const li = document.createElement('li');
+        li.className = 'folder-dropdown-item';
+        if (f === currentValue) li.classList.add('selected');
+
+        const label = document.createElement('span');
+        label.className = 'folder-dropdown-label';
+        label.textContent = f;
+        li.appendChild(label);
+
+        if (thumbUrl) {
+          const img = document.createElement('img');
+          img.src = thumbUrl;
+          img.className = 'folder-dropdown-thumb';
+          img.loading = 'lazy';
+          img.draggable = false;
+          li.appendChild(img);
+        } else {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'folder-dropdown-thumb folder-thumb-placeholder';
+          placeholder.textContent = f.charAt(0).toUpperCase();
+          li.appendChild(placeholder);
+        }
+
+        li.addEventListener('click', (e) => {
+          e.stopPropagation();
+          folderWrapper.dataset.value = f;
+          folderBtn.textContent = f;
+          folderList.querySelectorAll('li').forEach(el => el.classList.remove('selected'));
+          li.classList.add('selected');
+          folderWrapper.classList.remove('open');
+          folderList.classList.remove('open');
+          
+          // Auto-save to the selected folder
+          if (typeof savePostToFolder === 'function') {
+            savePostToFolder(post, f, saveBtn);
+          }
+        });
+        folderList.appendChild(li);
+      });
+    };
+
+    // Initial populate
+    refreshFolderList();
+
+    folderBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      togglePostLikeStatus(post.id);
-      const newlyLiked = likedPosts.includes(String(post.id));
-      likeBtn.classList.toggle('liked', newlyLiked);
-      likeBtn.textContent = newlyLiked ? '♥ Liked' : '♡ Like';
+      const isOpening = !folderList.classList.contains('open');
+      if (isOpening) refreshFolderList(); // always up-to-date when opening
+      folderList.classList.toggle('open');
+      folderWrapper.classList.toggle('open'); // keep caret animation
     });
 
-    // Save Badge
+    folderWrapper.appendChild(folderBtn);
+    // folderList goes on saveWidget so it can stretch full width
+
     const saveBtn = document.createElement('button');
-    saveBtn.className = 'grid-action-btn btn-save';
+    saveBtn.className = 'pinterest-save-btn';
     const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-    saveBtn.textContent = isSaved ? 'Saved' : 'Save';
-    if (isSaved) saveBtn.style.backgroundColor = '#8b5cf6';
+    if (isSaved) saveBtn.classList.add('saved');
+    saveBtn.textContent = isSaved ? 'Saved' : 'Merken';
 
-    saveBtn.addEventListener('click', (e) => openFolderMenu(e, post, saveBtn));
+    saveBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof savePostToFolder === 'function') {
+        savePostToFolder(post, folderWrapper.dataset.value, saveBtn);
+      }
+    });
 
-    actionBadges.appendChild(likeBtn);
-    actionBadges.appendChild(saveBtn);
-    card.appendChild(actionBadges);
+    saveWidget.appendChild(folderWrapper);
+    saveWidget.appendChild(saveBtn);
+    saveWidget.appendChild(folderList); // appended last so it layers on top
+    card.appendChild(saveWidget);
+
+    card.addEventListener('mouseleave', () => {
+      folderList.classList.remove('open');
+      folderWrapper.classList.remove('open');
+    });
 
     // Figure out the best title for the card
     const rawTags = (post.tags || '').split(/\s+/).filter(Boolean);
@@ -588,17 +746,44 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     footer.innerHTML = `
       <div class="pinterest-card-title">${cardTitle}</div>
       <button class="pinterest-card-options" aria-label="More options">
-         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
          </svg>
       </button>
+      <div class="card-options-dropdown">
+         <ul>
+           <li onclick="window.open('${post.file_url}', '_blank'); event.stopPropagation();">
+             <img src="Icons/icons8-download-48.png" class="dropdown-icon" /> Download Image
+           </li>
+           <li onclick="navigator.clipboard.writeText('${post.file_url}'); if(typeof triggerToastNotification === 'function') triggerToastNotification('Image URL copied to clipboard!'); event.stopPropagation();">
+             <img src="Icons/icons8-link-48.png" class="dropdown-icon" /> Share Link
+           </li>
+           <li class="text-danger" onclick="document.getElementById('report-modal').style.display='flex'; event.stopPropagation();">
+             <img src="Icons/icons8-error-30.png" class="dropdown-icon danger-icon" /> Report Image
+           </li>
+         </ul>
+      </div>
     `;
 
     const optionsBtn = footer.querySelector('.pinterest-card-options');
+    const dropdown = footer.querySelector('.card-options-dropdown');
+    
     optionsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      alert(`Details for: ${cardTitle}\nScore: ${post.score}\nFormat: ${ext.toUpperCase()}`);
+      // Close all other open dropdowns first
+      document.querySelectorAll('.card-options-dropdown.show').forEach(d => {
+        if (d !== dropdown) d.classList.remove('show');
+      });
+      dropdown.classList.toggle('show');
     });
+
+    // We can use a global event listener to close all dropdowns when clicking outside
+    if (!window.hasCardDropdownListener) {
+      document.addEventListener('click', () => {
+        document.querySelectorAll('.card-options-dropdown.show').forEach(d => d.classList.remove('show'));
+      });
+      window.hasCardDropdownListener = true;
+    }
 
     card.appendChild(footer);
     card.addEventListener('click', (e) => {

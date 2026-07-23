@@ -608,8 +608,10 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
             if (preloadedPosts.length > 0) {
                 const uniquePosts = [];
                 const renderedIds = new Set(cachedPosts.map(p => p.id));
+                const vaultedIds = new Set(typeof vaultedPosts !== 'undefined' ? vaultedPosts.map(vp => vp.id) : []);
+                
                 preloadedPosts.forEach(post => {
-                    if (post && post.id && !renderedIds.has(post.id)) {
+                    if (post && post.id && !renderedIds.has(post.id) && !vaultedIds.has(post.id)) {
                         renderedIds.add(post.id);
                         uniquePosts.push(post);
                     }
@@ -660,8 +662,9 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
                 if (myVersion !== window.algoRequestVersion) return;
 
                 if (posts && posts.length > 0) {
+                    const vaultedIds = new Set(typeof vaultedPosts !== 'undefined' ? vaultedPosts.map(vp => vp.id) : []);
                     const uniquePosts = posts.filter(post => {
-                        if (post && post.id && !renderedIds.has(post.id)) {
+                        if (post && post.id && !renderedIds.has(post.id) && !vaultedIds.has(post.id)) {
                             renderedIds.add(post.id);
                             return true;
                         }

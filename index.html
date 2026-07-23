@@ -58,8 +58,9 @@
       <section id="view-images" class="app-view" aria-labelledby="images-title">
 
         <!-- Accessibility & Modern Best Practice: Wrap search inputs in <form> with role="search" -->
-        <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
-          <div class="search-row">
+        <div class="sticky-header-container">
+          <form class="search-wrap" role="search" onsubmit="event.preventDefault();">
+            <div class="search-row">
             <div class="search-input-container" id="search-container">
               <!-- Accessibility: aria-live="polite" announces dynamic changes to tags -->
               <div id="tag-pills-list" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;"
@@ -145,6 +146,7 @@
         <nav class="home-folders-nav" id="home-folders-nav" aria-label="Home Feed Categories">
           <!-- Folder tabs dynamically injected here -->
         </nav>
+        </div>
 
 
 
@@ -168,6 +170,7 @@
 
       <!-- MANGA VIEW -->
       <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
+        <div class="sticky-header-container">
         <!-- Manga Grid Search -->
         <form class="search-wrap" role="search" onsubmit="event.preventDefault();" style="margin-bottom: 24px;">
           <div class="search-row">
@@ -219,6 +222,7 @@
             </div>
           </fieldset>
         </form>
+        </div>
 
         <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="grid"
           aria-label="Manga Results"></div>
@@ -596,6 +600,42 @@
         <button id="new-folder-submit"
           style="padding: 10px 20px; background: var(--accent-purple); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Save
           Folder</button>
+      </div>
+    </div>
+  </div>
+  <!-- Fake Report Modal -->
+  <div id="report-modal"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);"
+    role="dialog" aria-modal="true" aria-labelledby="report-title">
+    <div
+      style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="report-title" style="margin: 0; font-size: 1.2rem; color: #ef4444;">🚨 Report Image</h2>
+        <button onclick="document.getElementById('report-modal').style.display='none'"
+          style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      <p style="color: var(--muted); font-size: 0.95rem; margin: 0;">Please select a reason for reporting this image:</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+          <input type="radio" name="report_reason" style="accent-color: #ef4444;" checked> Spam or misleading
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+          <input type="radio" name="report_reason" style="accent-color: #ef4444;"> Inappropriate content
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+          <input type="radio" name="report_reason" style="accent-color: #ef4444;"> Copyright violation
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);">
+          <input type="radio" name="report_reason" style="accent-color: #ef4444;"> Incorrect tags
+        </label>
+      </div>
+      
+      <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+        <button onclick="document.getElementById('report-modal').style.display='none'"
+          style="padding: 10px 20px; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Cancel</button>
+        <button onclick="document.getElementById('report-modal').style.display='none'; if(typeof triggerToastNotification === 'function') triggerToastNotification('Report submitted successfully. Thank you!');"
+          style="padding: 10px 20px; background: #ef4444; border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Submit Report</button>
       </div>
     </div>
   </div>
