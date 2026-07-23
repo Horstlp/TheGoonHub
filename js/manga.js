@@ -645,7 +645,7 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
   
   const chapHeader = document.createElement('div');
   chapHeader.className = 'chapters-header';
-  chapHeader.innerHTML = `<h3 style="margin:0; font-size: 1.2rem;">Chapters</h3>`;
+  chapHeader.innerHTML = `<h3 class="m-0 text-lg">Chapters</h3>`;
   
   const langSelect = document.createElement('select');
   langSelect.className = 'filter-select';
@@ -662,7 +662,7 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
 
   const chapList = document.createElement('div');
   chapList.className = 'chapters-list';
-  chapList.innerHTML = '<span style="color:var(--muted)">Loading chapters...</span>';
+  chapList.innerHTML = '<span class="text-muted">Loading chapters...</span>';
   chaptersCol.appendChild(chapList);
   
   expanded.appendChild(chaptersCol);
@@ -679,7 +679,7 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
 
   // 4. Fetch Volumes & Preload Pages
   async function fetchVolumesForExpansion(lang) {
-    chapList.innerHTML = '<span style="color:var(--muted)">Loading volumes...</span>';
+    chapList.innerHTML = '<span class="text-muted">Loading volumes...</span>';
     try {
       // Fetch aggregate for chapters and volumes
       const aggRes = await throttledFetch(PROXY + encodeURIComponent(`https://api.mangadex.org/manga/${post.id}/aggregate?translatedLanguage[]=${lang}`));
@@ -699,7 +699,7 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
       chapList.innerHTML = '';
       
       if (!aggData.volumes || Object.keys(aggData.volumes).length === 0) {
-        chapList.innerHTML = '<span style="color:var(--muted)">No chapters found.</span>';
+        chapList.innerHTML = '<span class="text-muted">No chapters found.</span>';
         readBtn.disabled = true;
         return;
       }
@@ -818,7 +818,7 @@ async function openInlineMangaExpansion(post, clickedElement, container) {
 
     } catch (err) {
       console.error(err);
-      chapList.innerHTML = '<span style="color:red">Error loading volumes.</span>';
+      chapList.innerHTML = '<span class="text-danger">Error loading volumes.</span>';
     }
   }
 
@@ -995,7 +995,7 @@ if (mangaRatingMenu) {
         cb.addEventListener('change', () => {
             let count = 0;
             mangaRatingCbs.forEach(c => { if(c.checked) count++; });
-            mangaRatingBtn.innerHTML = `<span>🔞 Ratings (${count})</span> <span style="font-size: 0.8em;">▼</span>`;
+            mangaRatingBtn.innerHTML = `<span>🔞 Ratings (${count})</span> <span class="text-xs">▼</span>`;
             doMangaSearch();
         });
     });
@@ -1038,7 +1038,7 @@ if (mangaLangSelect) {
 }
 
 async function fetchAndRenderChapters(mangaId) {
-  mangaChapterList.innerHTML = '<div class="spinner"></div><span style="color:var(--muted); font-size: 0.9rem;">Loading chapters...</span>';
+  mangaChapterList.innerHTML = '<div class="spinner"></div><span class="text-muted text-sm">Loading chapters...</span>';
   const lang = mangaLangSelect.value;
   const feedUrl = `${MD_API_BASE}/manga/${mangaId}/feed?translatedLanguage[]=${lang}&order[volume]=desc&order[chapter]=desc&limit=500`;
 
@@ -1049,7 +1049,7 @@ async function fetchAndRenderChapters(mangaId) {
 
     mangaChapterList.innerHTML = '';
     if (currentMangaData.chapters.length === 0) {
-      mangaChapterList.innerHTML = `<span style="color:var(--muted); font-size: 0.9rem;">No chapters found for selected language.</span>`;
+      mangaChapterList.innerHTML = `<span class="text-muted text-sm">No chapters found for selected language.</span>`;
       return;
     }
 
@@ -1067,9 +1067,9 @@ async function fetchAndRenderChapters(mangaId) {
       const btn = document.createElement('button');
       btn.style.cssText = `background: var(--bg); color: var(--text); border: 1px solid ${isLastRead ? 'var(--accent-purple)' : 'var(--border)'}; padding: 12px; border-radius: 6px; text-align: left; cursor: pointer; transition: background 0.2s; position: relative;`;
 
-      let html = `<strong>Vol ${vol} Ch ${chNum}</strong><span style="color:var(--muted)">${title}</span>`;
+      let html = `<strong>Vol ${vol} Ch ${chNum}</strong><span class="text-muted">${title}</span>`;
       if (isLastRead) {
-        html += `<span style="float:right; color: var(--accent-purple); font-size: 0.75rem; border: 1px solid var(--accent-purple); padding: 2px 6px; border-radius: 4px; font-weight: bold;">Resume</span>`;
+        html += `<span class="badge-purple-outline float-right">Resume</span>`;
       }
       btn.innerHTML = html;
 
@@ -1081,7 +1081,7 @@ async function fetchAndRenderChapters(mangaId) {
       mangaChapterList.appendChild(btn);
     });
   } catch (e) {
-    mangaChapterList.innerHTML = `<span style="color:#f43f5e; font-size: 0.9rem;">Failed to load chapter feed.</span>`;
+    mangaChapterList.innerHTML = `<span class="text-danger text-sm">Failed to load chapter feed.</span>`;
   }
 }
 
@@ -1174,7 +1174,7 @@ if (mangaSaveBtn) {
 
 async function loadMangaChapter(chapterId) {
   mangaPagesContainer.dataset.chapterId = chapterId;
-  mangaPagesContainer.innerHTML = '<div class="spinner"></div><p style="color:white">Loading chapter pages...</p>';
+  mangaPagesContainer.innerHTML = '<div class="spinner"></div><p class="text-white">Loading chapter pages...</p>';
   mangaReader.style.display = 'block';
   document.body.style.overflow = 'hidden';
 
@@ -1200,7 +1200,7 @@ async function loadMangaChapter(chapterId) {
       pageData = await pageRes.json();
     } catch (err) {
       console.warn("Direct at-home/server fetch failed due to CORS.");
-      mangaPagesContainer.innerHTML = '<p style="color:red; margin-top: 20px;"><strong>CORS Error:</strong> MangaDex restricts local development IPs. Please change your address bar from <code>127.0.0.1</code> to <code>localhost</code> and try again. (Note: This issue only happens locally and will not happen once you publish the site to a real domain!).</p>';
+      mangaPagesContainer.innerHTML = '<p class="text-danger mt-4"><strong>CORS Error:</strong> MangaDex restricts local development IPs. Please change your address bar from <code>127.0.0.1</code> to <code>localhost</code> and try again. (Note: This issue only happens locally and will not happen once you publish the site to a real domain!).</p>';
       return;
     }
 
@@ -1387,7 +1387,7 @@ async function loadMangaChapter(chapterId) {
     }
 
   } catch (e) {
-    mangaPagesContainer.innerHTML = '<p style="color:red">Failed to load chapter pages.</p>';
+    mangaPagesContainer.innerHTML = '<p class="text-danger">Failed to load chapter pages.</p>';
   }
 }
 

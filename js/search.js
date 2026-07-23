@@ -205,8 +205,8 @@ function renderHistoryAndPins() {
   const recentBox = document.getElementById('recent-chips-box');
   const pinnedBox = document.getElementById('pinned-chips-box');
   if(!recentBox || !pinnedBox) return;
-  recentBox.innerHTML = recentSearches.length === 0 ? '<span style="color:var(--muted); font-size:0.8rem; padding:4px 0;">No searches logged yet</span>' : '';
-  pinnedBox.innerHTML = pinnedSearches.length === 0 ? '<span style="color:var(--muted); font-size:0.8rem; padding:4px 0;">No pinned setups setup yet</span>' : '';
+  recentBox.innerHTML = recentSearches.length === 0 ? '<span class="text-muted text-xs py-1">No searches logged yet</span>' : '';
+  pinnedBox.innerHTML = pinnedSearches.length === 0 ? '<span class="text-muted text-xs py-1">No pinned setups setup yet</span>' : '';
   recentSearches.forEach(str => {
     const isPinned = pinnedSearches.includes(str);
     const row = document.createElement('div');
@@ -254,12 +254,18 @@ function renderFilterBadges(days, sortVal) {
   const badges = [];
   if(isViewingVault) {
     badges.push(`🔒 Saved Storage Mode`);
-    activeFilters.innerHTML = badges.map(b => `<span class="meta-badge" style="background:rgba(244,63,94,0.15); border-color:#f43f5e; color:#fb7185">${b}</span>`).join(' ');
+    activeFilters.innerHTML = badges.map(b => `<span class="meta-badge badge-danger">${b}</span>`).join(' ');
     return;
   }
-  if (days !== 'all' && timeframeSelect && timeframeSelect.selectedIndex >= 0) badges.push(`📅 ${timeframeSelect.options[timeframeSelect.selectedIndex].text.replace(/^.+ /,'')}`);
-  if (sortVal && sortSelect && sortSelect.selectedIndex >= 0 && sortSelect.options[sortSelect.selectedIndex]) {
-    badges.push(`⚙️ ${sortSelect.options[sortSelect.selectedIndex].text.replace(/^.+ /,'')}`);
+  if (days !== 'all') {
+    const activeTimeBtn = document.querySelector('.timeframe-option-btn.active');
+    const text = activeTimeBtn ? (activeTimeBtn.title || activeTimeBtn.textContent) : days;
+    badges.push(`📅 ${text.replace('Last ', '')}`);
+  }
+  if (sortVal && sortVal !== 'algo:discover') {
+    const activeSortBtn = document.querySelector('.sort-option-btn.active');
+    const text = activeSortBtn ? (activeSortBtn.title || activeSortBtn.textContent).split('(')[0].replace('Sort by ', '').trim() : sortVal.split(':').pop();
+    badges.push(`⚙️ ${text}`);
   }
   activeFilters.innerHTML = badges.map(b => `<span class="meta-badge">${b}</span>`).join(' ');
 }

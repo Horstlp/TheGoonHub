@@ -57,9 +57,18 @@ const searchContainer = document.getElementById('search-container');
 const tagPillsList = document.getElementById('tag-pills-list');
 const input = document.getElementById('search-input');
 const autocompleteBox = document.getElementById('autocomplete-box');
-const btn = document.getElementById('search-btn');
-const timeframeSelect = document.getElementById('timeframe-select');
-const sortSelect = document.getElementById('sort-select');
+
+let _timeframeVal = 'all';
+const timeframeSelect = {
+  get value() { return _timeframeVal; },
+  set value(v) { _timeframeVal = v; }
+};
+
+let _sortVal = 'algo:discover';
+const sortSelect = {
+  get value() { return _sortVal; },
+  set value(v) { _sortVal = v; }
+};
 const grid = document.getElementById('grid');
 const statusEl = document.getElementById('status');
 const metaRow = document.getElementById('meta-row');
@@ -177,7 +186,7 @@ function renderVaultFoldersNav() {
     });
 
     if (stackImages.length === 0) {
-      imgHTML = `<div style="width:76px;height:76px;background:var(--surface);border-radius:10px;border:1px dashed var(--border);position:absolute;top:4px;left:17px;z-index:1;"></div>`;
+      imgHTML = `<div class="folder-thumbnail-placeholder"></div>`;
     }
 
     btn.innerHTML = `
@@ -188,9 +197,9 @@ function renderVaultFoldersNav() {
           <path d="M 15 5 L 35 5 Q 40 5 43 12 L 47 20 Q 50 25 55 25 L 85 25 Q 95 25 95 35 L 95 65 Q 95 75 85 75 L 15 75 Q 5 75 5 65 L 5 15 Q 5 5 15 5 Z" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
         </svg>
       </div>
-      <div style="display:flex; align-items:center; gap: 4px;">
+      <div class="flex align-center gap-1">
         <div class="folder-stack-title">${f}</div>
-        ${f !== 'All' && f !== 'Default' ? `<button class="folder-edit-btn" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.1rem; padding:0 4px;" title="Folder Settings">⋮</button>` : ''}
+        ${f !== 'All' && f !== 'Default' ? `<button class="folder-edit-btn btn-icon-muted" title="Folder Settings">⋮</button>` : ''}
       </div>
       <div class="folder-stack-count">${count} items</div>
     `;
@@ -376,7 +385,7 @@ function renderSaveModalFolders(filterText = '') {
 
     const isSavedInHere = vaultedPosts.some(p => String(p.id) === String(currentSavePost.id) && (p.folder || 'Default') === f);
 
-    item.innerHTML = `<span>${f}</span><span style="color: ${isSavedInHere ? 'var(--accent-purple)' : 'var(--muted)'}; font-weight: bold;">${isSavedInHere ? 'Saved' : 'Save'}</span>`;
+    item.innerHTML = `<span>${f}</span><span class="${isSavedInHere ? 'text-purple font-bold' : 'text-muted font-bold'}">${isSavedInHere ? 'Saved' : 'Save'}</span>`;
 
     item.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -591,7 +600,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     if (isVideo) {
       const label = document.createElement('div');
       label.className = 'video-badge';
-      label.textContent = '🎬 VIDEO';
+      label.innerHTML = '<img src="Icons/icons8-no-video-48.png" width="16" height="16" style="filter: invert(1); margin-right: 4px; vertical-align: middle;"> VIDEO';
       card.appendChild(label);
       card.addEventListener('mouseenter', () => {
         const v = document.createElement('video');
@@ -775,6 +784,10 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
         if (d !== dropdown) d.classList.remove('show');
       });
       dropdown.classList.toggle('show');
+    });
+
+    dropdown.addEventListener('mouseleave', () => {
+      dropdown.classList.remove('show');
     });
 
     // We can use a global event listener to close all dropdowns when clicking outside
@@ -1085,7 +1098,7 @@ async function search(tags, page, append = false) {
 
   isLoading = true;
   const myVersion = ++window.searchRequestVersion;
-  btn.disabled = true; // Disable search button during loading
+
 
   const bottomStatusEl = document.getElementById('bottom-status');
 
@@ -1121,7 +1134,7 @@ async function search(tags, page, append = false) {
     let range = await getIdRange(parseInt(days));
     if (myVersion !== window.searchRequestVersion) {
       isLoading = false;
-      btn.disabled = false;
+
       return;
     }
     if (range) { tagParts.push(`id:>=${range.min}`); tagParts.push(`id:<=${range.max}`); }
@@ -1144,7 +1157,7 @@ async function search(tags, page, append = false) {
 
   if (myVersion !== window.searchRequestVersion) {
     isLoading = false;
-    btn.disabled = false;
+
     return;
   }
 
@@ -1170,7 +1183,7 @@ async function search(tags, page, append = false) {
     }
   }
 
-  btn.disabled = false;
+
   isLoading = false;
 
   setTimeout(() => {
@@ -1327,7 +1340,7 @@ function resetToAlgorithmFeed() {
 
 // The nav-images listener has been moved to navigation.js to allow contextual refreshing
 
-btn.addEventListener('click', doSearch);
+
 
 // Search Sort Capsule Logic
 const sortBtnScore = document.getElementById('sort-btn-score');

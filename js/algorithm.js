@@ -295,7 +295,7 @@ function logAlgo(msg) {
     if (!algoConsole) return;
     const div = document.createElement('div');
     const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
-    div.innerHTML = `<span style="color: #666;">[${time}]</span> > ${msg}`;
+    div.innerHTML = `<span class="text-gray">[${time}]</span> > ${msg}`;
     algoConsole.appendChild(div);
     algoConsole.scrollTop = algoConsole.scrollHeight;
 }
@@ -303,7 +303,7 @@ function logAlgo(msg) {
 // Generate the Algorithm DNA Table
 async function renderAlgoTable() {
     if (!algoDnaTableBody) return;
-    algoDnaTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;"><div class="spinner"></div></td></tr>';
+    algoDnaTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><div class="spinner"></div></td></tr>';
     
     logAlgo('Analyzing Vault DNA...');
     const sortedTags = analyzeVaultTags();
@@ -370,13 +370,13 @@ async function renderAlgoTable() {
             const color = colors[i % colors.length];
             conicStops.push(`${color} ${currentDeg}deg ${currentDeg + degrees}deg`);
             currentDeg += degrees;
-            legendHTML += `<div style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.2);padding:2px 6px;border-radius:4px;"><div style="width:10px;height:10px;background:${color};border-radius:2px;"></div><span>${row.tag} <strong>${(pct * 100).toFixed(1)}%</strong></span></div>`;
+            legendHTML += `<div class="legend-item"><div class="legend-color" style="background:${color};"></div><span>${row.tag} <strong>${(pct * 100).toFixed(1)}%</strong></span></div>`;
         });
         
         if (hasOther) {
             const pct = otherScore / totalSubjectScore;
             conicStops.push(`#444 ${currentDeg}deg 360deg`);
-            legendHTML += `<div style="display:flex;align-items:center;gap:4px;background:rgba(0,0,0,0.2);padding:2px 6px;border-radius:4px;"><div style="width:10px;height:10px;background:#444;border-radius:2px;"></div><span>Other <strong>${(pct * 100).toFixed(1)}%</strong></span></div>`;
+            legendHTML += `<div class="legend-item"><div class="legend-color-gray"></div><span>Other <strong>${(pct * 100).toFixed(1)}%</strong></span></div>`;
         }
         
         wheelEl.style.background = `conic-gradient(${conicStops.join(', ')})`;
@@ -406,12 +406,12 @@ async function renderAlgoTable() {
         }
         
         tr.innerHTML = `
-            <td style="padding: 8px;"><strong>${row.tag}</strong></td>
-            <td style="padding: 8px;">${typeEmoji} <span style="text-transform: capitalize;">${row.type}</span></td>
-            <td style="padding: 8px;">${row.count}</td>
-            <td style="padding: 8px; color: var(--accent-purple);">${row.mult.toFixed(1)}x</td>
-            <td style="padding: 8px; font-weight: bold; color: var(--text);">${row.score.toFixed(1)}</td>
-            <td style="padding: 8px; font-weight: bold; color: var(--accent-blue);">${pctCoverage}%</td>
+            <td class="p-2"><strong>${row.tag}</strong></td>
+            <td class="p-2">${typeEmoji} <span class="capitalize">${row.type}</span></td>
+            <td class="p-2">${row.count}</td>
+            <td class="p-2 text-purple">${row.mult.toFixed(1)}x</td>
+            <td class="p-2 font-bold text-normal">${row.score.toFixed(1)}</td>
+            <td class="p-2 font-bold text-blue">${pctCoverage}%</td>
         `;
         fragment.appendChild(tr);
     });
@@ -470,7 +470,7 @@ async function getAlgoBatchQueries(pageIndex, isBackground = false) {
     
     // Update Insights UI (Only visually updates when it resolves, which is fine)
     const allWeighted = [...subjectTags, ...modifierTags].sort((a,b) => b.weight - a.weight);
-    algoInsights.innerHTML = '<span style="color:var(--muted); font-size: 0.9rem; margin-right: 10px;">Top Weighted Influences:</span>';
+    algoInsights.innerHTML = '<span class="text-muted text-sm mr-2">Top Weighted Influences:</span>';
     allWeighted.slice(0, 5).forEach(t => {
         const pill = document.createElement('span');
         pill.className = 'lb-stream-tag';
@@ -725,7 +725,7 @@ const loadMoreBtn = document.getElementById('algo-load-more-btn');
 if (loadMoreBtn) {
     loadMoreBtn.addEventListener('click', () => {
         if (!isAlgoLoading) {
-            loadMoreBtn.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></div> Loading...';
+            loadMoreBtn.innerHTML = '<div class="spinner spinner-sm"></div> Loading...';
             loadMoreBtn.disabled = true;
             pullBlendedBatch(true);
         }
