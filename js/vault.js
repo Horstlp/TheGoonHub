@@ -31,6 +31,11 @@ async function initVault() {
     recentSearches = (await localforage.getItem('r34_history_v2')) || [];
     pinnedSearches = (await localforage.getItem('r34_pinned_v2')) || [];
     vaultedFolders = (await localforage.getItem('r34_folders_v2')) || ["Default"];
+    const mangaFolderIdx = vaultedFolders.indexOf('Manga');
+    if (mangaFolderIdx > -1) {
+      vaultedFolders.splice(mangaFolderIdx, 1);
+      localforage.setItem('r34_folders_v2', vaultedFolders);
+    }
     vaultFolderSettings = (await localforage.getItem('r34_folder_settings_v2')) || {};
     globalBlacklist = (await localforage.getItem('r34_blacklist')) || [];
     globalWhitelist = (await localforage.getItem('r34_whitelist')) || [];

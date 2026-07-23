@@ -299,97 +299,9 @@ function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer, re
     const saveWidget = document.createElement('div');
     saveWidget.className = 'pinterest-save-widget';
 
-    const folderWrapper = document.createElement('div');
-    folderWrapper.className = 'custom-select-wrapper';
-
-    const folderBtn = document.createElement('button');
-    folderBtn.className = 'pinterest-folder-select';
-
-    const folderList = document.createElement('ul');
-    folderList.className = 'custom-options-list card-folder-list';
-
-    const suggestedInit = typeof suggestFolderForPost === 'function'
-      ? suggestFolderForPost(post)
-      : ((typeof getVaultFolders === 'function' ? getVaultFolders() : (vaultedFolders || []))[0] || 'Saved');
-
-    folderBtn.textContent = suggestedInit;
-    folderWrapper.dataset.value = suggestedInit;
-
-    // Helper: (re)build the folder list from the live folder array each time the dropdown opens
-    const refreshFolderList = () => {
-      const currentFolders = typeof getVaultFolders === 'function' ? getVaultFolders() : (vaultedFolders || []);
-      const currentValue = folderWrapper.dataset.value;
-      folderList.innerHTML = '';
-
-      const folderSet = new Set(currentFolders);
-      folderSet.add(currentValue);
-
-      Array.from(folderSet).forEach(f => {
-        let folderPost = null;
-        for (let i = vaultedPosts.length - 1; i >= 0; i--) {
-          if ((vaultedPosts[i].folder || 'Default') === f) {
-            folderPost = vaultedPosts[i];
-            break;
-          }
-        }
-        const thumbUrl = folderPost ? (folderPost.preview_url || folderPost.sample_url || folderPost.file_url) : null;
-
-        const li = document.createElement('li');
-        li.className = 'folder-dropdown-item';
-        if (f === currentValue) li.classList.add('selected');
-
-        const label = document.createElement('span');
-        label.className = 'folder-dropdown-label';
-        label.textContent = f;
-        li.appendChild(label);
-
-        if (thumbUrl) {
-          const img = document.createElement('img');
-          img.src = thumbUrl;
-          img.className = 'folder-dropdown-thumb';
-          img.loading = 'lazy';
-          img.draggable = false;
-          li.appendChild(img);
-        } else {
-          const placeholder = document.createElement('div');
-          placeholder.className = 'folder-dropdown-thumb folder-thumb-placeholder';
-          placeholder.textContent = f.charAt(0).toUpperCase();
-          li.appendChild(placeholder);
-        }
-
-        li.addEventListener('click', (e) => {
-          e.stopPropagation();
-          folderWrapper.dataset.value = f;
-          folderBtn.textContent = f;
-          folderList.querySelectorAll('li').forEach(el => el.classList.remove('selected'));
-          li.classList.add('selected');
-          folderWrapper.classList.remove('open');
-          folderList.classList.remove('open');
-          
-          if (typeof savePostToFolder === 'function') {
-            savePostToFolder(post, f, saveBtn);
-          }
-        });
-        folderList.appendChild(li);
-      });
-    };
-
-    // Initial populate
-    refreshFolderList();
-
-    folderBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isOpening = !folderList.classList.contains('open');
-      if (isOpening) refreshFolderList(); // always up-to-date when opening
-      folderList.classList.toggle('open');
-      folderWrapper.classList.toggle('open'); // keep caret animation
-    });
-
-    folderWrapper.appendChild(folderBtn);
-    // folderList goes on saveWidget so it can stretch full width
-
     const saveBtn = document.createElement('button');
     saveBtn.className = 'pinterest-save-btn';
+    saveBtn.style.marginLeft = 'auto'; // push button to the right since there's no folder select
     const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
     if (isSaved) saveBtn.classList.add('saved');
     saveBtn.textContent = isSaved ? 'Saved' : 'Merken';
@@ -397,19 +309,12 @@ function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer, re
     saveBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (typeof savePostToFolder === 'function') {
-        savePostToFolder(post, folderWrapper.dataset.value, saveBtn);
+        savePostToFolder(post, 'Manga', saveBtn);
       }
     });
 
-    saveWidget.appendChild(folderWrapper);
     saveWidget.appendChild(saveBtn);
-    saveWidget.appendChild(folderList); // appended last so it layers on top
     card.appendChild(saveWidget);
-
-    card.addEventListener('mouseleave', () => {
-      folderList.classList.remove('open');
-      folderWrapper.classList.remove('open');
-    });
 
     const footer = document.createElement('div');
     footer.className = 'card-footer';

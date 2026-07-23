@@ -158,53 +158,64 @@ function renderVaultFoldersNav() {
 
   folders.forEach(f => {
     const btn = document.createElement('div');
-    btn.className = 'folder-stack-btn' + (f === currentVaultFolder ? ' active' : '');
+    btn.className = 'pinterest-folder-card' + (f === currentVaultFolder ? ' active' : '');
 
     // Find images for this stack
     let stackImages = [];
     let count = 0;
 
     if (f === 'All') {
-      stackImages = vaultedPosts.slice(0, 4);
+      stackImages = vaultedPosts.slice(0, 3);
       count = vaultedPosts.length;
     } else if (f === 'Default') {
       const defPosts = vaultedPosts.filter(p => !p.folder || p.folder === 'Default');
-      stackImages = defPosts.slice(0, 4);
+      stackImages = defPosts.slice(0, 3);
       count = defPosts.length;
     } else {
       const customPosts = vaultedPosts.filter(p => p.folder === f);
-      stackImages = customPosts.slice(0, 4);
+      stackImages = customPosts.slice(0, 3);
       count = customPosts.length;
     }
 
-    let imgHTML = '';
-    stackImages.forEach((p, i) => {
-      const url = p.preview_url || p.sample_url || p.file_url;
-      if (url) {
-        imgHTML += `<img src="${url}" class="stack-img-${4 - i}" loading="lazy" />`;
-      }
-    });
-
-    if (stackImages.length === 0) {
-      imgHTML = `<div class="folder-thumbnail-placeholder"></div>`;
+    let imgUrls = stackImages.map(p => p.preview_url || p.sample_url || p.file_url).filter(Boolean);
+    
+    let mainImgHtml = imgUrls[0] ? `<img src="${imgUrls[0]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+    let sideImgHtml = '';
+    
+    if (imgUrls[1] || imgUrls[2]) {
+      sideImgHtml += imgUrls[1] ? `<img src="${imgUrls[1]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+      sideImgHtml += imgUrls[2] ? `<img src="${imgUrls[2]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+    } else {
+      sideImgHtml += `<div class="folder-thumbnail-placeholder"></div><div class="folder-thumbnail-placeholder"></div>`;
     }
 
     btn.innerHTML = `
-      <div class="stack-images">
-        ${imgHTML}
-        <div class="glass-folder-overlay"></div>
-        <svg class="glass-folder-border" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
-          <path d="M 15 5 L 35 5 Q 40 5 43 12 L 47 20 Q 50 25 55 25 L 85 25 Q 95 25 95 35 L 95 65 Q 95 75 85 75 L 15 75 Q 5 75 5 65 L 5 15 Q 5 5 15 5 Z" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"/>
+      <div class="folder-grid-container">
+        <div class="folder-grid">
+          <div class="folder-grid-main">
+            ${mainImgHtml}
+          </div>
+          <div class="folder-grid-side">
+            ${sideImgHtml}
+          </div>
+        </div>
+        <div class="glass-folder-overlay-pinterest"></div>
+        <svg class="glass-folder-border-pinterest" viewBox="-0.4 -23.4 33.8 23.8" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">
+          <path d="M 0 -3 L 0.5 -1.5 L 1.5 -0.5 L 3 0 L 30 0 L 31.5 -0.5 L 32.5 -1.5 L 33 -3 L 33 -20 L 32.5 -21.5 L 31.5 -22.5 L 30 -23 L 21 -23 L 20 -22.8 L 19.3 -22.3 L 14.7 -17.7 L 14 -17.2 L 13 -17 L 3 -17 L 1.5 -16.5 L 0.5 -15.5 L 0 -14 Z" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="3" vector-effect="non-scaling-stroke"/>
         </svg>
+        ${f !== 'All' && f !== 'Default' ? `
+          <button class="folder-edit-btn-pinterest" title="Folder Settings">
+            <img src="Icons/icons8-pen-48.png" alt="Edit">
+          </button>
+        ` : ''}
       </div>
-      <div class="flex align-center gap-1">
-        <div class="folder-stack-title">${f}</div>
-        ${f !== 'All' && f !== 'Default' ? `<button class="folder-edit-btn btn-icon-muted" title="Folder Settings">⋮</button>` : ''}
+      <div class="pinterest-folder-info">
+        <div class="pinterest-folder-title">${f}</div>
+        <div class="pinterest-folder-count">${count} Posts</div>
       </div>
-      <div class="folder-stack-count">${count} items</div>
     `;
 
-    const editBtn = btn.querySelector('.folder-edit-btn');
+    const editBtn = btn.querySelector('.folder-edit-btn-pinterest');
     if (editBtn) {
       editBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -506,7 +517,7 @@ window.savePostToFolder = function(post, folderName, btnElement) {
     folderName = newName.trim();
   }
   
-  if (!vaultedFolders.includes(folderName)) {
+  if (folderName && folderName !== 'Manga' && !vaultedFolders.includes(folderName)) {
     vaultedFolders.push(folderName);
     localforage.setItem('r34_folders_v2', vaultedFolders);
   }
@@ -866,7 +877,11 @@ document.getElementById('vault-main-tabs')?.addEventListener('click', (e) => {
 
     // Toggle UI elements if needed
     const folderNav = document.getElementById('vault-folders-nav');
-    // We keep folder nav for both!
+    if (activeVaultTab === 'bookshelf') {
+      folderNav.style.display = 'none';
+    } else {
+      folderNav.style.display = 'flex';
+    }
 
     renderVaultGridToDedicatedView();
   }

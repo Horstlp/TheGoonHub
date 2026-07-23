@@ -382,14 +382,12 @@
 
         <nav class="vault-tabs" id="vault-main-tabs" style="display: flex; gap: 8px; margin-top: 16px;"
           aria-label="Vault View Tabs">
-          <button class="vault-tab-btn active" data-tab="images" class="btn-pill-primary">🖼️
-            Images & Videos</button>
-          <button class="vault-tab-btn" data-tab="bookshelf" class="btn-pill-surface">📚
-            Manga Bookshelf</button>
+          <button class="vault-tab-btn active" data-tab="images">Images & Videos</button>
+          <button class="vault-tab-btn" data-tab="bookshelf">Manga Bookshelf</button>
         </nav>
 
         <nav class="folder-nav" id="vault-folders-nav"
-          style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 16px; min-height: 120px; align-items: flex-start;"
+          style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 16px; padding-left: 8px; padding-right: 8px; min-height: 120px; align-items: flex-start;"
           aria-label="Vault Folders">
           <!-- Folders injected here -->
         </nav>
@@ -410,24 +408,19 @@
         <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
         <div id="vault-status" class="text-center text-muted p-5 d-none" aria-live="polite"></div>
 
-        <!-- Bulk Actions Sticky Footer -->
-        <div id="vault-bulk-actions"
-          style="display: none; position: fixed; bottom: 0; left: 0; width: 100%; background: var(--surface-light); padding: 16px 24px; box-shadow: 0 -4px 16px rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; gap: 16px; border-top: 1px solid var(--border);">
-          <span id="bulk-selection-count" class="font-bold mr-auto">0 items
-            selected</span>
-
-          <select id="bulk-folder-select" class="btn-bg-outline">
-            <!-- Populated dynamically -->
-          </select>
-          <button id="bulk-move-btn" class="btn-blue">Move
-            to Folder</button>
-          <button id="bulk-delete-btn" class="btn-danger">🗑
-            Delete Selected</button>
-          <button id="bulk-cancel-btn" class="btn-outline-muted">Cancel</button>
-        </div>
       </section>
 
     </main>
+
+    <!-- Bulk Actions Sticky Footer -->
+    <div id="vault-bulk-actions" class="vault-bulk-actions-footer" style="display: none;">
+      <span id="bulk-selection-count" class="font-bold mr-auto">0 items selected</span>
+      <select id="bulk-folder-select" class="btn-bg-outline"></select>
+      <button id="bulk-move-btn" class="btn-blue">Move to Folder</button>
+      <button id="bulk-delete-btn" class="btn-danger">🗑️ Delete Selected</button>
+      <button id="bulk-cancel-btn" class="btn-outline-muted">Cancel</button>
+    </div>
+
   </div>
 
   <!-- Accessibility: role="alert" for immediate notifications -->
