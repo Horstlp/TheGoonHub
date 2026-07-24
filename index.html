@@ -15,8 +15,8 @@
   <link rel="dns-prefetch" href="https://frosty-forest-2c7f.markus4free.workers.dev">
 
   <!-- Performance: Preload main stylesheet to avoid render-blocking delay -->
-  <link rel="preload" href="css/style.css" as="style">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="preload" href="css/style.css?v=2" as="style">
+  <link rel="stylesheet" href="css/style.css?v=2">
 
   <!-- Performance: Defer scripts so they don't block HTML parsing, keeping them in <head> -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" defer></script>
@@ -391,42 +391,7 @@
           </div>
         </header>
 
-        <div class="search-row"
-          style="max-width: none; margin-top: 16px; margin-bottom: 32px; align-items: center; padding: 0 8px;">
-          <!-- Left: Library Selector -->
-          <nav class="vault-tabs" id="vault-main-tabs" style="display: flex; gap: 8px;" aria-label="Vault View Tabs">
-            <button class="vault-tab-btn active" data-tab="images">Images & Videos</button>
-            <button class="vault-tab-btn" data-tab="bookshelf">Manga Bookshelf</button>
-          </nav>
 
-          <!-- Right: Search Bar with embedded Settings -->
-          <div class="search-input-container" id="vault-search-container"
-            style="flex: 1; max-width: 500px; margin-left: auto;">
-            <input id="vault-search-input" type="search" placeholder="Search saved tags..." autocomplete="off"
-              aria-label="Search Vault" />
-
-            <div class="search-sort-container" id="vault-sort-capsule" style="margin-right: -4px;">
-              <button type="button" id="vault-sort-toggle-btn" class="sort-toggle-btn" title="Vault Sorting">
-                <!-- Toggle icon dynamically updated by JS -->
-                <img id="vault-sort-toggle-icon" src="Icons/icons8-clock-30.png" alt="Settings" aria-hidden="true"
-                  width="20" height="20" style="filter: brightness(0) invert(1);">
-              </button>
-
-              <div class="search-sort-options" id="vault-sort-options">
-                <button type="button" class="sort-option-btn active" data-sort-type="date" data-sort-dir="desc"
-                  title="Sort by Date (Newest)">
-                  <img src="Icons/icons8-clock-30.png" alt="Date" width="18" height="18"
-                    style="filter: brightness(0) invert(1);" />
-                </button>
-                <button type="button" class="sort-option-btn" data-sort-type="score" data-sort-dir="desc"
-                  title="Sort by Score (Highest)">
-                  <img src="Icons/icons8-star-48.png" alt="Score" width="18" height="18"
-                    style="filter: brightness(0) invert(1);" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <nav class="folder-nav" id="vault-folders-nav"
           style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 8px; padding-left: 8px; padding-right: 8px; min-height: 120px; align-items: flex-start;"
@@ -446,6 +411,47 @@
       </section>
 
     </main>
+
+    <!-- Vault Main Taskbar (Floating Pill) -->
+    <div class="photoshop-task-bar" id="vault-main-taskbar" style="bottom: 32px; z-index: 1999; display: none;">
+      <!-- Left: Library Selector -->
+      <nav class="vault-tabs" id="vault-main-tabs" style="display: flex; gap: 4px;" aria-label="Vault View Tabs">
+        <button class="vault-tab-btn active" data-tab="images" style="padding: 8px 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <img src="Icons/icons8-image-48.png" width="20" height="20" style="filter: invert(1); opacity: 0.9;" alt=""> Posts
+        </button>
+        <button class="vault-tab-btn" data-tab="bookshelf" style="padding: 8px 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <img src="Icons/icons8-book-48.png" width="20" height="20" style="filter: invert(1); opacity: 0.9;" alt=""> Mangas
+        </button>
+      </nav>
+
+      <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 8px;"></div>
+
+      <!-- Right: Search Bar with embedded Settings -->
+      <div style="display: flex; align-items: center; width: 340px;">
+        <input id="vault-search-input" type="search" placeholder="Search tags..." autocomplete="off"
+          aria-label="Search Vault" style="width: 100%; background: transparent; border: none; color: var(--text); outline: none; padding: 4px 8px; font-size: 0.95rem; min-width: 0;" />
+
+        <div class="search-sort-container" id="vault-sort-capsule" style="margin-left: 4px;">
+          <button type="button" id="vault-sort-toggle-btn" class="sort-toggle-btn" title="Vault Sorting" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px;">
+            <img id="vault-sort-toggle-icon" src="Icons/icons8-clock-30.png" alt="Settings" aria-hidden="true"
+              width="18" height="18" style="filter: brightness(0) invert(1); opacity: 0.8; transition: all 0.2s;">
+          </button>
+
+          <div class="search-sort-options" id="vault-sort-options">
+            <button type="button" class="sort-option-btn active" data-sort-type="date" data-sort-dir="desc"
+              title="Sort by Date (Newest)">
+              <img src="Icons/icons8-clock-30.png" alt="Date" width="16" height="16"
+                style="filter: brightness(0) invert(1);" />
+            </button>
+            <button type="button" class="sort-option-btn" data-sort-type="score" data-sort-dir="desc"
+              title="Sort by Score (Highest)">
+              <img src="Icons/icons8-star-48.png" alt="Score" width="16" height="16"
+                style="filter: brightness(0) invert(1);" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Bulk Actions Sticky Footer (Photoshop Taskbar Style) -->
     <div id="vault-bulk-actions" class="photoshop-task-bar" style="display: none;">
@@ -554,10 +560,10 @@
   <!-- Script tags already moved to <head> with defer attribute for performance -->
   <!-- New Folder Modal -->
   <div id="new-folder-modal"
-    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px);"
+    style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
     role="dialog" aria-modal="true" aria-labelledby="new-folder-title">
     <div
-      style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;">
+      style="background: rgba(20, 20, 25, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 24px; width: 90%; max-width: 400px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 20px; animation: taskbarSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h2 id="new-folder-title" style="margin: 0; font-size: 1.2rem;">Folder Settings</h2>
         <button id="new-folder-close"

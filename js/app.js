@@ -661,6 +661,10 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     const isVideo = ['mp4', 'webm'].includes(ext);
     const card = document.createElement('div');
     card.className = 'card';
+    
+    if (targetContainer.id === 'vault-grid') {
+      card.style.animationDelay = `${Math.min(index * 0.04, 2)}s`;
+    }
 
     // Detect extreme vertical aspect ratios (comic strips) to prevent layout breakage
     if (post.height && post.width && (post.height / post.width > 2.5)) {
@@ -691,7 +695,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       card.classList.remove('skeleton-loader');
       img.style.display = 'none';
       const errorMsg = document.createElement('div');
-      errorMsg.innerHTML = '⚠️ Unavailable';
+      errorMsg.innerHTML = 'âš ï¸ Unavailable';
       errorMsg.style.padding = '40px 20px';
       errorMsg.style.color = 'var(--muted)';
       errorMsg.style.textAlign = 'center';
@@ -1115,17 +1119,26 @@ function renderVaultGridToDedicatedView() {
     return !isManga;
   });
 
-  const delBtn = document.getElementById('vault-delete-folder-btn');
-  if (delBtn) {
-    delBtn.style.display = (currentVaultFolder === 'Default' || currentVaultFolder === 'All') ? 'none' : 'block';
-  }
+  const createEmptyStateHtml = (icon, title, message) => `
+    <div style="background: rgba(30, 30, 40, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 48px; display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 400px; margin: 40px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div style="font-size: 3rem; opacity: 0.8;">${icon}</div>
+      <h3 style="margin: 0; font-size: 1.5rem; color: #fff;">${title}</h3>
+      <p style="margin: 0; color: var(--text-muted); font-size: 1rem; text-align: center;">${message}</p>
+      <button onclick="document.getElementById('nav-feed').click()" style="margin-top: 16px; background: var(--accent-purple); color: #fff; border: none; padding: 12px 32px; border-radius: 50px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(233, 94, 140, 0.4);">Go Discover</button>
+    </div>
+  `;
 
   if (tabFilteredPosts.length === 0) {
     vaultStatus.style.display = 'block';
     vaultStatus.innerHTML = activeVaultTab === 'bookshelf'
-      ? '<span class="icon">📚</span>Your bookshelf is empty. Save some manga!'
-      : '<span class="icon">💔</span>Your media vault is empty.';
+      ? createEmptyStateHtml('ðŸ“š', 'Bookshelf Empty', 'Your bookshelf is empty. Save some manga to start your collection!')
+      : createEmptyStateHtml('ðŸ’”', 'Vault Empty', 'Your media vault is empty. Find something you like and save it!');
     return;
+  }
+
+  const delBtn = document.getElementById('vault-delete-folder-btn');
+  if (delBtn) {
+    delBtn.style.display = (currentVaultFolder === 'Default' || currentVaultFolder === 'All') ? 'none' : 'block';
   }
 
   let filteredPosts = currentVaultFolder === 'All'
@@ -1157,7 +1170,7 @@ function renderVaultGridToDedicatedView() {
 
   if (filteredPosts.length === 0) {
     vaultStatus.style.display = 'block';
-    vaultStatus.innerHTML = `<span class="icon">📁</span>No matching media found in ${currentVaultFolder} folder.`;
+    vaultStatus.innerHTML = createEmptyStateHtml('ðŸ“', 'Folder Empty', `No matching media found in the ${currentVaultFolder} folder.`);
     return;
   }
 
@@ -1261,7 +1274,14 @@ function toggleBulkMode() {
 
   if (bulkActionsFooter) {
     bulkActionsFooter.style.display = isVaultBulkMode ? 'flex' : 'none';
-    if (isVaultBulkMode) {
+  }
+  
+  const mainTaskbar = document.getElementById('vault-main-taskbar');
+  if (mainTaskbar) {
+    mainTaskbar.style.display = isVaultBulkMode ? 'none' : 'flex';
+  }
+  
+  if (isVaultBulkMode) {
       const folderSelect = document.getElementById('bulk-folder-select');
       if (folderSelect) {
         folderSelect.innerHTML = '';
@@ -1273,7 +1293,6 @@ function toggleBulkMode() {
         });
       }
     }
-  }
 
   const countEl = document.getElementById('bulk-selection-count');
   if (countEl) countEl.textContent = `0 items selected`;
@@ -1284,10 +1303,10 @@ function toggleBulkMode() {
       vaultGrid.classList.add('bulk-mode-active');
     } else {
       vaultGrid.classList.remove('bulk-mode-active');
+      // Clear selection visually without re-rendering the whole grid
+      vaultGrid.querySelectorAll('.card.selected').forEach(card => card.classList.remove('selected'));
     }
   }
-
-  renderVaultGridToDedicatedView(); // Re-render to clear any active selections visually
 }
 
 if (bulkEditBtn) bulkEditBtn.addEventListener('click', toggleBulkMode);
@@ -1478,7 +1497,7 @@ async function search(tags, page, append = false) {
   }
 
   if (!data || data.length === 0) {
-    if (!append) statusEl.innerHTML = cachedPosts.length === 0 ? '<span class="icon">😶</span>No matching vectors found.' : '';
+    if (!append) statusEl.innerHTML = cachedPosts.length === 0 ? '<span class="icon">ðŸ˜¶</span>No matching vectors found.' : '';
     if (bottomStatusEl) bottomStatusEl.style.display = 'none';
     hasMore = false; // No more data to load
   } else {
@@ -1524,9 +1543,9 @@ function disableVaultViewMode() {
 function togglePostFavoriteStatus(post) {
   const idx = vaultedPosts.findIndex(p => String(p.id) === String(post.id));
   if (idx > -1) {
-    vaultedPosts.splice(idx, 1); lbFavBtn.classList.remove('favorited'); lbFavBtn.textContent = '🤍 Favorite';
+    vaultedPosts.splice(idx, 1); lbFavBtn.classList.remove('favorited'); lbFavBtn.textContent = 'ðŸ¤ Favorite';
   } else {
-    vaultedPosts.unshift(post); lbFavBtn.classList.add('favorited'); lbFavBtn.textContent = '❤️ Favorited';
+    vaultedPosts.unshift(post); lbFavBtn.classList.add('favorited'); lbFavBtn.textContent = 'â¤ï¸ Favorited';
   }
   localforage.setItem('r34_vault_v2', vaultedPosts);
   syncVaultCounterDisplay();
@@ -1903,7 +1922,7 @@ function renderWhitelist() {
     pill.style.color = '#10b981';
     pill.style.borderColor = '#059669';
     pill.style.cursor = 'pointer';
-    pill.textContent = tag + ' ✕';
+    pill.textContent = tag + ' âœ•';
     pill.onclick = async () => {
       globalWhitelist = globalWhitelist.filter(t => t !== tag);
       await localforage.setItem('r34_whitelist', globalWhitelist);
@@ -1924,7 +1943,7 @@ function renderBlacklist() {
     pill.style.color = '#fb7185';
     pill.style.borderColor = '#f43f5e';
     pill.style.cursor = 'pointer';
-    pill.textContent = tag + ' ✕';
+    pill.textContent = tag + ' âœ•';
     pill.onclick = async () => {
       globalBlacklist = globalBlacklist.filter(t => t !== tag);
       await localforage.setItem('r34_blacklist', globalBlacklist);
@@ -2039,7 +2058,7 @@ class Slideshow {
     }
     this.isPlaying = true;
     if (this.btn) {
-      this.btn.innerHTML = '⏸ Stop';
+      this.btn.innerHTML = 'â¸ Stop';
       this.btn.style.background = '#f43f5e';
     }
     triggerToastNotification("Slideshow started");
@@ -2077,10 +2096,23 @@ class Slideshow {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     if (this.btn) {
-      this.btn.innerHTML = '▶ Play';
+      this.btn.innerHTML = 'â–¶ Play';
       this.btn.style.background = 'var(--accent-purple)';
     }
   }
 }
 
 const slideshow = new Slideshow();
+
+// Handle Vault Main Taskbar Visibility
+const vaultView = document.getElementById('view-vault');
+const mainTaskbar = document.getElementById('vault-main-taskbar');
+if (vaultView && mainTaskbar) {
+  new MutationObserver(() => {
+    if (vaultView.style.display !== 'none' && !isVaultBulkMode) {
+      mainTaskbar.style.display = 'flex';
+    } else {
+      mainTaskbar.style.display = 'none';
+    }
+  }).observe(vaultView, { attributes: true, attributeFilter: ['style'] });
+}
