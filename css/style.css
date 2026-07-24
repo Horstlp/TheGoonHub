@@ -516,12 +516,25 @@ header p {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(13, 13, 17, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 10px;
+}
+
+.sticky-header-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: -48px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(13, 13, 17, 0.95) 0%, rgba(13, 13, 17, 0.9) 40%, rgba(13, 13, 17, 0.75) 65%, rgba(13, 13, 17, 0.4) 85%, rgba(13, 13, 17, 0) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  mask-image: linear-gradient(180deg, black 0%, black 40%, rgba(0, 0, 0, 0.75) 65%, rgba(0, 0, 0, 0.4) 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, black 0%, black 40%, rgba(0, 0, 0, 0.75) 65%, rgba(0, 0, 0, 0.4) 85%, transparent 100%);
 }
 
 /* ── Your Beautiful Custom Search Capsule Layout ── */
@@ -548,7 +561,7 @@ header p {
   transition: all 0.25s ease;
   cursor: text;
   position: relative;
-  min-height: 54px;
+  min-height: 46px;
   z-index: 200;
 }
 
@@ -557,7 +570,8 @@ header p {
   background: #09090d;
 }
 
-#search-input {
+#search-input,
+#vault-search-input {
   flex: 1;
   min-width: 140px;
   background: transparent;
@@ -569,7 +583,8 @@ header p {
   padding: 6px 4px;
 }
 
-#search-input::placeholder {
+#search-input::placeholder,
+#vault-search-input::placeholder {
   color: #4a4a61;
 }
 
@@ -1439,11 +1454,12 @@ header p {
 .vault-bulk-actions-footer {
   position: fixed;
   bottom: 0;
-  left: 72px; /* Starts after the sidebar */
+  left: 72px;
+  /* Starts after the sidebar */
   right: 0;
   background: var(--surface-light);
   padding: 16px 24px;
-  box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
   z-index: 1000;
   display: flex;
   justify-content: center;
@@ -1454,7 +1470,8 @@ header p {
 
 @media (max-width: 1024px) {
   .vault-bulk-actions-footer {
-    left: 0; /* Sidebar becomes top nav on mobile */
+    left: 0;
+    /* Sidebar becomes top nav on mobile */
   }
 }
 
@@ -1674,6 +1691,7 @@ header p {
   gap: 12px;
   cursor: pointer;
   width: 240px;
+  flex-shrink: 0;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -1692,6 +1710,8 @@ header p {
 }
 
 .folder-grid {
+  position: absolute;
+  inset: 0;
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 3px;
@@ -1792,7 +1812,7 @@ header p {
   width: 28px;
   height: 28px;
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: invert(1) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  filter: invert(1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
 .pinterest-folder-card:hover .folder-edit-btn-pinterest {
@@ -2327,7 +2347,7 @@ body.video-mode .main-content {
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
-  width: 108px;
+  width: 72px;
   /* 3 buttons * 30px + 2 gaps * 6px */
   margin-right: 6px;
   /* Space between options and toggle button */
@@ -2452,6 +2472,10 @@ body.video-mode .main-content {
   margin-right: 6px;
 }
 
+#vault-sort-capsule.expanded .search-timeframe-options {
+  width: 76px;
+}
+
 .timeframe-option-btn {
   width: 30px;
   height: 30px;
@@ -2541,8 +2565,12 @@ body.video-mode .main-content {
 .vault-tab-btn {
   background: transparent;
   color: var(--muted);
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 0 20px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 23px;
   font-weight: 600;
   font-size: 1rem;
   border: none;

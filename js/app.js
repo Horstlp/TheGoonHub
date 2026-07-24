@@ -221,15 +221,24 @@ function renderVaultFoldersNav() {
         e.stopPropagation();
         const nameField = document.getElementById('new-folder-name');
         nameField.value = f;
-        nameField.readOnly = true;
-        nameField.style.opacity = '0.6';
+        nameField.readOnly = false;
+        nameField.style.opacity = '1';
         document.getElementById('new-folder-title').textContent = 'Folder Settings';
 
         const settings = vaultFolderSettings[f] || { isPublic: false, useInAlgo: true };
         document.getElementById('new-folder-visibility').value = settings.isPublic ? 'public' : 'private';
         document.getElementById('new-folder-algo').checked = settings.useInAlgo !== false;
 
-        document.getElementById('new-folder-submit').textContent = 'Save Settings';
+        const submitBtn = document.getElementById('new-folder-submit');
+        submitBtn.textContent = 'Save Settings';
+        submitBtn.setAttribute('data-editing-folder', f);
+
+        const deleteBtn = document.getElementById('modal-delete-folder-btn');
+        if (deleteBtn) {
+          deleteBtn.style.display = 'block';
+          deleteBtn.setAttribute('data-folder', f);
+        }
+
         newFolderModal.style.display = 'flex';
       });
     }
@@ -326,7 +335,17 @@ if (newFolderBtn) {
     document.getElementById('new-folder-title').textContent = 'Create New Folder';
     document.getElementById('new-folder-visibility').value = 'private';
     document.getElementById('new-folder-algo').checked = true;
-    document.getElementById('new-folder-submit').textContent = 'Create Folder';
+    
+    const submitBtn = document.getElementById('new-folder-submit');
+    submitBtn.textContent = 'Create Folder';
+    submitBtn.removeAttribute('data-editing-folder');
+    
+    const deleteBtn = document.getElementById('modal-delete-folder-btn');
+    if (deleteBtn) {
+      deleteBtn.style.display = 'none';
+      deleteBtn.removeAttribute('data-folder');
+    }
+
     newFolderModal.style.display = 'flex';
   });
 }
@@ -349,19 +368,60 @@ if (newFolderSubmitBtn) {
       return;
     }
 
-    // Save to settings
+    const originalName = newFolderSubmitBtn.getAttribute('data-editing-folder');
+
+    // If renaming an existing folder
+    if (originalName && originalName !== nameInput) {
+      if (vaultedFolders.includes(nameInput)) {
+        alert("A folder with this name already exists.");
+        return;
+      }
+      
+      const folderIndex = vaultedFolders.indexOf(originalName);
+      if (folderIndex > -1) {
+        vaultedFolders[folderIndex] = nameInput;
+      }
+      localforage.setItem('r34_folders_v2', vaultedFolders);
+      
+      if (vaultFolderSettings[originalName]) {
+        vaultFolderSettings[nameInput] = vaultFolderSettings[originalName];
+        delete vaultFolderSettings[originalName];
+      }
+      
+      let postsChanged = false;
+      vaultedPosts.forEach(p => {
+        if (p.folder === originalName) {
+          p.folder = nameInput;
+          postsChanged = true;
+        }
+      });
+      if (postsChanged) {
+        localforage.setItem('r34_vault_v2', vaultedPosts);
+      }
+      
+      if (currentVaultFolder === originalName) {
+        currentVaultFolder = nameInput;
+      }
+    } 
+    // If creating a new folder
+    else if (!originalName) {
+      if (!vaultedFolders.includes(nameInput)) {
+        vaultedFolders.push(nameInput);
+        localforage.setItem('r34_folders_v2', vaultedFolders);
+      } else {
+        alert("A folder with this name already exists.");
+        return;
+      }
+      currentVaultFolder = nameInput;
+    }
+
+    // Save visibility settings
     vaultFolderSettings[nameInput] = {
       isPublic: visibility === 'public',
       useInAlgo: useAlgo
     };
     localforage.setItem('r34_folder_settings_v1', vaultFolderSettings);
 
-    if (!vaultedFolders.includes(nameInput)) {
-      vaultedFolders.push(nameInput);
-      localforage.setItem('r34_folders_v2', vaultedFolders);
-    }
-
-    currentVaultFolder = nameInput;
     renderVaultGridToDedicatedView();
     renderVaultFoldersNav();
     closeNewFolderModal();
@@ -937,15 +997,44 @@ function renderVaultGridToDedicatedView() {
     return;
   }
 
-  const sortSelect = document.getElementById('vault-sort-select');
-  const sortVal = sortSelect ? sortSelect.value : 'newest';
+  const activeSortBtn = document.querySelector('#vault-sort-options .sort-option-btn.active');
+  const sortType = activeSortBtn ? activeSortBtn.getAttribute('data-sort-type') : 'date';
+  const sortDir = activeSortBtn ? activeSortBtn.getAttribute('data-sort-dir') : 'desc';
 
-  if (sortVal === 'oldest') {
-    filteredPosts.reverse();
-  } else if (sortVal === 'highest') {
-    filteredPosts.sort((a, b) => (b.score || 0) - (a.score || 0));
-  } else if (sortVal === 'lowest') {
-    filteredPosts.sort((a, b) => (a.score || 0) - (b.score || 0));
+  // Update the toggle button icon to match the selected sort option
+  const toggleIcon = document.getElementById('vault-sort-toggle-icon');
+  if (toggleIcon && activeSortBtn) {
+    const activeImg = activeSortBtn.querySelector('img');
+    if (activeImg) {
+      toggleIcon.src = activeImg.src;
+      
+      if (sortDir === 'asc') {
+        toggleIcon.classList.add('reversed');
+        activeImg.classList.add('reversed');
+      } else {
+        toggleIcon.classList.remove('reversed');
+        activeImg.classList.remove('reversed');
+      }
+      
+      document.querySelectorAll('#vault-sort-options .sort-option-btn:not(.active) img').forEach(img => {
+        img.classList.remove('reversed');
+      });
+    }
+  }
+
+  // To ensure visual reversal even for items with identical scores, 
+  // we first reverse the whole array if ascending is requested, 
+  // then stable sort by score.
+  if (sortDir === 'asc') {
+    filteredPosts.reverse(); 
+  }
+
+  if (sortType === 'score') {
+    filteredPosts.sort((a, b) => {
+      const scoreA = Number(a.score) || 0;
+      const scoreB = Number(b.score) || 0;
+      return sortDir === 'desc' ? scoreB - scoreA : scoreA - scoreB;
+    });
   }
 
   vaultStatus.style.display = 'none';
@@ -959,8 +1048,36 @@ function renderVaultGridToDedicatedView() {
   }
 }
 
-document.getElementById('vault-sort-select')?.addEventListener('change', renderVaultGridToDedicatedView);
 document.getElementById('vault-search-input')?.addEventListener('input', debounce(renderVaultGridToDedicatedView, 300));
+
+document.getElementById('vault-sort-toggle-btn')?.addEventListener('click', function(e) {
+  e.stopPropagation();
+  const capsule = document.getElementById('vault-sort-capsule');
+  if (capsule) {
+    capsule.classList.toggle('expanded');
+  }
+});
+
+document.addEventListener('click', function(e) {
+  const capsule = document.getElementById('vault-sort-capsule');
+  if (capsule && capsule.classList.contains('expanded') && !capsule.contains(e.target)) {
+    capsule.classList.remove('expanded');
+  }
+});
+
+document.querySelectorAll('#vault-sort-options .sort-option-btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (this.classList.contains('active')) {
+      const currentDir = this.getAttribute('data-sort-dir');
+      this.setAttribute('data-sort-dir', currentDir === 'desc' ? 'asc' : 'desc');
+    } else {
+      document.querySelectorAll('#vault-sort-options .sort-option-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    }
+    renderVaultGridToDedicatedView();
+  });
+});
 
 let isVaultBulkMode = false;
 const selectedVaultPosts = new Set();
@@ -1031,20 +1148,31 @@ document.getElementById('bulk-delete-btn')?.addEventListener('click', () => {
   toggleBulkMode();
 });
 
-document.getElementById('vault-delete-folder-btn')?.addEventListener('click', () => {
-  if (currentVaultFolder === 'Default') return;
-  if (confirm(`Delete the folder "${currentVaultFolder}"? All items will be moved to Default.`)) {
+document.getElementById('modal-delete-folder-btn')?.addEventListener('click', function() {
+  const folderToDelete = this.getAttribute('data-folder');
+  if (!folderToDelete || folderToDelete === 'Default') return;
+  
+  if (confirm(`Delete the folder "${folderToDelete}"? All items will be moved to Default.`)) {
     vaultedPosts.forEach(p => {
-      if (p.folder === currentVaultFolder) p.folder = 'Default';
+      if (p.folder === folderToDelete) p.folder = 'Default';
     });
     localforage.setItem('r34_vault_v2', vaultedPosts);
 
-    vaultedFolders = vaultedFolders.filter(f => f !== currentVaultFolder);
+    vaultedFolders = vaultedFolders.filter(f => f !== folderToDelete);
     localforage.setItem('r34_folders_v2', vaultedFolders);
+    
+    if (vaultFolderSettings[folderToDelete]) {
+      delete vaultFolderSettings[folderToDelete];
+      localforage.setItem('r34_folder_settings_v1', vaultFolderSettings);
+    }
 
-    currentVaultFolder = 'Default';
+    if (currentVaultFolder === folderToDelete) {
+      currentVaultFolder = 'Default';
+    }
+    
     renderVaultFoldersNav();
     renderVaultGridToDedicatedView();
+    closeNewFolderModal();
   }
 });
 
