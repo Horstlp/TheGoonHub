@@ -109,8 +109,10 @@
                   </div>
                 </div>
               </div>
-              <button id="search-btn" type="button" aria-label="View Profile" onclick="document.getElementById('nav-vault').click()">
-                <img src="Icons/icons8-user-48.png" width="24" height="24" alt="Profile" style="filter: invert(1); opacity: 0.8; transition: opacity 0.2s;">
+              <button id="search-btn" type="button" aria-label="View Profile"
+                onclick="document.getElementById('nav-vault').click()">
+                <img src="Icons/icons8-user-48.png" width="24" height="24" alt="Profile"
+                  style="filter: invert(1); opacity: 0.8; transition: opacity 0.2s;">
               </button>
 
             </div>
@@ -371,41 +373,55 @@
             </div>
           </div>
           <div class="profile-actions" style="display: flex; gap: 12px; align-items: center;">
-            <button id="vault-new-folder-btn" class="timeframe-toggle-btn" title="Create New Folder" aria-label="Create New Folder" style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
+            <button id="vault-new-folder-btn" class="timeframe-toggle-btn" title="Create New Folder"
+              aria-label="Create New Folder"
+              style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
               <img src="Icons/icons8-xbox-cross-48.png" style="width: 22px; height: 22px;" alt="+">
             </button>
-            <button id="vault-bulk-edit-btn" class="timeframe-toggle-btn" title="Bulk Edit Mode" aria-label="Bulk Edit Mode" style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
+            <button id="vault-bulk-edit-btn" class="timeframe-toggle-btn" title="Bulk Edit Mode"
+              aria-label="Bulk Edit Mode"
+              style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
               <img src="Icons/icons8-pen-48 (1).png" style="width: 22px; height: 22px;" alt="Edit">
             </button>
-            <button id="vault-settings-btn" class="timeframe-toggle-btn" title="Global Settings" aria-label="Global Settings" style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
+            <button id="vault-settings-btn" class="timeframe-toggle-btn" title="Global Settings"
+              aria-label="Global Settings"
+              style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
               <img src="Icons/icons8-setting-48.png" style="width: 22px; height: 22px;" alt="Settings">
             </button>
           </div>
         </header>
 
-        <div class="search-row" style="max-width: none; margin-top: 16px; margin-bottom: 8px; align-items: center; padding: 0 8px;">
+        <div class="search-row"
+          style="max-width: none; margin-top: 16px; margin-bottom: 32px; align-items: center; padding: 0 8px;">
           <!-- Left: Library Selector -->
           <nav class="vault-tabs" id="vault-main-tabs" style="display: flex; gap: 8px;" aria-label="Vault View Tabs">
             <button class="vault-tab-btn active" data-tab="images">Images & Videos</button>
             <button class="vault-tab-btn" data-tab="bookshelf">Manga Bookshelf</button>
           </nav>
-          
+
           <!-- Right: Search Bar with embedded Settings -->
-          <div class="search-input-container" id="vault-search-container" style="flex: 1; max-width: 500px; margin-left: auto;">
-            <input id="vault-search-input" type="search" placeholder="Search saved tags..." autocomplete="off" aria-label="Search Vault" />
-            
+          <div class="search-input-container" id="vault-search-container"
+            style="flex: 1; max-width: 500px; margin-left: auto;">
+            <input id="vault-search-input" type="search" placeholder="Search saved tags..." autocomplete="off"
+              aria-label="Search Vault" />
+
             <div class="search-sort-container" id="vault-sort-capsule" style="margin-right: -4px;">
               <button type="button" id="vault-sort-toggle-btn" class="sort-toggle-btn" title="Vault Sorting">
                 <!-- Toggle icon dynamically updated by JS -->
-                <img id="vault-sort-toggle-icon" src="Icons/icons8-clock-30.png" alt="Settings" aria-hidden="true" width="20" height="20" style="filter: brightness(0) invert(1);">
+                <img id="vault-sort-toggle-icon" src="Icons/icons8-clock-30.png" alt="Settings" aria-hidden="true"
+                  width="20" height="20" style="filter: brightness(0) invert(1);">
               </button>
-              
+
               <div class="search-sort-options" id="vault-sort-options">
-                <button type="button" class="sort-option-btn active" data-sort-type="date" data-sort-dir="desc" title="Sort by Date (Newest)">
-                  <img src="Icons/icons8-clock-30.png" alt="Date" width="18" height="18" style="filter: brightness(0) invert(1);" />
+                <button type="button" class="sort-option-btn active" data-sort-type="date" data-sort-dir="desc"
+                  title="Sort by Date (Newest)">
+                  <img src="Icons/icons8-clock-30.png" alt="Date" width="18" height="18"
+                    style="filter: brightness(0) invert(1);" />
                 </button>
-                <button type="button" class="sort-option-btn" data-sort-type="score" data-sort-dir="desc" title="Sort by Score (Highest)">
-                  <img src="Icons/icons8-star-48.png" alt="Score" width="18" height="18" style="filter: brightness(0) invert(1);" />
+                <button type="button" class="sort-option-btn" data-sort-type="score" data-sort-dir="desc"
+                  title="Sort by Score (Highest)">
+                  <img src="Icons/icons8-star-48.png" alt="Score" width="18" height="18"
+                    style="filter: brightness(0) invert(1);" />
                 </button>
               </div>
             </div>
@@ -418,7 +434,11 @@
           <!-- Folders injected here -->
         </nav>
 
-        <hr class="vault-divider" />
+        <div id="vault-active-folder-header" class="vault-active-folder-header">
+          <h2 id="vault-active-folder-name" class="vault-active-folder-name">All</h2>
+          <div class="vault-active-folder-line"></div>
+          <span id="vault-active-folder-count" class="vault-active-folder-count">0 items</span>
+        </div>
 
         <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
         <div id="vault-status" class="text-center text-muted p-5 d-none" aria-live="polite"></div>
@@ -433,20 +453,24 @@
       <div class="task-bar-divider"></div>
       <select id="bulk-folder-select" class="task-bar-select"></select>
       <button id="bulk-move-btn" class="task-bar-btn" title="Move to Folder" aria-label="Move to Folder">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;">
-          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+          style="width: 20px; height: 20px;">
+          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
         </svg>
       </button>
       <div class="task-bar-divider"></div>
       <button id="bulk-delete-btn" class="task-bar-btn delete-btn" title="Delete Selected" aria-label="Delete Selected">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;">
-          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+          style="width: 20px; height: 20px;">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
         </svg>
       </button>
       <div class="task-bar-divider"></div>
       <button id="bulk-cancel-btn" class="task-bar-btn" title="Cancel" aria-label="Cancel">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+          style="width: 20px; height: 20px;">
+          <path
+            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
         </svg>
       </button>
     </div>
@@ -558,7 +582,9 @@
           Discovery Algorithm</label>
       </div>
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; width: 100%;">
-        <button id="modal-delete-folder-btn" class="btn-outline" style="border-color: rgba(244, 63, 94, 0.5); color: #fb7185; display: none;" title="Delete this folder">Delete</button>
+        <button id="modal-delete-folder-btn" class="btn-outline"
+          style="border-color: rgba(244, 63, 94, 0.5); color: #fb7185; display: none;"
+          title="Delete this folder">Delete</button>
         <div style="display: flex; justify-content: flex-end; gap: 12px; flex: 1;">
           <button id="new-folder-cancel" class="btn-outline">Cancel</button>
           <button id="new-folder-submit" class="btn-purple">Save Folder</button>

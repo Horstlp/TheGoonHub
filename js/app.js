@@ -704,6 +704,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       label.innerHTML = '<img src="Icons/icons8-no-video-48.png" width="16" height="16" style="filter: invert(1); margin-right: 4px; vertical-align: middle;"> VIDEO';
       card.appendChild(label);
       card.addEventListener('mouseenter', () => {
+        if (typeof isVaultBulkMode !== 'undefined' && isVaultBulkMode) return;
         const v = document.createElement('video');
         v.src = fileUrl; v.muted = true; v.loop = true; v.playsInline = true; v.disablePictureInPicture = true; v.controlsList = "nodownload noplaybackrate"; v.className = 'hover-video';
         v.style.pointerEvents = 'none'; // Block Opera UI injections
@@ -714,126 +715,150 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       });
     }
 
-    // Pinterest Save Widget
-    const saveWidget = document.createElement('div');
-    saveWidget.className = 'pinterest-save-widget';
+    // Pinterest Save Widget (Only show outside the vault)
+    const isVaultContainerCheck = (targetContainer && targetContainer.id === 'vault-grid');
+    if (!isVaultContainerCheck) {
+      const saveWidget = document.createElement('div');
+      saveWidget.className = 'pinterest-save-widget';
 
-    const folderWrapper = document.createElement('div');
-    folderWrapper.className = 'custom-select-wrapper';
+      const folderWrapper = document.createElement('div');
+      folderWrapper.className = 'custom-select-wrapper';
 
-    const folderBtn = document.createElement('button');
-    folderBtn.className = 'pinterest-folder-select';
+      const folderBtn = document.createElement('button');
+      folderBtn.className = 'pinterest-folder-select';
 
-    // folderList is appended to saveWidget (not folderWrapper) so it can
-    // span the full width of the widget (folder btn left → Merken btn right)
-    const folderList = document.createElement('ul');
-    folderList.className = 'custom-options-list card-folder-list';
+      const folderList = document.createElement('ul');
+      folderList.className = 'custom-options-list card-folder-list';
 
-    const suggestedInit = typeof suggestFolderForPost === 'function'
-      ? suggestFolderForPost(post)
-      : ((typeof getVaultFolders === 'function' ? getVaultFolders() : vaultedFolders)[0] || 'Saved');
+      const suggestedInit = typeof suggestFolderForPost === 'function'
+        ? suggestFolderForPost(post)
+        : ((typeof getVaultFolders === 'function' ? getVaultFolders() : vaultedFolders)[0] || 'Saved');
 
-    folderBtn.textContent = suggestedInit;
-    folderWrapper.dataset.value = suggestedInit;
+      folderBtn.textContent = suggestedInit;
+      folderWrapper.dataset.value = suggestedInit;
 
-    // Helper: (re)build the folder list from the live folder array each time the dropdown opens
-    const refreshFolderList = () => {
-      const currentFolders = typeof getVaultFolders === 'function' ? getVaultFolders() : vaultedFolders;
-      const currentValue = folderWrapper.dataset.value;
-      folderList.innerHTML = '';
+      const refreshFolderList = () => {
+        const currentFolders = typeof getVaultFolders === 'function' ? getVaultFolders() : vaultedFolders;
+        const currentValue = folderWrapper.dataset.value;
+        folderList.innerHTML = '';
 
-      // Ensure the currently selected value is always present
-      const folderSet = new Set(currentFolders);
-      folderSet.add(currentValue);
+        const folderSet = new Set(currentFolders);
+        folderSet.add(currentValue);
 
-      Array.from(folderSet).forEach(f => {
-        // Find the first (oldest) image added to this folder
-        let folderPost = null;
-        for (let i = vaultedPosts.length - 1; i >= 0; i--) {
-          if ((vaultedPosts[i].folder || 'Default') === f) {
-            folderPost = vaultedPosts[i];
-            break;
+        Array.from(folderSet).forEach(f => {
+          let folderPost = null;
+          for (let i = vaultedPosts.length - 1; i >= 0; i--) {
+            if ((vaultedPosts[i].folder || 'Default') === f) {
+              folderPost = vaultedPosts[i];
+              break;
+            }
           }
-        }
-        const thumbUrl = folderPost ? (folderPost.preview_url || folderPost.sample_url || folderPost.file_url) : null;
+          const thumbUrl = folderPost ? (folderPost.preview_url || folderPost.sample_url || folderPost.file_url) : null;
 
-        const li = document.createElement('li');
-        li.className = 'folder-dropdown-item';
-        if (f === currentValue) li.classList.add('selected');
+          const li = document.createElement('li');
+          li.className = 'folder-dropdown-item';
+          if (f === currentValue) li.classList.add('selected');
 
-        const label = document.createElement('span');
-        label.className = 'folder-dropdown-label';
-        label.textContent = f;
-        li.appendChild(label);
+          const label = document.createElement('span');
+          label.className = 'folder-dropdown-label';
+          label.textContent = f;
+          li.appendChild(label);
 
-        if (thumbUrl) {
-          const img = document.createElement('img');
-          img.src = thumbUrl;
-          img.className = 'folder-dropdown-thumb';
-          img.loading = 'lazy';
-          img.draggable = false;
-          li.appendChild(img);
-        } else {
-          const placeholder = document.createElement('div');
-          placeholder.className = 'folder-dropdown-thumb folder-thumb-placeholder';
-          placeholder.textContent = f.charAt(0).toUpperCase();
-          li.appendChild(placeholder);
-        }
-
-        li.addEventListener('click', (e) => {
-          e.stopPropagation();
-          folderWrapper.dataset.value = f;
-          folderBtn.textContent = f;
-          folderList.querySelectorAll('li').forEach(el => el.classList.remove('selected'));
-          li.classList.add('selected');
-          folderWrapper.classList.remove('open');
-          folderList.classList.remove('open');
-          
-          // Auto-save to the selected folder
-          if (typeof savePostToFolder === 'function') {
-            savePostToFolder(post, f, saveBtn);
+          if (thumbUrl) {
+            const img = document.createElement('img');
+            img.src = thumbUrl;
+            img.className = 'folder-dropdown-thumb';
+            img.loading = 'lazy';
+            img.draggable = false;
+            li.appendChild(img);
+          } else {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'folder-dropdown-thumb folder-thumb-placeholder';
+            placeholder.textContent = f.charAt(0).toUpperCase();
+            li.appendChild(placeholder);
           }
+
+          li.addEventListener('click', (e) => {
+            e.stopPropagation();
+            folderWrapper.dataset.value = f;
+            folderBtn.textContent = f;
+            folderList.querySelectorAll('li').forEach(el => el.classList.remove('selected'));
+            li.classList.add('selected');
+            folderWrapper.classList.remove('open');
+            folderList.classList.remove('open');
+            
+            if (typeof savePostToFolder === 'function') {
+              savePostToFolder(post, f, saveBtn);
+            }
+          });
+          folderList.appendChild(li);
         });
-        folderList.appendChild(li);
+      };
+
+      refreshFolderList();
+
+      folderBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpening = !folderList.classList.contains('open');
+        if (isOpening) refreshFolderList();
+        folderList.classList.toggle('open');
+        folderWrapper.classList.toggle('open');
       });
-    };
 
-    // Initial populate
-    refreshFolderList();
+      folderWrapper.appendChild(folderBtn);
 
-    folderBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isOpening = !folderList.classList.contains('open');
-      if (isOpening) refreshFolderList(); // always up-to-date when opening
-      folderList.classList.toggle('open');
-      folderWrapper.classList.toggle('open'); // keep caret animation
-    });
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'pinterest-save-btn';
+      const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
+      if (isSaved) saveBtn.classList.add('saved');
+      saveBtn.textContent = isSaved ? 'Saved' : 'Merken';
 
-    folderWrapper.appendChild(folderBtn);
-    // folderList goes on saveWidget so it can stretch full width
+      saveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof savePostToFolder === 'function') {
+          savePostToFolder(post, folderWrapper.dataset.value, saveBtn);
+        }
+      });
 
-    const saveBtn = document.createElement('button');
-    saveBtn.className = 'pinterest-save-btn';
-    const isSaved = vaultedPosts.some(p => String(p.id) === String(post.id));
-    if (isSaved) saveBtn.classList.add('saved');
-    saveBtn.textContent = isSaved ? 'Saved' : 'Merken';
+      saveWidget.appendChild(folderWrapper);
+      saveWidget.appendChild(saveBtn);
+      saveWidget.appendChild(folderList);
+      card.appendChild(saveWidget);
 
-    saveBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (typeof savePostToFolder === 'function') {
-        savePostToFolder(post, folderWrapper.dataset.value, saveBtn);
-      }
-    });
-
-    saveWidget.appendChild(folderWrapper);
-    saveWidget.appendChild(saveBtn);
-    saveWidget.appendChild(folderList); // appended last so it layers on top
-    card.appendChild(saveWidget);
-
-    card.addEventListener('mouseleave', () => {
-      folderList.classList.remove('open');
-      folderWrapper.classList.remove('open');
-    });
+      card.addEventListener('mouseleave', () => {
+        folderList.classList.remove('open');
+        folderWrapper.classList.remove('open');
+      });
+    } else {
+      // Add a small remove button in the top right for Vault view
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'vault-card-remove-btn';
+      removeBtn.title = 'Remove from Vault';
+      
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idStr = String(post.id);
+        const postIndex = vaultedPosts.findIndex(p => String(p.id) === idStr);
+        if (postIndex !== -1) {
+          vaultedPosts.splice(postIndex, 1);
+          if (typeof localforage !== 'undefined') {
+            localforage.setItem('r34_vault_v2', vaultedPosts);
+          }
+          card.style.opacity = '0';
+          card.style.pointerEvents = 'none';
+          setTimeout(() => {
+            card.remove();
+            if (typeof renderVaultGridToDedicatedView === 'function') {
+               renderVaultGridToDedicatedView();
+            }
+          }, 300);
+          if (typeof triggerToastNotification === 'function') {
+            triggerToastNotification('Removed from Vault');
+          }
+        }
+      });
+      card.appendChild(removeBtn);
+    }
 
     // Figure out the best title for the card
     const rawTags = (post.tags || '').split(/\s+/).filter(Boolean);
@@ -914,10 +939,82 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
         }
         e.dataTransfer.setData('text/plain', 'bulk-drag');
         e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => card.classList.add('dragging'), 0);
+        
+        // Custom drag ghost (using DOM for animation support)
+        const ghostContainer = document.createElement('div');
+        ghostContainer.className = 'bulk-drag-ghost wobble-anim';
+        ghostContainer.id = 'active-drag-ghost';
+        
+        const selectedPostsArray = vaultedPosts.filter(p => selectedVaultPosts.has(String(p.id)));
+        const stackItems = selectedPostsArray.slice(0, 3);
+        
+        stackItems.forEach((sp, i) => {
+          const ghostImg = document.createElement('img');
+          ghostImg.src = sp.preview_url || sp.sample_url || sp.file_url;
+          ghostImg.className = 'bulk-drag-ghost-img';
+          ghostImg.style.transform = `translate(${i * 6}px, ${i * 6}px) rotate(${i * -3}deg)`;
+          ghostImg.style.zIndex = 3 - i;
+          ghostContainer.appendChild(ghostImg);
+        });
+        
+        if (selectedVaultPosts.size > 1) {
+          const badge = document.createElement('div');
+          badge.textContent = '+' + (selectedVaultPosts.size - 1);
+          badge.style.position = 'absolute';
+          badge.style.bottom = '-10px';
+          badge.style.right = '-10px';
+          badge.style.background = '#e95e8c';
+          badge.style.color = 'white';
+          badge.style.borderRadius = '50%';
+          badge.style.width = '32px';
+          badge.style.height = '32px';
+          badge.style.display = 'flex';
+          badge.style.alignItems = 'center';
+          badge.style.justifyContent = 'center';
+          badge.style.fontWeight = 'bold';
+          badge.style.zIndex = '10';
+          badge.style.boxShadow = '0 2px 8px rgba(0,0,0,0.5)';
+          ghostContainer.appendChild(badge);
+        }
+
+        document.body.appendChild(ghostContainer);
+        
+        // Hide default browser drag image
+        const emptyImage = new Image();
+        emptyImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+        e.dataTransfer.setDragImage(emptyImage, 0, 0);
+
+        setTimeout(() => {
+          document.querySelectorAll('.card.bulk-selected').forEach(c => {
+            if (c === card) {
+              // The dragged element must remain in layout flow technically, but position absolute removes it visually
+              c.style.position = 'absolute';
+              c.style.left = '-9999px';
+            } else {
+              // Other selected items can just be display none to force grid resort
+              c.style.display = 'none';
+            }
+          });
+        }, 0);
       });
+      
+      card.addEventListener('drag', (e) => {
+        const ghost = document.getElementById('active-drag-ghost');
+        if (ghost && e.clientX !== 0 && e.clientY !== 0) {
+          ghost.style.left = (e.clientX + 15) + 'px';
+          ghost.style.top = (e.clientY + 15) + 'px';
+        }
+      });
+      
       card.addEventListener('dragend', () => {
-        card.classList.remove('dragging');
+        const ghost = document.getElementById('active-drag-ghost');
+        if (ghost) ghost.remove();
+
+        document.querySelectorAll('.card.bulk-selected').forEach(c => {
+          c.style.display = '';
+          c.style.position = '';
+          c.style.left = '';
+        });
       });
     }
 
@@ -987,10 +1084,13 @@ document.getElementById('vault-main-tabs')?.addEventListener('click', (e) => {
 
     // Toggle UI elements if needed
     const folderNav = document.getElementById('vault-folders-nav');
+    const folderHeader = document.getElementById('vault-active-folder-header');
     if (activeVaultTab === 'bookshelf') {
-      folderNav.style.display = 'none';
+      if (folderNav) folderNav.style.display = 'none';
+      if (folderHeader) folderHeader.style.display = 'none';
     } else {
-      folderNav.style.display = 'flex';
+      if (folderNav) folderNav.style.display = 'flex';
+      if (folderHeader) folderHeader.style.display = 'flex';
     }
 
     renderVaultGridToDedicatedView();
@@ -1000,6 +1100,12 @@ document.getElementById('vault-main-tabs')?.addEventListener('click', (e) => {
 function renderVaultGridToDedicatedView() {
   const vaultGrid = document.getElementById('vault-grid');
   const vaultStatus = document.getElementById('vault-status');
+  const folderHeader = document.getElementById('vault-active-folder-header');
+  
+  if (folderHeader) {
+    folderHeader.style.display = activeVaultTab === 'bookshelf' ? 'none' : 'flex';
+  }
+
   vaultGrid.innerHTML = '';
 
   // Apply Tab filter first
@@ -1039,6 +1145,14 @@ function renderVaultGridToDedicatedView() {
       // All search parts must match
       return queryParts.every(part => t.includes(part));
     });
+  }
+
+  const headerName = document.getElementById('vault-active-folder-name');
+  const headerCount = document.getElementById('vault-active-folder-count');
+  if (headerName) headerName.textContent = currentVaultFolder;
+  if (headerCount) {
+    const postWord = filteredPosts.length === 1 ? 'item' : 'items';
+    headerCount.textContent = `${filteredPosts.length} ${postWord}`;
   }
 
   if (filteredPosts.length === 0) {
@@ -1163,6 +1277,15 @@ function toggleBulkMode() {
 
   const countEl = document.getElementById('bulk-selection-count');
   if (countEl) countEl.textContent = `0 items selected`;
+
+  const vaultGrid = document.getElementById('vault-grid');
+  if (vaultGrid) {
+    if (isVaultBulkMode) {
+      vaultGrid.classList.add('bulk-mode-active');
+    } else {
+      vaultGrid.classList.remove('bulk-mode-active');
+    }
+  }
 
   renderVaultGridToDedicatedView(); // Re-render to clear any active selections visually
 }

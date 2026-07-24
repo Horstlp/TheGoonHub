@@ -1038,6 +1038,7 @@ header p {
   right: 14px;
   background: rgba(0, 0, 0, 0.6);
   padding: 4px 10px;
+  transition: opacity 0.25s ease;
   border-radius: 6px;
   font-size: 0.65rem;
   font-weight: 600;
@@ -1049,6 +1050,14 @@ header p {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.card:hover .video-badge {
+  opacity: 0;
+}
+
+.bulk-mode-active .card:hover .video-badge {
+  opacity: 1;
 }
 
 .card .video-badge img {
@@ -1656,32 +1665,23 @@ header p {
 
 /* -- Bulk Edit Mode -- */
 .card.bulk-selected {
-  outline: 4px solid #34d399;
-  outline-offset: -4px;
-  transform: scale(0.95);
   transition: all 0.2s ease;
   opacity: 0.8;
 }
 
 .card.bulk-selected::after {
-  content: '?';
+  content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(52, 211, 153, 0.9);
-  color: #fff;
-  font-size: 3rem;
-  font-weight: bold;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  top: -4px;
+  left: 24px;
+  width: 32px;
+  height: 52px;
+  background-color: var(--accent-purple);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 10px), 0 100%);
   pointer-events: none;
   z-index: 10;
+  border-radius: 4px 4px 0 0;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
 }
 
 /* -- Pinterest Folder UI -- */
@@ -1692,15 +1692,60 @@ header p {
   cursor: pointer;
   width: 240px;
   flex-shrink: 0;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.6;
 }
 
 .pinterest-folder-card:hover {
   transform: translateY(-4px);
+  opacity: 0.8;
+}
+
+.pinterest-folder-card.active {
+  opacity: 1;
+  transform: scale(1.02);
 }
 
 .pinterest-folder-card.active .folder-grid {
   border-color: var(--accent-purple);
+  box-shadow: 0 0 20px rgba(233, 94, 140, 0.3);
+}
+
+.pinterest-folder-card.active .pinterest-folder-title {
+  color: var(--accent-purple);
+  text-shadow: 0 0 10px rgba(233, 94, 140, 0.4);
+}
+
+/* Vault Active Folder Header */
+.vault-active-folder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0 24px 0;
+}
+
+.vault-active-folder-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.vault-active-folder-line {
+  flex-grow: 1;
+  height: 1px;
+  background-color: var(--border);
+  opacity: 0.5;
+}
+
+.vault-active-folder-count {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .folder-grid-container {
@@ -1859,7 +1904,6 @@ header p {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
   flex-wrap: wrap;
   gap: 16px;
 }
@@ -3273,13 +3317,20 @@ body.video-mode .main-content {
   border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 8px 14px;
   border-radius: 50px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.05);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
   animation: taskbarSlideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @keyframes taskbarSlideUp {
-  from { opacity: 0; transform: translate(-50%, 20px) scale(0.95); }
-  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
 }
 
 .task-bar-text {
@@ -3314,9 +3365,11 @@ body.video-mode .main-content {
   border-radius: 20px;
   transition: background 0.2s;
 }
+
 .task-bar-select:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
 .task-bar-select option {
   background: var(--surface);
   color: var(--text);
@@ -3335,16 +3388,20 @@ body.video-mode .main-content {
   transition: all 0.2s ease;
   color: white;
 }
+
 .task-bar-btn:hover {
   background: rgba(255, 255, 255, 0.15);
   transform: scale(1.05);
 }
+
 .task-bar-btn:active {
   transform: scale(0.95);
 }
+
 .task-bar-btn.delete-btn:hover {
   background: rgba(239, 68, 68, 0.15);
 }
+
 .task-bar-btn.delete-btn:hover svg {
   fill: #ef4444;
 }
@@ -3356,8 +3413,122 @@ body.video-mode .main-content {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 8px 24px rgba(233, 94, 140, 0.2);
 }
+
 .vault-grid-layout .card.dragging {
   opacity: 0.6;
   border: 2px dashed var(--accent-purple);
   transform: scale(0.95);
+}
+
+/* Bulk Mode Overrides */
+.vault-grid-layout.bulk-mode-active .card {
+  cursor: grab !important;
+}
+
+.vault-grid-layout.bulk-mode-active .card:active,
+.vault-grid-layout.bulk-mode-active .card.dragging {
+  cursor: grabbing !important;
+}
+
+.bulk-drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  /* Start hidden until first drag event updates position */
+  left: -9999px;
+  top: -9999px;
+}
+
+@keyframes dragWobble {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  25% {
+    transform: rotate(-4deg) scale(1.05);
+  }
+
+  50% {
+    transform: rotate(0deg) scale(1.05);
+  }
+
+  75% {
+    transform: rotate(4deg) scale(1.05);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.wobble-anim {
+  animation: dragWobble 0.6s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.bulk-drag-ghost-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 3px solid white;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Vault Remove Button */
+.vault-card-remove-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.85);
+  /* Red background */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.25s ease;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.vault-card-remove-btn::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  -webkit-mask-image: url('../Icons/icons8-trash-48.png');
+  -webkit-mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: url('../Icons/icons8-trash-48.png');
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+}
+
+.card:hover .vault-card-remove-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.vault-card-remove-btn:hover {
+  background: rgba(220, 38, 38, 1);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.6);
+  transform: scale(1.1) !important;
+}
+
+.vault-grid-layout.bulk-mode-active .vault-card-remove-btn {
+  display: none !important;
 }
