@@ -248,6 +248,36 @@ function renderVaultFoldersNav() {
       renderVaultGridToDedicatedView();
       renderVaultFoldersNav();
     });
+    
+    // Setup drag-and-drop dropzones
+    btn.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      btn.classList.add('drag-over');
+    });
+    btn.addEventListener('dragleave', (e) => {
+      btn.classList.remove('drag-over');
+    });
+    btn.addEventListener('drop', (e) => {
+      e.preventDefault();
+      btn.classList.remove('drag-over');
+      
+      const dragType = e.dataTransfer.getData('text/plain');
+      if (dragType === 'bulk-drag' && selectedVaultPosts.size > 0) {
+        const targetFolder = (f === 'All') ? 'Default' : f;
+        vaultedPosts.forEach(p => {
+          if (selectedVaultPosts.has(String(p.id))) {
+            p.folder = targetFolder;
+          }
+        });
+        localforage.setItem('r34_vault_v2', vaultedPosts);
+        if (typeof triggerToastNotification === 'function') {
+          triggerToastNotification(`Moved ${selectedVaultPosts.size} items to ${f}.`);
+        }
+        toggleBulkMode();
+      }
+    });
+
     nav.appendChild(btn);
   });
 
@@ -870,6 +900,27 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     }
 
     card.appendChild(footer);
+    
+    const isVaultContainer = (targetContainer && targetContainer.id === 'vault-grid');
+    if (typeof isVaultBulkMode !== 'undefined' && isVaultBulkMode && isVaultContainer) {
+      card.setAttribute('draggable', 'true');
+      card.addEventListener('dragstart', (e) => {
+        const postIdStr = String(post.id);
+        if (!selectedVaultPosts.has(postIdStr)) {
+          selectedVaultPosts.add(postIdStr);
+          card.classList.add('bulk-selected');
+          const countEl = document.getElementById('bulk-selection-count');
+          if (countEl) countEl.textContent = `${selectedVaultPosts.size} items selected`;
+        }
+        e.dataTransfer.setData('text/plain', 'bulk-drag');
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => card.classList.add('dragging'), 0);
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+    }
+
     card.addEventListener('click', (e) => {
       const isVaultView = targetContainer && targetContainer.id === 'vault-grid';
       if (typeof isVaultBulkMode !== 'undefined' && isVaultBulkMode && isVaultView) {
@@ -886,7 +937,6 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
         return;
       }
 
-      const isVaultContainer = (targetContainer && targetContainer.id === 'vault-grid');
       const targetArray = isVaultContainer ? (window.cachedVaultPosts || []) : cachedPosts;
       const actualIndex = targetArray.findIndex(p => String(p.id) === String(post.id));
       if (actualIndex > -1) openLightbox(actualIndex);

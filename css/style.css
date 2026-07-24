@@ -3256,3 +3256,108 @@ body.video-mode .main-content {
 .capitalize {
   text-transform: capitalize;
 }
+
+/* --- Photoshop-Style Contextual Taskbar for Bulk Edit --- */
+.photoshop-task-bar {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(22, 22, 31, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 8px 14px;
+  border-radius: 50px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.05);
+  animation: taskbarSlideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes taskbarSlideUp {
+  from { opacity: 0; transform: translate(-50%, 20px) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.task-bar-text {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.95rem;
+  margin: 0 8px;
+  white-space: nowrap;
+}
+
+.task-bar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 4px;
+}
+
+.task-bar-select {
+  background: transparent;
+  color: var(--text);
+  border: none;
+  font-size: 0.95rem;
+  font-family: inherit;
+  font-weight: 500;
+  padding: 8px 24px 8px 12px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23ffffff' stroke-opacity='0.7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+.task-bar-select:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.task-bar-select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.task-bar-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: white;
+}
+.task-bar-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+.task-bar-btn:active {
+  transform: scale(0.95);
+}
+.task-bar-btn.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+.task-bar-btn.delete-btn:hover svg {
+  fill: #ef4444;
+}
+
+/* Drag and Drop feedback styles */
+.pinterest-folder-card.drag-over {
+  border-color: var(--accent-purple);
+  background: rgba(233, 94, 140, 0.15);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(233, 94, 140, 0.2);
+}
+.vault-grid-layout .card.dragging {
+  opacity: 0.6;
+  border: 2px dashed var(--accent-purple);
+  transform: scale(0.95);
+}
