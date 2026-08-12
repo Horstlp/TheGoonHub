@@ -204,6 +204,12 @@
 }
 
 /* Inside lightbox panel – always visible, relative-positioned */
+#lb-pinterest-widget {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 #lb-pinterest-widget .custom-select-wrapper,
 #lb-pinterest-widget .pinterest-save-btn {
   opacity: 1;
@@ -1212,19 +1218,40 @@ header p {
   display: flex;
   position: fixed;
   inset: 0;
-  background: rgba(6, 6, 9, 0.98);
+  background: rgba(6, 6, 9, 0.55);
   z-index: 500;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 32px;
-  backdrop-filter: blur(20px);
+  padding: 64px 32px;
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   transition: opacity 0.2s ease, visibility 0.2s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #lightbox.open {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
+}
+
+.lightbox-scroll-content {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.lightbox-top-section {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 1400px;
 }
 
 .lightbox-wrapper {
@@ -1238,7 +1265,9 @@ header p {
   max-height: 70vh;
   border-radius: 20px;
   overflow: hidden;
-  background: #000;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 #lightbox-media-container img,
@@ -1285,26 +1314,86 @@ header p {
 #lightbox-close {
   position: fixed;
   top: 32px;
-  right: 32px;
-  background: #1c1c27;
-  border: 1px solid var(--border);
+  left: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   color: var(--text);
   font-size: 0.9rem;
   padding: 12px 20px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   z-index: 520;
 }
 
 #lightbox-close:hover {
   border-color: var(--danger);
   color: var(--danger);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#lightbox-back {
+  position: fixed;
+  top: 32px;
+  left: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 520;
+  display: none;
+}
+
+#lightbox-back:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#lightbox-slim-close {
+  position: fixed;
+  top: 32px;
+  left: 160px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  color: var(--muted);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 520;
+  display: none;
+}
+
+#lightbox-slim-close:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: rgba(233, 94, 140, 0.1);
 }
 
 #lightbox-info {
-  background: #111116;
-  border: 1px solid var(--border);
+  background: rgba(17, 17, 22, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
   border-radius: 16px;
   padding: 24px;
   font-size: 0.85rem;
@@ -1314,8 +1403,8 @@ header p {
   gap: 16px;
   width: auto;
   min-width: 250px;
+  max-width: 350px;
   align-items: flex-start;
-  margin-left: 24px;
   overflow: hidden;
 }
 
@@ -1329,8 +1418,10 @@ header p {
 }
 
 .lb-action-btn {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--text);
   padding: 8px 16px;
   border-radius: 10px;
@@ -1340,12 +1431,12 @@ header p {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
 
 .lb-action-btn:hover {
-  border-color: #4a4a61;
-  background: var(--surface-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 #lb-fav-btn.favorited {
@@ -1361,7 +1452,7 @@ header p {
   align-content: flex-start;
   width: auto;
   padding-top: 16px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   flex-grow: 1;
   min-height: 0;
   overflow: hidden;
@@ -1370,13 +1461,13 @@ header p {
 
 .lb-stream-tag {
   font-size: 0.75rem;
-  background: #1c1c27;
+  background: rgba(255, 255, 255, 0.05);
   color: #b5b5c6;
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   writing-mode: horizontal-tb;
   display: inline-flex;
   align-items: center;
@@ -1385,7 +1476,8 @@ header p {
 }
 
 .lb-stream-tag:hover {
-  border-color: var(--accent-purple);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 

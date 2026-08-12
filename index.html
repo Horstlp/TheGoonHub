@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
   <!-- Accessibility & SEO: Added meta description for better indexing and context -->
   <meta name="description" content="R34 Media Hub Pro - Advanced Media Browser">
   <title>R34 Media Hub Pro</title>
@@ -146,56 +147,225 @@
 
       <!-- MANGA VIEW -->
       <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
-        <div class="sticky-header-container">
-          <!-- Manga Grid Search -->
-          <form class="search-wrap" role="search" onsubmit="event.preventDefault();" class="mb-4">
-            <div class="search-row">
-              <div class="search-input-container" id="manga-search-container">
-                <div id="manga-tag-pills-list" class="flex-wrap gap-1 align-center" aria-live="polite"></div>
-                <input id="manga-grid-search-input" type="search"
-                  placeholder="Add modifiers (e.g. tag:yuri) or search titles..." class="search-input"
-                  autocomplete="off" aria-label="Search manga grid" />
-                <div class="autocomplete-dropdown" id="manga-autocomplete-box" role="listbox"
-                  aria-label="Manga search suggestions"></div>
+        <!-- Simplified & Sleek Manga Search Suite (Unified with Main Search Bar) -->
+        <div class="manga-search-section">
+          <!-- Main Search Bar Row -->
+          <div class="search-row manga-search-row">
+            <!-- Search Pill Capsule Container -->
+            <div class="search-input-container manga-search-capsule" id="manga-search-container">
+              <span class="manga-search-icon" aria-hidden="true">🔍</span>
+              <!-- Inline Active Tag Pills -->
+              <div id="manga-active-tag-pills" class="flex-wrap gap-1 align-center" aria-live="polite"></div>
+              <!-- Manga Search Input -->
+              <input id="manga-grid-search-input" type="search" placeholder="Search titles, authors, keywords..." autocomplete="off" aria-label="Search manga" />
+              <button type="button" id="manga-search-clear-btn" class="manga-input-clear-btn" title="Clear search" style="display: none;">✕</button>
+              
+              <!-- Autocomplete Suggestions Dropdown -->
+              <div class="autocomplete-dropdown" id="manga-autocomplete-box" role="listbox" aria-label="Manga search suggestions"></div>
+
+              <!-- Inline Capsule Controls -->
+              <div class="manga-inline-controls">
+                <!-- 🏷️ Tags Capsule Trigger -->
+                <button type="button" id="manga-tags-trigger-btn" class="manga-pill-capsule-btn" title="Filter Tags">
+                  <span class="capsule-icon">🏷️</span>
+                  <span class="capsule-label" id="manga-tags-trigger-text">Tags</span>
+                  <span id="manga-tags-badge" class="manga-filter-badge" style="display: none;">0</span>
+                </button>
+
+                <!-- 🔞 Content Rating Capsule -->
+                <div class="manga-rating-capsule-wrapper">
+                  <button type="button" id="manga-rating-trigger-btn" class="manga-pill-capsule-btn active" title="Content Rating">
+                    <span class="capsule-icon">🔞</span>
+                    <span id="manga-rating-trigger-text" class="capsule-label">Erotica+</span>
+                    <span id="manga-rating-badge" class="manga-filter-badge">+2</span>
+                  </button>
+                  
+                  <!-- Rating Dropdown Popover -->
+                  <div id="manga-rating-dropdown-menu" class="manga-dropdown-popover" style="display: none;">
+                    <div class="popover-heading">Content Rating</div>
+                    <label class="manga-checkbox-option">
+                      <input type="checkbox" name="manga-rating" value="safe">
+                      <span class="custom-check"></span>
+                      <span class="opt-label">🟢 Safe</span>
+                    </label>
+                    <label class="manga-checkbox-option">
+                      <input type="checkbox" name="manga-rating" value="suggestive">
+                      <span class="custom-check"></span>
+                      <span class="opt-label">🟡 Suggestive</span>
+                    </label>
+                    <label class="manga-checkbox-option">
+                      <input type="checkbox" name="manga-rating" value="erotica" checked>
+                      <span class="custom-check"></span>
+                      <span class="opt-label">🟠 Erotica</span>
+                    </label>
+                    <label class="manga-checkbox-option">
+                      <input type="checkbox" name="manga-rating" value="pornographic" checked>
+                      <span class="custom-check"></span>
+                      <span class="opt-label">🔴 Pornographic</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- ⚙️ Advanced Filters Toggle -->
+                <button type="button" id="manga-toggle-filters-btn" class="manga-pill-capsule-btn" title="Toggle Advanced Filters">
+                  <span class="capsule-icon">⚙️</span>
+                  <span class="capsule-label toggle-text">Filters</span>
+                </button>
               </div>
-              <button id="manga-grid-search-btn" type="submit" class="btn-pill-outline">Search
-                Grid</button>
-              <button id="manga-random-btn" type="button" class="btn-pill-outline" title="Surprise Me (Random Manga)">🎲
-                Random</button>
             </div>
 
-            <fieldset class="filter-row search-options-row">
-              <legend class="sr-only" style="display: none;">Manga Search Filters</legend>
-              <select id="manga-sort-select" class="filter-select" aria-label="Sort order">
-                <option value="relevance">🤖 Relevance</option>
-                <option value="rating">🏆 Highest Rating</option>
-                <option value="latest">🆕 Latest Uploads</option>
-                <option value="popular">🔥 Most Follows</option>
-                <option value="new">🕰 Newest Titles</option>
-              </select>
+            <!-- Action Buttons beside the bar -->
+            <button type="button" id="manga-lucky-btn" class="manga-action-icon-btn" title="Surprise Me (Random Manga)">
+              <span>🎲</span>
+            </button>
+            <button type="button" id="manga-grid-search-btn" class="manga-action-icon-btn primary" title="Search Manga">
+              <span>🔍</span>
+            </button>
+          </div>
 
-              <div class="relative" id="manga-rating-dropdown-container">
-                <button type="button" id="manga-rating-btn" class="filter-select search-dropdown-btn">
-                  <span>🔞 Ratings (2)</span> <span style="font-size: 0.8em;">▼</span>
-                </button>
-                <div id="manga-rating-menu"
-                  style="display: none; position: absolute; top: calc(100% + 8px); left: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; z-index: 100; box-shadow: 0 10px 25px rgba(0,0,0,0.5); min-width: 180px; flex-direction: column; gap: 8px;">
-                  <label
-                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
-                      type="checkbox" value="safe" class="manga-rating-cb"> Safe</label>
-                  <label
-                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
-                      type="checkbox" value="suggestive" class="manga-rating-cb"> Suggestive</label>
-                  <label
-                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
-                      type="checkbox" value="erotica" class="manga-rating-cb" checked> Erotica</label>
-                  <label
-                    style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text);"><input
-                      type="checkbox" value="pornographic" class="manga-rating-cb" checked> Pornographic</label>
+          <!-- Inline Expandable Tag Selection Drawer (Scrolls with grid!) -->
+          <div id="manga-tags-modal" class="manga-inline-tag-drawer" style="display: none;">
+            <div class="manga-tag-drawer-header">
+              <div class="drawer-search-box">
+                <span class="drawer-search-icon">🔍</span>
+                <input type="search" id="manga-modal-tag-search" placeholder="Filter tags (e.g. Romance, Yuri, Action)..." class="manga-drawer-search-input">
+              </div>
+              <div class="manga-modal-tag-modes">
+                <label class="manga-radio-label">
+                  <input type="radio" name="manga-tag-mode" value="AND" checked>
+                  <span>Match ALL (AND)</span>
+                </label>
+                <label class="manga-radio-label">
+                  <input type="radio" name="manga-tag-mode" value="OR">
+                  <span>Match ANY (OR)</span>
+                </label>
+              </div>
+              <div class="drawer-actions">
+                <button type="button" id="manga-modal-tags-clear" class="btn-manga-text-action">Clear Tags</button>
+                <button type="button" id="manga-tags-modal-close" class="manga-drawer-close-btn" title="Close tags">✕</button>
+              </div>
+            </div>
+            <div class="manga-modal-tags-body" id="manga-modal-tags-container">
+              <!-- Categorized tag chips rendered dynamically -->
+              <div class="manga-tags-loading"><div class="spinner"></div>Loading tags...</div>
+            </div>
+          </div>
+
+          <!-- Inline Collapsible Advanced Filters Panel (Scrolls with grid!) -->
+          <div class="manga-filters-panel" id="manga-filters-panel" style="display: none;">
+            <div class="manga-filter-chips-row">
+              <!-- Sort Select -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Sort</span>
+                <select id="manga-filter-sort" class="manga-glass-chip-select">
+                  <option value="relevance" selected>Relevance</option>
+                  <option value="rating">Highest Rating</option>
+                  <option value="followedCount">Most Followed</option>
+                  <option value="latestUploadedChapter">Latest Uploads</option>
+                  <option value="createdAt">Newest Titles</option>
+                  <option value="updatedAt">Recently Updated</option>
+                  <option value="title_asc">Title (A-Z)</option>
+                  <option value="title_desc">Title (Z-A)</option>
+                  <option value="year_desc">Year (Newest)</option>
+                  <option value="year_asc">Year (Oldest)</option>
+                </select>
+              </div>
+
+              <!-- Demographic Select -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Demographic</span>
+                <select id="manga-filter-demo" class="manga-glass-chip-select">
+                  <option value="any" selected>Any</option>
+                  <option value="shounen">Shounen</option>
+                  <option value="shoujo">Shoujo</option>
+                  <option value="seinen">Seinen</option>
+                  <option value="josei">Josei</option>
+                  <option value="none">None</option>
+                </select>
+              </div>
+
+              <!-- Status Select -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Status</span>
+                <select id="manga-filter-status" class="manga-glass-chip-select">
+                  <option value="any" selected>Any</option>
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+                  <option value="hiatus">Hiatus</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <!-- Original Language Select -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Original</span>
+                <select id="manga-filter-orig-lang" class="manga-glass-chip-select">
+                  <option value="all" selected>All</option>
+                  <option value="ja">🇯🇵 Japanese</option>
+                  <option value="zh">🇨🇳 Chinese</option>
+                  <option value="ko">🇰🇷 Korean</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 Spanish</option>
+                  <option value="fr">🇫🇷 French</option>
+                </select>
+              </div>
+
+              <!-- Translated Language Select -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Translated</span>
+                <select id="manga-filter-trans-lang" class="manga-glass-chip-select">
+                  <option value="all" selected>Any</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="ja">🇯🇵 Japanese</option>
+                  <option value="zh">🇨🇳 Chinese</option>
+                  <option value="ko">🇰🇷 Korean</option>
+                  <option value="es">🇪🇸 Spanish</option>
+                  <option value="es-la">🇲🇽 Spanish (LATAM)</option>
+                  <option value="fr">🇫🇷 French</option>
+                  <option value="pt-br">🇧🇷 Portuguese</option>
+                  <option value="ru">🇷🇺 Russian</option>
+                  <option value="de">🇩🇪 German</option>
+                  <option value="it">🇮🇹 Italian</option>
+                </select>
+              </div>
+
+              <!-- Publication Year Stepper -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Year</span>
+                <div class="manga-inline-stepper">
+                  <button type="button" id="manga-year-minus" class="stepper-btn">−</button>
+                  <input type="text" id="manga-filter-year" placeholder="Any" class="stepper-input" maxlength="4">
+                  <button type="button" id="manga-year-plus" class="stepper-btn">+</button>
                 </div>
               </div>
-            </fieldset>
-          </form>
+
+              <!-- Author -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Author</span>
+                <input type="text" id="manga-filter-author" placeholder="Any" class="manga-chip-text-input">
+              </div>
+
+              <!-- Artist -->
+              <div class="manga-filter-chip-group">
+                <span class="group-label">Artist</span>
+                <input type="text" id="manga-filter-artist" placeholder="Any" class="manga-chip-text-input">
+              </div>
+
+              <!-- Has translated chapters -->
+              <div class="manga-filter-chip-group">
+                <label class="manga-checkbox-inline" for="manga-filter-has-translated">
+                  <input type="checkbox" id="manga-filter-has-translated" checked>
+                  <span class="custom-check-small"></span>
+                  <span class="manga-filter-label-inline">Has Chapters</span>
+                </label>
+              </div>
+
+              <!-- Reset Button -->
+              <button type="button" id="manga-reset-filters-btn" class="btn-manga-chip-reset" title="Reset all filters">
+                ↺ Reset
+              </button>
+            </div>
+          </div>
         </div>
 
         <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="grid"
@@ -450,6 +620,17 @@
             </button>
           </div>
         </div>
+
+        <div class="search-sort-container" id="vault-slideshow-capsule" style="margin-left: 4px;">
+          <button type="button" id="vault-slideshow-toggle-btn" class="sort-toggle-btn" title="Vault Slideshow Settings" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px;">
+            <img id="vault-slideshow-icon" src="Icons/icons8-switch-camera-48.png" alt="Slideshow" aria-hidden="true"
+              width="18" height="18" style="filter: brightness(0) invert(1); opacity: 0.8; transition: all 0.2s;">
+          </button>
+          <div class="search-sort-options" id="vault-slideshow-options" style="align-items: center; gap: 8px; display: flex; width: 100%;">
+             <span style="color: var(--text); font-size: 0.8rem; font-weight: bold; white-space: nowrap; width: 32px; text-align: center;" id="vault-slideshow-speed-label">Off</span>
+             <input type="range" id="vault-slideshow-speed" class="custom-slider" min="0" max="100" value="0" style="flex: 1; cursor: pointer; min-width: 80px;">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -489,24 +670,43 @@
   <!-- Accessibility: Use role="dialog" and aria-modal for custom modals -->
   <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image Lightbox">
     <button id="lightbox-close" aria-label="Close Lightbox">✕ Close</button>
+    <button id="lightbox-back" aria-label="Go Back">← Go Back</button>
+    <button id="lightbox-slim-close" aria-label="Close Lightbox Completely" style="display: none;">✕</button>
     <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous Image">‹</button>
 
-    <div class="lightbox-wrapper">
-      <div id="lightbox-media-container" aria-live="polite"></div>
+    <div class="lightbox-scroll-content">
+      <div class="lightbox-top-section">
+        <div class="lightbox-wrapper">
+          <div id="lightbox-media-container" aria-live="polite"></div>
+        </div>
+
+        <div id="lightbox-info">
+          <div class="lb-meta-row">
+            <span id="lb-score"></span>
+            <span id="lb-size"></span>
+
+            <div class="pinterest-save-widget" id="lb-pinterest-widget">
+              <div class="custom-select-wrapper" id="lb-folder-select-wrapper">
+                <button class="pinterest-folder-select" id="lb-folder-select">Saved</button>
+              </div>
+              <button class="pinterest-save-btn" id="lb-save-btn">Merken</button>
+              <ul class="custom-options-list card-folder-list" id="lb-folder-options"></ul>
+            </div>
+            <button class="lb-action-btn" id="lb-dl-btn" aria-label="Download Image">📥 Download</button>
+          </div>
+          <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
+        </div>
+      </div>
+
+      <!-- Recommendation Section -->
+      <div id="lightbox-recommendations" style="width: 100%; max-width: 1400px; padding: 0 40px; margin-top: 60px; display: none;">
+        <h2 style="color: white; margin-bottom: 24px; font-size: 1.5rem; text-align: left; font-weight: bold;">More like this</h2>
+        <div id="lb-recommendations-grid" class="vault-grid-layout" role="grid" aria-label="Recommended Images"></div>
+        <div id="lb-recommendations-status" class="text-center text-muted p-4" aria-live="polite"></div>
+      </div>
     </div>
 
     <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next Image">›</button>
-
-    <div id="lightbox-info">
-      <div class="lb-meta-row">
-        <span id="lb-score"></span>
-        <span id="lb-size"></span>
-
-        <button class="lb-action-btn" id="lb-fav-btn" aria-label="Favorite Image">🤍 Favorite</button>
-        <button class="lb-action-btn" id="lb-dl-btn" aria-label="Download Image">📥 Download</button>
-      </div>
-      <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
-    </div>
   </div>
 
   <!-- Manga Reader Modal -->
@@ -648,6 +848,37 @@
       </div>
 
       <div class="modal-body-large">
+        <!-- Insights & Statistics Section -->
+        <div class="settings-section">
+          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Insights & Statistics</h3>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px;">
+            <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-vault-items">0</div>
+              <div class="modal-desc" style="margin: 0;">Vault Items</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-liked-posts">0</div>
+              <div class="modal-desc" style="margin: 0;">Liked Posts</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-vault-folders">0</div>
+              <div class="modal-desc" style="margin: 0;">Vault Folders</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- UI & Layout Section -->
+        <div class="settings-section">
+          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">UI & Layout</h3>
+          <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: bold;">Grid Density</label>
+          <p class="modal-desc">Adjust the size of the thumbnails across all grid views (Home, Vault, Manga).</p>
+          <select id="grid-density-select" class="filter-select" style="width: 100%; max-width: 300px; padding: 10px; border-radius: 8px; background: var(--surface); color: var(--text); border: 1px solid var(--border);">
+            <option value="compact">Compact (More items)</option>
+            <option value="normal" selected>Normal (Default)</option>
+            <option value="large">Large (Bigger images)</option>
+          </select>
+        </div>
+
         <!-- Data Backup Section -->
         <div class="settings-section">
           <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Data Backup</h3>

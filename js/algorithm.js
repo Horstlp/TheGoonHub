@@ -734,3 +734,152 @@ if (loadMoreBtn) {
 
 // Init
 document.addEventListener('DOMContentLoaded', initAlgoCache);
+
+// Lightbox Recommendations
+
+window.lbAlgoCurrentPostId = null;
+window.lbAlgoGridPage = 0;
+window.lbAlgoCache = {}; // Cache to store recommendations by post id
+
+window.getSimilarPostsForLightbox = async function(post, append = false) {
+    if (!append) {
+        window.lbAlgoGridPage = 0;
+        window.lbAlgoCurrentPostId = post.id;
+        const grid = document.getElementById('lb-recommendations-grid');
+        const status = document.getElementById('lb-recommendations-status');
+        if (grid) grid.innerHTML = '';
+        
+        if (window.lbAlgoCache[post.id] && window.lbAlgoCache[post.id].length > 0) {
+            if (status) status.style.display = 'none';
+            if (typeof injectPostCardsIntoGrid === 'function' && grid) {
+                injectPostCardsIntoGrid(window.lbAlgoCache[post.id], grid);
+            }
+            return; // Use cached recommendations
+        }
+        
+        if (status) {
+            status.style.display = 'block';
+            status.innerHTML = '<div class="heart-loader"></div>Finding similar posts...';
+        }
+    } else {
+        window.lbAlgoGridPage++;
+    }
+
+    const targetPostId = window.lbAlgoCurrentPostId;
+    const tags = (post.tags || '').split(/\s+/).filter(Boolean);
+    const sortedTags = tags.map(tag => [tag, 1]);
+    
+    await resolveTopTagTypes(sortedTags, 100);
+    
+    const multipliers = {
+        'character': parseFloat(algoValChar ? algoValChar.value : 2.5),
+        'artist': parseFloat(algoValArtist ? algoValArtist.value : 2.0),
+        'copyright': parseFloat(algoValSeries ? algoValSeries.value : 1.0),
+        'general': parseFloat(algoValGeneral ? algoValGeneral.value : 0.3),
+        'metadata': parseFloat(algoValGeneral ? algoValGeneral.value : 0.3)
+    };
+
+    const subjectTags = [];
+    const modifierTags = [];
+    
+    sortedTags.forEach(([tag, count]) => {
+        const type = algoTagsCache[tag] || 'general';
+        const mult = multipliers[type] !== undefined ? multipliers[type] : 1.0;
+        if (count * mult > 0) {
+            const data = { tag, type, weight: count * mult };
+            if (type === 'general' || type === 'metadata') {
+                modifierTags.push(data);
+            } else {
+                subjectTags.push(data);
+            }
+        }
+    });
+    
+    const primaryPool = subjectTags.length > 0 ? subjectTags : modifierTags;
+    const fetchAmount = 6;
+    const countPerTag = 5;
+    const queries = [];
+    const tagsToQuery = selectWeightedTags(primaryPool, fetchAmount);
+    
+    if (tagsToQuery.length > 0) {
+        tagsToQuery.forEach(tag => {
+            queries.push(async () => {
+                let maxRetries = 2;
+                while (maxRetries > 0) {
+                    let q = tag;
+                    let applyMod = false;
+                    if (subjectTags.length > 0 && modifierTags.length > 0 && Math.random() > 0.5) {
+                        if (maxRetries > 1) applyMod = true;
+                    }
+                    if (applyMod) {
+                        const mod = selectWeightedTags(modifierTags, 1);
+                        if (mod.length > 0) q += ' ' + mod[0];
+                    }
+                    q += ' sort:random score:>=100';
+                    const res = await fetchR34Posts(q, countPerTag, window.lbAlgoGridPage, false);
+                    if (res && res.length > 0) return res;
+                    maxRetries--;
+                }
+                return [];
+            });
+        });
+    }
+
+    let activeRequests = queries.length;
+    let hasRenderedFirst = false;
+    const targetGrid = document.getElementById('lb-recommendations-grid');
+    const targetStatus = document.getElementById('lb-recommendations-status');
+    const renderedIds = new Set([post.id]);
+
+    if (queries.length === 0) {
+        if (targetStatus) targetStatus.innerHTML = 'No similar posts found.';
+        return;
+    }
+
+    queries.forEach(async (queryFn) => {
+        try {
+            if (targetPostId !== window.lbAlgoCurrentPostId) return;
+            const postsRes = await queryFn();
+            if (targetPostId !== window.lbAlgoCurrentPostId) return;
+            
+            if (postsRes && postsRes.length > 0) {
+                const uniquePosts = postsRes.filter(p => {
+                    if (p && p.id && !renderedIds.has(p.id)) {
+                        renderedIds.add(p.id);
+                        return true;
+                    }
+                    return false;
+                });
+                
+                if (uniquePosts.length > 0) {
+                    if (!window.lbAlgoCache[post.id]) {
+                        window.lbAlgoCache[post.id] = [];
+                    }
+                    window.lbAlgoCache[post.id].push(...uniquePosts);
+                    
+                    if (!hasRenderedFirst && !append) {
+                        if (targetStatus) targetStatus.style.display = 'none';
+                        hasRenderedFirst = true;
+                    }
+                    if (typeof injectPostCardsIntoGrid === 'function' && targetGrid) {
+                        injectPostCardsIntoGrid(uniquePosts, targetGrid);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            activeRequests--;
+            if (activeRequests === 0) {
+                if (!hasRenderedFirst && !append) {
+                    if (targetStatus) {
+                        targetStatus.style.display = 'block';
+                        targetStatus.innerHTML = 'No similar posts found.';
+                    }
+                } else {
+                    if (targetStatus) targetStatus.style.display = 'none';
+                }
+            }
+        }
+    });
+};

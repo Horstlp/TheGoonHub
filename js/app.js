@@ -154,6 +154,8 @@ function renderVaultFoldersNav() {
   const nav = document.getElementById('vault-folders-nav');
   if (!nav) return;
   nav.innerHTML = '';
+  
+  const imagePosts = vaultedPosts.filter(p => !p.mangaObject);
   const folders = ['All', ...getVaultFolders()];
 
   folders.forEach(f => {
@@ -165,14 +167,14 @@ function renderVaultFoldersNav() {
     let count = 0;
 
     if (f === 'All') {
-      stackImages = vaultedPosts.slice(0, 3);
-      count = vaultedPosts.length;
+      stackImages = imagePosts.slice(0, 3);
+      count = imagePosts.length;
     } else if (f === 'Default') {
-      const defPosts = vaultedPosts.filter(p => !p.folder || p.folder === 'Default');
+      const defPosts = imagePosts.filter(p => !p.folder || p.folder === 'Default');
       stackImages = defPosts.slice(0, 3);
       count = defPosts.length;
     } else {
-      const customPosts = vaultedPosts.filter(p => p.folder === f);
+      const customPosts = imagePosts.filter(p => p.folder === f);
       stackImages = customPosts.slice(0, 3);
       count = customPosts.length;
     }
@@ -600,6 +602,38 @@ window.suggestFolderForPost = function(post) {
   return bestScore > 0 ? bestFolder : (folders[0] || 'Saved');
 };
 
+window.saveMangaToBookshelf = function(post, folderName, btnElement) {
+  if (folderName === '_new_') {
+    const newName = prompt("Enter new bookshelf name:");
+    if (!newName) return;
+    folderName = newName.trim();
+  }
+  
+  if (folderName && folderName !== 'All' && !vaultedMangaFolders.includes(folderName)) {
+    vaultedMangaFolders.push(folderName);
+    localforage.setItem('r34_manga_folders_v2', vaultedMangaFolders);
+  }
+
+  const idx = vaultedManga.findIndex(p => String(p.id) === String(post.id));
+  if (idx > -1) vaultedManga.splice(idx, 1);
+
+  post.folder = folderName;
+  vaultedManga.unshift(post);
+  localforage.setItem('r34_vault_manga_v2', vaultedManga);
+  
+  if (typeof syncVaultCounterDisplay === 'function') syncVaultCounterDisplay();
+  
+  if (btnElement) {
+    btnElement.textContent = 'Saved';
+    btnElement.classList.add('saved');
+  }
+
+  const viewVault = document.getElementById('view-vault');
+  if (viewVault && viewVault.style.display !== 'none') {
+    if (typeof renderVaultGridToDedicatedView === 'function') renderVaultGridToDedicatedView();
+  }
+};
+
 window.savePostToFolder = function(post, folderName, btnElement) {
   if (folderName === '_new_') {
     const newName = prompt("Enter new folder name:");
@@ -855,6 +889,9 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
             if (typeof renderVaultGridToDedicatedView === 'function') {
                renderVaultGridToDedicatedView();
             }
+            if (typeof renderVaultFoldersNav === 'function') {
+               renderVaultFoldersNav();
+            }
           }, 300);
           if (typeof triggerToastNotification === 'function') {
             triggerToastNotification('Removed from Vault');
@@ -1038,7 +1075,17 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
         return;
       }
 
-      const targetArray = isVaultContainer ? (window.cachedVaultPosts || []) : cachedPosts;
+      let targetArray = null;
+      if (targetContainer && targetContainer.id === 'lb-recommendations-grid') {
+          if (typeof pushLightboxHistory === 'function') pushLightboxHistory();
+          targetArray = window.lbAlgoCache[window.lbAlgoCurrentPostId] || [];
+          window.currentLightboxArray = targetArray;
+      } else {
+          if (typeof clearLightboxHistory === 'function') clearLightboxHistory();
+          window.currentLightboxArray = null;
+          targetArray = isVaultContainer ? (window.cachedVaultPosts || []) : cachedPosts;
+      }
+      
       const actualIndex = targetArray.findIndex(p => String(p.id) === String(post.id));
       if (actualIndex > -1) openLightbox(actualIndex);
     });
@@ -1112,12 +1159,8 @@ function renderVaultGridToDedicatedView() {
 
   vaultGrid.innerHTML = '';
 
-  // Apply Tab filter first
-  let tabFilteredPosts = vaultedPosts.filter(p => {
-    const isManga = !!p.mangaObject;
-    if (activeVaultTab === 'bookshelf') return isManga;
-    return !isManga;
-  });
+  // Use vaultedManga for bookshelf and vaultedPosts for images
+  let tabFilteredPosts = activeVaultTab === 'bookshelf' ? vaultedManga : vaultedPosts.filter(p => !p.mangaObject);
 
   const createEmptyStateHtml = (icon, title, message) => `
     <div style="background: rgba(30, 30, 40, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 48px; display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 400px; margin: 40px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
@@ -1141,11 +1184,14 @@ function renderVaultGridToDedicatedView() {
     delBtn.style.display = (currentVaultFolder === 'Default' || currentVaultFolder === 'All') ? 'none' : 'block';
   }
 
-  let filteredPosts = currentVaultFolder === 'All'
-    ? tabFilteredPosts
-    : currentVaultFolder === 'Default'
-      ? tabFilteredPosts.filter(p => !p.folder || p.folder === 'Default')
-      : tabFilteredPosts.filter(p => p.folder === currentVaultFolder);
+  let filteredPosts = tabFilteredPosts;
+  if (activeVaultTab !== 'bookshelf') {
+    filteredPosts = currentVaultFolder === 'All'
+      ? tabFilteredPosts
+      : currentVaultFolder === 'Default'
+        ? tabFilteredPosts.filter(p => !p.folder || p.folder === 'Default')
+        : tabFilteredPosts.filter(p => p.folder === currentVaultFolder);
+  }
 
   // Apply Vault Local Search filter
   const searchInput = document.getElementById('vault-search-input');
@@ -1153,9 +1199,16 @@ function renderVaultGridToDedicatedView() {
     const query = searchInput.value.trim().toLowerCase();
     const queryParts = query.split(/\s+/);
     filteredPosts = filteredPosts.filter(p => {
-      if (!p.tags) return false;
-      const t = p.tags.toLowerCase();
-      // All search parts must match
+      let t = '';
+      if (p.mangaObject) {
+        t = (typeof getMdTitle === 'function' ? getMdTitle(p.mangaObject) : '').toLowerCase();
+        if (p.mangaObject.attributes && p.mangaObject.attributes.tags) {
+          t += ' ' + p.mangaObject.attributes.tags.map(tag => typeof getMdTagName === 'function' ? getMdTagName(tag) : '').join(' ').toLowerCase();
+        }
+      } else {
+        if (!p.tags) return false;
+        t = p.tags.toLowerCase();
+      }
       return queryParts.every(part => t.includes(part));
     });
   }
@@ -1326,6 +1379,12 @@ document.getElementById('bulk-move-btn')?.addEventListener('click', () => {
   localforage.setItem('r34_vault_v2', vaultedPosts);
   triggerToastNotification(`Moved ${selectedVaultPosts.size} items to ${targetFolder}.`);
   toggleBulkMode();
+  if (typeof renderVaultGridToDedicatedView === 'function') {
+    renderVaultGridToDedicatedView();
+  }
+  if (typeof renderVaultFoldersNav === 'function') {
+    renderVaultFoldersNav();
+  }
 });
 
 document.getElementById('bulk-delete-btn')?.addEventListener('click', () => {
@@ -1338,6 +1397,12 @@ document.getElementById('bulk-delete-btn')?.addEventListener('click', () => {
   triggerToastNotification(`Deleted ${selectedVaultPosts.size} items.`);
   syncVaultCounterDisplay();
   toggleBulkMode();
+  if (typeof renderVaultGridToDedicatedView === 'function') {
+    renderVaultGridToDedicatedView();
+  }
+  if (typeof renderVaultFoldersNav === 'function') {
+    renderVaultFoldersNav();
+  }
 });
 
 document.getElementById('modal-delete-folder-btn')?.addEventListener('click', function() {
@@ -1531,8 +1596,8 @@ async function search(tags, page, append = false) {
 function syncVaultCounterDisplay() {
   const navVault = document.getElementById('nav-vault');
   if (navVault) {
-    navVault.title = `Vault (${vaultedPosts.length})`;
-    // We can also show the count visually if desired, but for now just title
+    const totalCount = vaultedPosts.length + (typeof vaultedManga !== 'undefined' ? vaultedManga.length : 0);
+    navVault.title = `Vault (${totalCount})`;
   }
 }
 

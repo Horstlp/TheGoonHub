@@ -1,7 +1,9 @@
 let recentSearches = [];
 let pinnedSearches = [];
 let vaultedPosts   = [];
+let vaultedManga   = [];
 let vaultedFolders = ["Default"];
+let vaultedMangaFolders = ["All"];
 let vaultFolderSettings = {};
 let globalBlacklist = [];
 let globalWhitelist = [];
@@ -28,9 +30,28 @@ async function initVault() {
     }
     
     vaultedPosts = (await localforage.getItem('r34_vault_v2')) || [];
+    vaultedManga = (await localforage.getItem('r34_vault_manga_v2')) || [];
+    
+    // Clean up vaultedPosts if it has any Manga objects accidentally saved
+    let initialPostsCount = vaultedPosts.length;
+    const migratedMangas = vaultedPosts.filter(p => !!p.mangaObject);
+    vaultedPosts = vaultedPosts.filter(p => !p.mangaObject);
+    if (vaultedPosts.length !== initialPostsCount) {
+        localforage.setItem('r34_vault_v2', vaultedPosts);
+        
+        // Add them to vaultedManga
+        migratedMangas.forEach(m => {
+            if (!vaultedManga.some(vm => String(vm.id) === String(m.id))) {
+                vaultedManga.unshift(m);
+            }
+        });
+        localforage.setItem('r34_vault_manga_v2', vaultedManga);
+    }
+    
     recentSearches = (await localforage.getItem('r34_history_v2')) || [];
     pinnedSearches = (await localforage.getItem('r34_pinned_v2')) || [];
     vaultedFolders = (await localforage.getItem('r34_folders_v2')) || ["Default"];
+    vaultedMangaFolders = (await localforage.getItem('r34_manga_folders_v2')) || ["All"];
     const mangaFolderIdx = vaultedFolders.indexOf('Manga');
     if (mangaFolderIdx > -1) {
       vaultedFolders.splice(mangaFolderIdx, 1);
@@ -76,7 +97,9 @@ async function exportVault() {
   try {
     const data = {
       vaultedPosts,
+      vaultedManga,
       vaultedFolders,
+      vaultedMangaFolders,
       recentSearches,
       pinnedSearches,
       vaultFolderSettings,
@@ -107,9 +130,17 @@ async function importVault(file) {
       vaultedPosts = data.vaultedPosts;
       await localforage.setItem('r34_vault_v2', vaultedPosts);
     }
+    if (data.vaultedManga) {
+      vaultedManga = data.vaultedManga;
+      await localforage.setItem('r34_vault_manga_v2', vaultedManga);
+    }
     if (data.vaultedFolders) {
       vaultedFolders = data.vaultedFolders;
       await localforage.setItem('r34_folders_v2', vaultedFolders);
+    }
+    if (data.vaultedMangaFolders) {
+      vaultedMangaFolders = data.vaultedMangaFolders;
+      await localforage.setItem('r34_manga_folders_v2', vaultedMangaFolders);
     }
     if (data.recentSearches) {
       recentSearches = data.recentSearches;
@@ -159,3 +190,5 @@ async function forceBinaryAssetDownload(url, postId) {
     triggerToastNotification("Opened original in secondary window");
   }
 }
+window.getVaultMangaFolders = () => vaultedMangaFolders;
+window.setVaultMangaFolders = (arr) => { vaultedMangaFolders = arr; localforage.setItem('r34_manga_folders_v2', vaultedMangaFolders); };
