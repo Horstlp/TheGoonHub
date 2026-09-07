@@ -62,7 +62,8 @@ function saveAlgoSettings() {
         fetches: algoValFetches ? algoValFetches.value : 9,
         baseSearch: algoBaseSearch ? algoBaseSearch.value : ''
     };
-    localStorage.setItem('algo_settings', JSON.stringify(settings));
+    if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('algo_settings', JSON.stringify(settings));
+    else localStorage.setItem('algo_settings', JSON.stringify(settings));
 }
 
 // Update UI values & render table on change
@@ -587,6 +588,10 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
     try {
         if (!append) {
             targetGrid.innerHTML = '';
+            targetGrid.classList.add('is-filtering');
+            if (typeof window.renderGridSkeletons === 'function') {
+                window.renderGridSkeletons(targetGrid, isMainGrid ? 12 : 8);
+            }
             algoGridPage = 0;
             targetStatus.style.display = 'block';
             if(bottomStatusEl) bottomStatusEl.style.display = 'none';
@@ -643,6 +648,8 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
 
         if (queries.length === 0) {
             isAlgoLoading = false;
+            if (!append && typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(targetGrid);
+            targetGrid.classList.remove('is-filtering');
             if (bottomStatusEl) bottomStatusEl.style.display = 'none';
             if (!append) {
                 targetStatus.style.display = 'block';
@@ -692,9 +699,11 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
                     isAlgoLoading = false;
                     if (bottomStatusEl) bottomStatusEl.style.display = 'none';
                     if (!hasRenderedFirst && !append && cachedPosts.length === 0) {
+                        if (typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(targetGrid);
                         targetStatus.style.display = 'block';
                         targetStatus.innerHTML = 'No results found. Try clearing your Base Search or lowering weights.';
                     }
+                    targetGrid.classList.remove('is-filtering');
                     startContinuousAlgoPreload(algoGridPage + 1);
                     setTimeout(() => {
                         if (typeof window.checkSentinelVisibility === 'function') {
@@ -708,6 +717,8 @@ async function pullBlendedBatch(append = false, isMainGrid = false) {
     } catch (err) {
         console.error("Error inside pullBlendedBatch:", err);
         isAlgoLoading = false;
+        if (!append && typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(targetGrid);
+        targetGrid.classList.remove('is-filtering');
         if (bottomStatusEl) bottomStatusEl.style.display = 'none';
     }
 }
@@ -747,7 +758,10 @@ window.getSimilarPostsForLightbox = async function(post, append = false) {
         window.lbAlgoCurrentPostId = post.id;
         const grid = document.getElementById('lb-recommendations-grid');
         const status = document.getElementById('lb-recommendations-status');
-        if (grid) grid.innerHTML = '';
+        if (grid) {
+            grid.innerHTML = '';
+            if (typeof window.renderGridSkeletons === 'function') window.renderGridSkeletons(grid, 6);
+        }
         
         if (window.lbAlgoCache[post.id] && window.lbAlgoCache[post.id].length > 0) {
             if (status) status.style.display = 'none';
@@ -832,6 +846,7 @@ window.getSimilarPostsForLightbox = async function(post, append = false) {
     const renderedIds = new Set([post.id]);
 
     if (queries.length === 0) {
+        if (typeof window.clearGridSkeletons === 'function' && targetGrid) window.clearGridSkeletons(targetGrid);
         if (targetStatus) targetStatus.innerHTML = 'No similar posts found.';
         return;
     }
@@ -872,6 +887,7 @@ window.getSimilarPostsForLightbox = async function(post, append = false) {
             activeRequests--;
             if (activeRequests === 0) {
                 if (!hasRenderedFirst && !append) {
+                    if (typeof window.clearGridSkeletons === 'function' && targetGrid) window.clearGridSkeletons(targetGrid);
                     if (targetStatus) {
                         targetStatus.style.display = 'block';
                         targetStatus.innerHTML = 'No similar posts found.';

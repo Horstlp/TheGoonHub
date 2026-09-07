@@ -16,7 +16,8 @@ const mangaPagedToggle = document.getElementById('manga-paged-toggle');
 if (mangaHqToggle) {
   mangaHqToggle.checked = localStorage.getItem('manga_hq') === 'true';
   mangaHqToggle.addEventListener('change', (e) => {
-    localStorage.setItem('manga_hq', e.target.checked);
+    if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('manga_hq', e.target.checked);
+    else localStorage.setItem('manga_hq', e.target.checked);
     if (mangaPagesContainer.dataset.chapterId) {
       loadMangaChapter(mangaPagesContainer.dataset.chapterId);
     }
@@ -26,7 +27,8 @@ if (mangaHqToggle) {
 if (mangaPagedToggle) {
   mangaPagedToggle.checked = localStorage.getItem('manga_paged') === 'true';
   mangaPagedToggle.addEventListener('change', (e) => {
-    localStorage.setItem('manga_paged', e.target.checked);
+    if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('manga_paged', e.target.checked);
+    else localStorage.setItem('manga_paged', e.target.checked);
     if (mangaPagesContainer.dataset.chapterId) {
       loadMangaChapter(mangaPagesContainer.dataset.chapterId);
     }
@@ -140,6 +142,8 @@ async function searchMangaGrid(titleQuery, page, append = false) {
 
   if (!append) {
     mangaGridContainer.innerHTML = '';
+    mangaGridContainer.classList.add('is-filtering');
+    if (typeof window.renderGridSkeletons === 'function') window.renderGridSkeletons(mangaGridContainer, 9);
     cachedMangaPosts = [];
     mangaGridStatus.style.display = 'block';
     mangaGridStatus.innerHTML = '<div class="spinner"></div>Fetching from MangaDex...';
@@ -298,6 +302,7 @@ async function searchMangaGrid(titleQuery, page, append = false) {
     const data = await res.json();
 
     if (!data || !data.data || data.data.length === 0) {
+      if (!append && typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(mangaGridContainer);
       mangaGridStatus.innerHTML = cachedMangaPosts.length === 0 ? '<span class="icon">😶</span>No matching manga found.' : '';
       hasMoreMangaGrid = false;
     } else {
@@ -322,12 +327,14 @@ async function searchMangaGrid(titleQuery, page, append = false) {
     }
   } catch (err) {
     console.error('MangaDex fetch error:', err);
+    if (!append && typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(mangaGridContainer);
     mangaGridStatus.innerHTML = `<span class="icon">⚠️</span>API down or rate limited.`;
     hasMoreMangaGrid = false;
   }
 
   mangaGridSearchBtn.disabled = false;
   isMangaGridLoading = false;
+  mangaGridContainer.classList.remove('is-filtering');
 
   if (hasMoreMangaGrid && typeof mangaScrollSentinel !== 'undefined' && mangaScrollSentinel) {
       const sentinelRect = mangaScrollSentinel.getBoundingClientRect();
@@ -339,18 +346,35 @@ async function searchMangaGrid(titleQuery, page, append = false) {
 }
 
 function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer, readIds = new Set(), savedIds = new Set()) {
+  if (typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(targetContainer);
+  targetContainer.classList.remove('is-filtering');
   data.forEach((post, index) => {
     const previewUrl = post.preview_url;
     if (!previewUrl) return;
 
     const card = document.createElement('div');
     card.className = 'card';
+    card.classList.add('is-media-loading');
+    card.setAttribute('aria-busy', 'true');
+    if (typeof window.makeCardKeyboardAccessible === 'function') {
+      window.makeCardKeyboardAccessible(card, `Open manga: ${getMdTitle(post.mangaObject)}`);
+    }
     const img = document.createElement('img');
-    img.src = previewUrl;
     img.loading = 'lazy';
-    img.onload = () => { if (typeof resizeGridItem === 'function') resizeGridItem(card); };
-    img.onerror = () => { card.style.display = 'none'; };
+    img.decoding = 'async';
+    img.alt = '';
+    img.style.aspectRatio = '2 / 3';
+    img.onload = () => {
+      card.classList.remove('is-media-loading');
+      card.setAttribute('aria-busy', 'false');
+      if (typeof resizeGridItem === 'function') resizeGridItem(card);
+    };
+    if (typeof window.attachMediaFallback === 'function') {
+      window.attachMediaFallback(card, img, previewUrl, 'Manga cover');
+    }
     card.appendChild(img);
+    if (typeof window.deferMediaLoad === 'function') window.deferMediaLoad(img, previewUrl);
+    else img.src = previewUrl;
 
     // Visual indicator for Read/Saved
     if (readIds.has(post.id) || savedIds.has(post.id)) {
@@ -958,7 +982,8 @@ async function openInlineMangaExpansion(post, clickedElement, container, targetV
   fetchVolumesForExpansion(langSelect.value, targetVolume);
 
   langSelect.addEventListener('change', () => {
-    localStorage.setItem('r34_manga_lang', langSelect.value);
+    if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('r34_manga_lang', langSelect.value);
+    else localStorage.setItem('r34_manga_lang', langSelect.value);
     fetchVolumesForExpansion(langSelect.value);
   });
 }
@@ -1175,10 +1200,12 @@ if (mangaTagsTriggerBtn) {
       const isVisible = mangaTagsModal.style.display !== 'none';
       if (isVisible) {
         mangaTagsModal.style.display = 'none';
+        mangaTagsTriggerBtn.setAttribute('aria-expanded', 'false');
         mangaTagsTriggerBtn.classList.toggle('active', (mdSelectedIncludedTags.size + mdSelectedExcludedTags.size) > 0);
       } else {
         renderMangaModalTags(mangaModalTagSearch ? mangaModalTagSearch.value : '');
         mangaTagsModal.style.display = 'block';
+        mangaTagsTriggerBtn.setAttribute('aria-expanded', 'true');
         mangaTagsTriggerBtn.classList.add('active');
         if (mangaModalTagSearch) mangaModalTagSearch.focus();
       }
@@ -1191,6 +1218,7 @@ if (mangaTagsModalClose) {
     e.stopPropagation();
     if (mangaTagsModal) {
       mangaTagsModal.style.display = 'none';
+      if (mangaTagsTriggerBtn) mangaTagsTriggerBtn.setAttribute('aria-expanded', 'false');
       if (mangaTagsTriggerBtn) {
         mangaTagsTriggerBtn.classList.toggle('active', (mdSelectedIncludedTags.size + mdSelectedExcludedTags.size) > 0);
       }
@@ -1251,6 +1279,7 @@ if (mangaRatingTriggerBtn) {
     if (mangaRatingDropdown) {
       const isShown = mangaRatingDropdown.style.display === 'flex';
       mangaRatingDropdown.style.display = isShown ? 'none' : 'flex';
+      mangaRatingTriggerBtn.setAttribute('aria-expanded', String(!isShown));
       mangaRatingTriggerBtn.classList.toggle('active', !isShown);
     }
   });
@@ -1271,6 +1300,7 @@ document.addEventListener('click', (e) => {
   if (mangaRatingDropdown && mangaRatingDropdown.style.display === 'flex') {
     if (!mangaRatingDropdown.contains(e.target) && e.target !== mangaRatingTriggerBtn) {
       mangaRatingDropdown.style.display = 'none';
+      if (mangaRatingTriggerBtn) mangaRatingTriggerBtn.setAttribute('aria-expanded', 'false');
     }
   }
 });
@@ -1324,6 +1354,7 @@ function initFiltersToggle() {
   if (mangaFiltersPanel && mangaToggleFiltersBtn) {
     mangaFiltersPanel.style.display = isExpanded ? 'block' : 'none';
     mangaToggleFiltersBtn.classList.toggle('active', isExpanded);
+    mangaToggleFiltersBtn.setAttribute('aria-expanded', String(isExpanded));
   }
 }
 initFiltersToggle();
@@ -1334,7 +1365,9 @@ if (mangaToggleFiltersBtn && mangaFiltersPanel) {
     const isCurrentlyOpen = mangaFiltersPanel.style.display !== 'none';
     mangaFiltersPanel.style.display = isCurrentlyOpen ? 'none' : 'block';
     mangaToggleFiltersBtn.classList.toggle('active', !isCurrentlyOpen);
-    localStorage.setItem('manga_filters_expanded', !isCurrentlyOpen);
+    mangaToggleFiltersBtn.setAttribute('aria-expanded', String(!isCurrentlyOpen));
+    if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('manga_filters_expanded', !isCurrentlyOpen);
+    else localStorage.setItem('manga_filters_expanded', !isCurrentlyOpen);
   });
 }
 
@@ -1368,6 +1401,8 @@ if (mangaAdvancedSearchInput) {
             const title = getMdTitle(item);
             const row = document.createElement('div');
             row.className = 'autocomplete-item';
+            row.setAttribute('role', 'option');
+            row.setAttribute('aria-selected', 'false');
             row.style.display = 'flex';
             row.style.alignItems = 'center';
             row.style.justifyContent = 'space-between';
@@ -1555,7 +1590,8 @@ if (mangaLangSelect) mangaLangSelect.value = savedLang;
 
 if (mangaLangSelect) {
   mangaLangSelect.addEventListener('change', () => {
-    localStorage.setItem('r34_manga_lang', mangaLangSelect.value);
+    if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('r34_manga_lang', mangaLangSelect.value);
+    else localStorage.setItem('r34_manga_lang', mangaLangSelect.value);
     if (currentMangaData) {
       fetchAndRenderChapters(currentMangaData.id);
     }

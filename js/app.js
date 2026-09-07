@@ -91,6 +91,7 @@ function triggerToastNotification(msg) {
 
 /** Masonry Calculation Engine **/
 function resizeGridItem(item) {
+  if (!item || !item.isConnected) return;
   const rowHeight = 10; // Matches grid-auto-rows in CSS
   const rowGap = 16;    // Matches gap in CSS
 
@@ -99,11 +100,113 @@ function resizeGridItem(item) {
   item.style.gridRowEnd = `span ${rowSpan}`;
 }
 
+const pendingMasonryCards = new Set();
+let masonryAnimationFrame = null;
+
+function queueMasonryLayout(cards) {
+  cards.forEach(card => pendingMasonryCards.add(card));
+  if (masonryAnimationFrame) return;
+
+  masonryAnimationFrame = requestAnimationFrame(() => {
+    pendingMasonryCards.forEach(resizeGridItem);
+    pendingMasonryCards.clear();
+    masonryAnimationFrame = null;
+  });
+}
+
 const masonryObserver = new ResizeObserver(entries => {
-  for (let entry of entries) {
-    resizeGridItem(entry.target);
-  }
+  queueMasonryLayout(entries.map(entry => entry.target));
 });
+
+window.refreshMasonryLayout = function (container = document) {
+  const root = container instanceof Element || container instanceof Document ? container : document;
+  queueMasonryLayout(Array.from(root.querySelectorAll('.card:not(.skeleton-card)')));
+};
+
+let masonryResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(masonryResizeTimer);
+  masonryResizeTimer = setTimeout(() => window.refreshMasonryLayout(), 140);
+}, { passive: true });
+
+window.renderGridSkeletons = function (container, count = 10) {
+  if (!container) return;
+  container.querySelectorAll('.skeleton-card').forEach(card => {
+    masonryObserver.unobserve(card);
+    card.remove();
+  });
+
+  const fragment = document.createDocumentFragment();
+  const cards = [];
+  for (let index = 0; index < count; index += 1) {
+    const card = document.createElement('div');
+    card.className = 'card skeleton-card';
+    card.setAttribute('aria-hidden', 'true');
+    const media = document.createElement('div');
+    media.className = 'skeleton-media';
+    media.style.aspectRatio = index % 3 === 0 ? '3 / 4' : index % 3 === 1 ? '1 / 1' : '4 / 3';
+    card.appendChild(media);
+    fragment.appendChild(card);
+    cards.push(card);
+  }
+  container.setAttribute('aria-busy', 'true');
+  container.appendChild(fragment);
+  cards.forEach(card => masonryObserver.observe(card));
+  queueMasonryLayout(cards);
+};
+
+window.clearGridSkeletons = function (container) {
+  if (!container) return;
+  container.querySelectorAll('.skeleton-card').forEach(card => {
+    masonryObserver.unobserve(card);
+    card.remove();
+  });
+  container.setAttribute('aria-busy', 'false');
+};
+
+window.makeCardKeyboardAccessible = function (card, label) {
+  card.setAttribute('role', 'button');
+  card.tabIndex = 0;
+  card.setAttribute('aria-label', label || 'Open item');
+  card.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      card.click();
+    }
+  });
+};
+
+window.attachMediaFallback = function (card, img, sourceUrl, label = 'Media') {
+  const showFallback = () => {
+    card.classList.remove('is-media-loading');
+    card.setAttribute('aria-busy', 'false');
+    img.style.display = 'none';
+    if (card.querySelector('.media-fallback')) return;
+
+    const fallback = document.createElement('div');
+    fallback.className = 'media-fallback';
+    fallback.innerHTML = `<span class="media-fallback-icon" aria-hidden="true">!</span><span>${label} unavailable</span>`;
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'media-retry';
+    retry.textContent = 'Retry';
+    retry.addEventListener('click', event => {
+      event.stopPropagation();
+      fallback.remove();
+      card.classList.add('is-media-loading');
+      card.setAttribute('aria-busy', 'true');
+      img.style.display = '';
+      const joiner = sourceUrl.includes('?') ? '&' : '?';
+      img.src = `${sourceUrl}${joiner}retry=${Date.now()}`;
+    });
+    fallback.appendChild(retry);
+    card.appendChild(fallback);
+    window.refreshMasonryLayout(card.parentElement);
+  };
+
+  img.onerror = showFallback;
+  return showFallback;
+};
 
 /** Infinite Scroll Observer **/
 const handleScroll = debounce((entries) => {
@@ -133,7 +236,8 @@ function togglePostLikeStatus(postId) {
   } else {
     likedPosts.push(String(postId));
   }
-  localStorage.setItem('r34_liked_v2', JSON.stringify(likedPosts));
+  if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('r34_liked_v2', JSON.stringify(likedPosts));
+  else localStorage.setItem('r34_liked_v2', JSON.stringify(likedPosts));
 }
 
 let currentVaultFolder = 'All';
@@ -684,6 +788,8 @@ function openFolderMenu(e, post, anchorBtn, onUpdateCallback = null) {
 }
 
 function injectPostCardsIntoGrid(data, targetContainer = grid) {
+  if (typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(targetContainer);
+  targetContainer.classList.remove('is-filtering');
   const fragment = document.createDocumentFragment();
   const newCards = []; // Store references for batch layout calculation
 
@@ -695,6 +801,11 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     const isVideo = ['mp4', 'webm'].includes(ext);
     const card = document.createElement('div');
     card.className = 'card';
+    card.classList.add('is-media-loading');
+    card.setAttribute('aria-busy', 'true');
+    if (typeof window.makeCardKeyboardAccessible === 'function') {
+      window.makeCardKeyboardAccessible(card, isVideo ? 'Open video' : 'Open image');
+    }
     
     if (targetContainer.id === 'vault-grid') {
       card.style.animationDelay = `${Math.min(index * 0.04, 2)}s`;
@@ -706,9 +817,9 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     }
 
     const img = document.createElement('img');
-    img.src = previewUrl;
     img.loading = 'lazy';
     img.decoding = 'async'; // Offload image decoding from main thread
+    img.alt = '';
 
     // Performance: Pre-allocate image height using aspect-ratio so the DOM 
     // doesn't have to wait for the image to download to calculate the layout.
@@ -716,26 +827,22 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       img.style.aspectRatio = `${post.width} / ${post.height}`;
     }
 
-    card.classList.add('skeleton-loader');
     img.style.opacity = '0';
     img.style.transition = 'opacity 0.3s ease';
 
     img.onload = () => {
-      card.classList.remove('skeleton-loader');
+      card.classList.remove('is-media-loading');
+      card.setAttribute('aria-busy', 'false');
       img.style.opacity = '1';
+      if (typeof window.refreshMasonryLayout === 'function') window.refreshMasonryLayout(card.parentElement);
     };
 
-    img.onerror = () => {
-      card.classList.remove('skeleton-loader');
-      img.style.display = 'none';
-      const errorMsg = document.createElement('div');
-      errorMsg.innerHTML = 'âš ï¸ Unavailable';
-      errorMsg.style.padding = '40px 20px';
-      errorMsg.style.color = 'var(--muted)';
-      errorMsg.style.textAlign = 'center';
-      card.appendChild(errorMsg);
-    };
+    if (typeof window.attachMediaFallback === 'function') {
+      window.attachMediaFallback(card, img, previewUrl, isVideo ? 'Video preview' : 'Image');
+    }
     card.appendChild(img);
+    if (typeof window.deferMediaLoad === 'function') window.deferMediaLoad(img, previewUrl);
+    else img.src = previewUrl;
     if (isVideo) {
       const label = document.createElement('div');
       label.className = 'video-badge';
@@ -1504,6 +1611,8 @@ async function search(tags, page, append = false) {
 
   if (!append) {
     grid.innerHTML = ''; // Clear grid only for new searches
+    grid.classList.add('is-filtering');
+    if (typeof window.renderGridSkeletons === 'function') window.renderGridSkeletons(grid, 12);
     cachedPosts = []; // Clear cached posts for new searches
     if (metaRow) metaRow.style.display = 'none';
     statusEl.style.display = 'block';
@@ -1562,6 +1671,7 @@ async function search(tags, page, append = false) {
   }
 
   if (!data || data.length === 0) {
+    if (!append && typeof window.clearGridSkeletons === 'function') window.clearGridSkeletons(grid);
     if (!append) statusEl.innerHTML = cachedPosts.length === 0 ? '<span class="icon">ðŸ˜¶</span>No matching vectors found.' : '';
     if (bottomStatusEl) bottomStatusEl.style.display = 'none';
     hasMore = false; // No more data to load
@@ -1585,6 +1695,7 @@ async function search(tags, page, append = false) {
 
 
   isLoading = false;
+  grid.classList.remove('is-filtering');
 
   setTimeout(() => {
     if (typeof window.checkSentinelVisibility === 'function') {
@@ -1772,6 +1883,7 @@ function updateSortButtonsUI(value) {
   // Remove active and reversed classes from all buttons and their child images
   [sortBtnScore, sortBtnTime, sortBtnRandom].forEach(btn => {
     btn.classList.remove('active');
+    btn.setAttribute('aria-pressed', 'false');
     const img = btn.querySelector('img');
     if (img) img.classList.remove('reversed');
   });
@@ -1832,15 +1944,21 @@ function updateSortButtonsUI(value) {
   if (sortSelect) {
     sortSelect.value = value;
   }
+
+  [sortBtnScore, sortBtnTime, sortBtnRandom].forEach(btn => {
+    btn.setAttribute('aria-pressed', String(btn.classList.contains('active')));
+  });
 }
 
 if (sortToggleBtn && sortContainer) {
   sortToggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     sortContainer.classList.toggle('expanded');
+    sortToggleBtn.setAttribute('aria-expanded', String(sortContainer.classList.contains('expanded')));
     // Collapse timeframe capsule when sort is opened
     const timeframeContainer = document.getElementById('search-timeframe-container');
     if (timeframeContainer) timeframeContainer.classList.remove('expanded');
+    if (timeframeToggleBtn) timeframeToggleBtn.setAttribute('aria-expanded', 'false');
   });
 }
 
@@ -1894,6 +2012,7 @@ function updateTimeframeUI(value) {
   if (targetBtn) {
     targetBtn.classList.add('active');
   }
+  timeframeOptions.forEach(btn => btn.setAttribute('aria-pressed', String(btn.classList.contains('active'))));
 
   // Update backend select dropdown value
   timeframeSelect.value = value;
@@ -1903,8 +2022,10 @@ if (timeframeToggleBtn && timeframeContainer) {
   timeframeToggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     timeframeContainer.classList.toggle('expanded');
+    timeframeToggleBtn.setAttribute('aria-expanded', String(timeframeContainer.classList.contains('expanded')));
     // Collapse sort capsule when timeframe is opened
     if (sortContainer) sortContainer.classList.remove('expanded');
+    if (sortToggleBtn) sortToggleBtn.setAttribute('aria-expanded', 'false');
   });
 }
 
@@ -1922,9 +2043,11 @@ timeframeOptions.forEach(btn => {
 document.addEventListener('click', (e) => {
   if (sortContainer && !sortContainer.contains(e.target)) {
     sortContainer.classList.remove('expanded');
+    if (sortToggleBtn) sortToggleBtn.setAttribute('aria-expanded', 'false');
   }
   if (timeframeContainer && !timeframeContainer.contains(e.target)) {
     timeframeContainer.classList.remove('expanded');
+    if (timeframeToggleBtn) timeframeToggleBtn.setAttribute('aria-expanded', 'false');
   }
 });
 

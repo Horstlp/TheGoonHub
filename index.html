@@ -16,12 +16,13 @@
   <link rel="dns-prefetch" href="https://frosty-forest-2c7f.markus4free.workers.dev">
 
   <!-- Performance: Preload main stylesheet to avoid render-blocking delay -->
-  <link rel="preload" href="css/style.css?v=2" as="style">
-  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="preload" href="css/style.css?v=3" as="style">
+  <link rel="stylesheet" href="css/style.css?v=3">
 
   <!-- Performance: Defer scripts so they don't block HTML parsing, keeping them in <head> -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" defer></script>
   <script src="js/api.js" defer></script>
+  <script src="js/resilience.js" defer></script>
   <script src="js/vault.js" defer></script>
   <script src="js/app.js" defer></script>
   <script src="js/search.js" defer></script>
@@ -36,18 +37,17 @@
   <div class="app-container">
     <!-- Accessibility & Semantic HTML: Use <nav> and aria-label for navigation -->
     <nav class="sidebar" aria-label="Primary Navigation">
-      <div class="sidebar-nav" role="menubar">
-        <!-- Accessibility: Add aria-label and explicit role to emoji buttons -->
-        <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images" role="menuitem">
+      <div class="sidebar-nav">
+        <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images" aria-controls="view-images" aria-current="page">
           <img src="Icons/icons8-image-48.png" alt="Images" width="24" height="24" style="pointer-events:none;">
         </button>
-        <button class="sidebar-item" id="nav-manga" title="Manga" aria-label="View Manga" role="menuitem">
+        <button class="sidebar-item" id="nav-manga" title="Manga" aria-label="View Manga" aria-controls="view-manga">
           <img src="Icons/icons8-book-48.png" alt="Manga" width="24" height="24" style="pointer-events:none;">
         </button>
-        <button class="sidebar-item" id="nav-algo" title="Algorithm" aria-label="View Algorithm" role="menuitem">
+        <button class="sidebar-item" id="nav-algo" title="Algorithm" aria-label="View Algorithm" aria-controls="view-algo">
           <img src="Icons/icons8-star-48.png" alt="Algorithm" width="24" height="24" style="pointer-events:none;">
         </button>
-        <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" role="menuitem">
+        <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" aria-controls="view-vault">
           <img src="Icons/icons8-safe-48.png" alt="Vault" width="24" height="24" style="pointer-events:none;">
         </button>
       </div>
@@ -57,6 +57,7 @@
       <!-- IMAGES VIEW (Default) -->
       <!-- Semantic HTML: Use <section> for views instead of <div> -->
       <section id="view-images" class="app-view" aria-labelledby="images-title">
+        <h1 id="images-title" class="sr-only">Image browser</h1>
 
         <!-- Accessibility & Modern Best Practice: Wrap search inputs in <form> with role="search" -->
         <div class="sticky-header-container">
@@ -73,7 +74,7 @@
 
                 <!-- Inline Search Timeframe Capsule -->
                 <div class="search-timeframe-container" id="search-timeframe-container" style="display: none;">
-                  <button type="button" id="timeframe-toggle-btn" class="timeframe-toggle-btn" title="Choose Timeframe">
+                  <button type="button" id="timeframe-toggle-btn" class="timeframe-toggle-btn" title="Choose Timeframe" aria-label="Choose timeframe" aria-expanded="false" aria-controls="search-timeframe-options">
                     <img src="Icons/icons8-calendar-32.png" alt="" aria-hidden="true" width="20" height="20">
                   </button>
                   <div class="search-timeframe-options" id="search-timeframe-options">
@@ -91,7 +92,7 @@
 
                 <!-- Inline Search Sort Capsule -->
                 <div class="search-sort-container" id="search-sort-container" style="display: none;">
-                  <button type="button" id="sort-toggle-btn" class="sort-toggle-btn" title="Choose Sort Order">
+                  <button type="button" id="sort-toggle-btn" class="sort-toggle-btn" title="Choose Sort Order" aria-label="Choose sort order" aria-expanded="false" aria-controls="search-sort-options">
                     <img src="Icons\icons8-dice-32.png" alt="" aria-hidden="true" width="20" height="20">
                   </button>
                   <div class="search-sort-options" id="search-sort-options">
@@ -132,7 +133,7 @@
           Enter tags above to start scanning files
         </div>
 
-        <div id="grid" aria-label="Image Results Grid" role="grid"></div>
+        <div id="grid" aria-label="Image Results" role="list" aria-busy="false"></div>
 
         <!-- Infinite Scroll Bottom Indicator -->
         <div id="bottom-status"
@@ -147,6 +148,7 @@
 
       <!-- MANGA VIEW -->
       <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
+        <h1 id="manga-title" class="sr-only">Manga browser</h1>
         <!-- Simplified & Sleek Manga Search Suite (Unified with Main Search Bar) -->
         <div class="manga-search-section">
           <!-- Main Search Bar Row -->
@@ -166,7 +168,7 @@
               <!-- Inline Capsule Controls -->
               <div class="manga-inline-controls">
                 <!-- 🏷️ Tags Capsule Trigger -->
-                <button type="button" id="manga-tags-trigger-btn" class="manga-pill-capsule-btn" title="Filter Tags">
+                <button type="button" id="manga-tags-trigger-btn" class="manga-pill-capsule-btn" title="Filter Tags" aria-label="Filter manga by tags" aria-expanded="false" aria-controls="manga-tags-modal">
                   <span class="capsule-icon">🏷️</span>
                   <span class="capsule-label" id="manga-tags-trigger-text">Tags</span>
                   <span id="manga-tags-badge" class="manga-filter-badge" style="display: none;">0</span>
@@ -174,7 +176,7 @@
 
                 <!-- 🔞 Content Rating Capsule -->
                 <div class="manga-rating-capsule-wrapper">
-                  <button type="button" id="manga-rating-trigger-btn" class="manga-pill-capsule-btn active" title="Content Rating">
+                  <button type="button" id="manga-rating-trigger-btn" class="manga-pill-capsule-btn active" title="Content Rating" aria-label="Choose content ratings" aria-expanded="false">
                     <span class="capsule-icon">🔞</span>
                     <span id="manga-rating-trigger-text" class="capsule-label">Erotica+</span>
                     <span id="manga-rating-badge" class="manga-filter-badge">+2</span>
@@ -207,7 +209,7 @@
                 </div>
 
                 <!-- ⚙️ Advanced Filters Toggle -->
-                <button type="button" id="manga-toggle-filters-btn" class="manga-pill-capsule-btn" title="Toggle Advanced Filters">
+                <button type="button" id="manga-toggle-filters-btn" class="manga-pill-capsule-btn" title="Toggle Advanced Filters" aria-label="Toggle advanced manga filters" aria-expanded="false" aria-controls="manga-filters-panel">
                   <span class="capsule-icon">⚙️</span>
                   <span class="capsule-label toggle-text">Filters</span>
                 </button>
@@ -368,8 +370,8 @@
           </div>
         </div>
 
-        <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="grid"
-          aria-label="Manga Results"></div>
+        <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="list"
+          aria-label="Manga Results" aria-busy="false"></div>
 
         <div id="manga-grid-status" class="text-center text-muted p-4" aria-live="polite">
           <span class="icon" aria-hidden="true">🔍</span> Search to load comic covers...
@@ -382,6 +384,7 @@
 
       <!-- ALGORITHM VIEW -->
       <section id="view-algo" class="app-view" style="display: none;" aria-labelledby="algo-title">
+        <h1 id="algo-title" class="sr-only">Recommendation settings</h1>
 
         <div class="algo-panel insight-box">
           <div
@@ -518,7 +521,7 @@
         <!-- Algo Insights Panel -->
         <div id="algo-insights" class="flex-wrap gap-2 mb-4"></div>
 
-        <div id="algo-grid" class="vault-grid-layout" role="grid" aria-label="Algorithm Results"></div>
+        <div id="algo-grid" class="vault-grid-layout" role="list" aria-label="Algorithm Results"></div>
 
         <div class="text-center my-5">
           <button id="algo-load-more-btn"
@@ -575,7 +578,7 @@
           <span id="vault-active-folder-count" class="vault-active-folder-count">0 items</span>
         </div>
 
-        <div id="vault-grid" class="vault-grid-layout" role="grid" aria-label="Vault Contents"></div>
+        <div id="vault-grid" class="vault-grid-layout" role="list" aria-label="Vault Contents"></div>
         <div id="vault-status" class="text-center text-muted p-5 d-none" aria-live="polite"></div>
 
       </section>
@@ -701,7 +704,7 @@
       <!-- Recommendation Section -->
       <div id="lightbox-recommendations" style="width: 100%; max-width: 1400px; padding: 0 40px; margin-top: 60px; display: none;">
         <h2 style="color: white; margin-bottom: 24px; font-size: 1.5rem; text-align: left; font-weight: bold;">More like this</h2>
-        <div id="lb-recommendations-grid" class="vault-grid-layout" role="grid" aria-label="Recommended Images"></div>
+        <div id="lb-recommendations-grid" class="vault-grid-layout" role="list" aria-label="Recommended Images"></div>
         <div id="lb-recommendations-status" class="text-center text-muted p-4" aria-live="polite"></div>
       </div>
     </div>

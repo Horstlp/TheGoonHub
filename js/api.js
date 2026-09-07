@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
         val += (val.includes('?') ? '&url=' : '?url=');
       }
       if (val) {
-        localStorage.setItem('r34_proxy_url', val);
+        if (typeof window.safeLocalStorageSet === 'function') window.safeLocalStorageSet('r34_proxy_url', val);
+        else localStorage.setItem('r34_proxy_url', val);
         PROXY = val;
       } else {
         localStorage.removeItem('r34_proxy_url');
@@ -101,12 +102,12 @@ function processFetchQueue() {
         const resClone = res.clone();
         try {
           const data = await resClone.json();
-          // We use sessionStorage so it clears when you close the tab,
-          // but persists across page reloads while testing!
-          try {
-            sessionStorage.setItem(`r34_cache_${req.url}`, JSON.stringify(data));
-          } catch(storageErr) {
-            // Might fail if storage is full, ignore
+          // Keep transient responses fresh and bounded; the cache is only an optimization.
+          const cacheEntry = JSON.stringify({ cachedAt: Date.now(), data });
+          if (typeof window.safeSessionStorageSet === 'function') {
+            window.safeSessionStorageSet(`r34_cache_${req.url}`, cacheEntry);
+          } else {
+            try { sessionStorage.setItem(`r34_cache_${req.url}`, cacheEntry); } catch (_) { /* Cache is optional. */ }
           }
         } catch(jsonErr) {}
       }
@@ -126,18 +127,34 @@ function throttledFetch(url, options = {}, isBackground = false, useCache = true
     // This prevents hitting the API limit when you refresh the page constantly
     if (useCache && (!options.method || options.method.toUpperCase() === 'GET')) {
       const cacheKey = `r34_cache_${url}`;
-      const cached = sessionStorage.getItem(cacheKey);
+      let cached = null;
+      try { cached = sessionStorage.getItem(cacheKey); } catch (_) { /* Storage can be disabled. */ }
       if (cached) {
         try {
-          const parsedData = JSON.parse(cached);
-          const fakeResponse = {
-            ok: true,
-            status: 200,
-            json: () => Promise.resolve(parsedData)
-          };
-          return resolve(fakeResponse); // Instantly resolve from cache!
+          const parsedCache = JSON.parse(cached);
+          const isEnvelope = parsedCache && typeof parsedCache === 'object' && 'cachedAt' in parsedCache && 'data' in parsedCache;
+          const isFresh = !isEnvelope || Date.now() - parsedCache.cachedAt < 6 * 60 * 60 * 1000;
+          if (!isFresh) {
+            try { sessionStorage.removeItem(cacheKey); } catch (_) { /* Cache is optional. */ }
+          } else {
+            const parsedData = isEnvelope ? parsedCache.data : parsedCache;
+            const serializedData = JSON.stringify(parsedData);
+            const fakeResponse = {
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve(parsedData),
+              text: () => Promise.resolve(serializedData),
+              clone: () => ({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve(parsedData),
+                text: () => Promise.resolve(serializedData)
+              })
+            };
+            return resolve(fakeResponse); // Instantly resolve from a fresh cache entry.
+          }
         } catch (e) {
-          sessionStorage.removeItem(cacheKey);
+          try { sessionStorage.removeItem(cacheKey); } catch (_) { /* Cache is optional. */ }
         }
       }
     }

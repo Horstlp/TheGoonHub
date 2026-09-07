@@ -14,9 +14,15 @@ window.handleViewSwitch = function(view) {
     }
 
     // Update active nav button
-    document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(el => {
+        el.classList.remove('active');
+        el.removeAttribute('aria-current');
+    });
     const btn = document.getElementById(`nav-${view}`);
-    if (btn) btn.classList.add('active');
+    if (btn) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-current', 'page');
+    }
 
     // Hide all views
     document.querySelectorAll('.app-view').forEach(el => {

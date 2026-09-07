@@ -122,6 +122,8 @@ function renderSuggestions(items) {
     tagCategoriesMap.set(value, category);
     const row = document.createElement('div');
     row.className = 'autocomplete-item';
+    row.setAttribute('role', 'option');
+    row.setAttribute('aria-selected', 'false');
     const textSpan = document.createElement('span');
     textSpan.textContent = value;
     row.appendChild(textSpan);
@@ -151,6 +153,7 @@ function hideAutocomplete() {
 function highlightSuggestion(items) {
   items.forEach((item, idx) => {
     item.classList.toggle('active', idx === activeSuggestionIdx);
+    item.setAttribute('aria-selected', String(idx === activeSuggestionIdx));
     if(idx === activeSuggestionIdx) item.scrollIntoView({ block: 'nearest' });
   });
 }
