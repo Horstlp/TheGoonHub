@@ -744,7 +744,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       card.addEventListener('mouseenter', () => {
         if (typeof isVaultBulkMode !== 'undefined' && isVaultBulkMode) return;
         const v = document.createElement('video');
-        v.src = fileUrl; v.muted = true; v.loop = true; v.playsInline = true; v.disablePictureInPicture = true; v.controlsList = "nodownload noplaybackrate"; v.className = 'hover-video';
+        v.src = typeof getOptimizedVideoUrl === 'function' ? getOptimizedVideoUrl(fileUrl) : fileUrl; v.muted = true; v.loop = true; v.playsInline = true; v.disablePictureInPicture = true; v.controlsList = "nodownload noplaybackrate"; v.className = 'hover-video';
         v.style.pointerEvents = 'none'; // Block Opera UI injections
         card.appendChild(v); v.play().catch(() => { });
       });

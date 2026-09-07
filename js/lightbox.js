@@ -73,7 +73,7 @@ function openLightbox(index) {
   
   if (isVideo) {
     const v = document.createElement('video'); 
-    v.src = fileUrl; 
+    v.src = typeof getOptimizedVideoUrl === 'function' ? getOptimizedVideoUrl(fileUrl) : fileUrl; 
     v.controls = true; 
     v.preload = "metadata";
     v.poster = post.sample_url || post.preview_url || '';

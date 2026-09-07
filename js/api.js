@@ -1,6 +1,27 @@
 let PROXY = localStorage.getItem('r34_proxy_url') || 'https://frosty-forest-2c7f.markus4free.workers.dev/?url='; // IMPORTANT: Keep the /?url= at the end
 const API = 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&api_key=2116381cf8a58c1de26faacfac84d760099e863311a98c1d060028461c82ab831d579f74e72983e6af34adbb661039c6a610d8f422be912fee3cb90b39d38f1a&user_id=6064624';
 
+// --- Cloudinary Video Optimization ---
+// 1. Create a Cloudinary account.
+// 2. Add an Auto-upload mapping in Settings -> Upload:
+//    Folder: api-videos
+//    URL prefix: https://wwebm.rule34.xxx/images/
+// 3. Fill in your Cloud Name and Folder Name below:
+const CLOUDINARY_CLOUD_NAME = ''; // Leave empty to disable
+const CLOUDINARY_FOLDER = '';
+
+function getOptimizedVideoUrl(rawUrl) {
+  if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_FOLDER || !rawUrl) return rawUrl;
+
+  // Extract the path after /images/ since Rule34 hosts videos across different subdomains
+  const match = rawUrl.match(/https?:\/\/[^\/]+\/images\/(.+)/);
+  if (match) {
+    const path = match[1];
+    return `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/video/upload/q_auto,f_auto,w_720/${CLOUDINARY_FOLDER}/${path}`;
+  }
+  return rawUrl;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const proxyInput = document.getElementById('proxy-input');
   const proxySaveBtn = document.getElementById('proxy-save-btn');
@@ -39,6 +60,7 @@ let lowPriorityQueue = [];
 let isFetchingQueue = false;
 let currentFetchDelay = 500; // Safer 2 requests per second baseline
 let queueTimeoutId = null;
+let isCoolingDown = false;
 
 function processFetchQueue() {
   if (highPriorityQueue.length === 0 && lowPriorityQueue.length === 0) {
@@ -52,9 +74,19 @@ function processFetchQueue() {
 
   // Launch fetch without blocking the queue
   fetch(req.url, req.options)
-    .then(res => {
+    .then(async res => {
       if (res.status === 429) {
         console.warn(`[RATE LIMIT] 429 Too Many Requests. Backing off for 3 seconds...`);
+        
+        // Show user-facing notification
+        if (!isCoolingDown) {
+          isCoolingDown = true;
+          if (typeof triggerToastNotification === 'function') {
+            triggerToastNotification("API overloaded, waiting till it cooled down...");
+          }
+          setTimeout(() => { isCoolingDown = false; }, 3000);
+        }
+
         // Re-insert at the front of the queue it came from
         if (isHighPriority) highPriorityQueue.unshift(req);
         else lowPriorityQueue.unshift(req);
@@ -63,6 +95,22 @@ function processFetchQueue() {
         queueTimeoutId = setTimeout(processFetchQueue, 3000); // 3 second backoff
         return;
       }
+      
+      // Save successful responses to cache
+      if (res.ok && req.useCache && (!req.options.method || req.options.method.toUpperCase() === 'GET')) {
+        const resClone = res.clone();
+        try {
+          const data = await resClone.json();
+          // We use sessionStorage so it clears when you close the tab,
+          // but persists across page reloads while testing!
+          try {
+            sessionStorage.setItem(`r34_cache_${req.url}`, JSON.stringify(data));
+          } catch(storageErr) {
+            // Might fail if storage is full, ignore
+          }
+        } catch(jsonErr) {}
+      }
+
       req.resolve(res);
     })
     .catch(err => req.reject(err));
@@ -72,9 +120,29 @@ function processFetchQueue() {
   queueTimeoutId = setTimeout(processFetchQueue, currentFetchDelay);
 }
 
-function throttledFetch(url, options = {}, isBackground = false) {
+function throttledFetch(url, options = {}, isBackground = false, useCache = true) {
   return new Promise((resolve, reject) => {
-    const req = { url, options, resolve, reject };
+    // --- Session Caching for Testing/Development ---
+    // This prevents hitting the API limit when you refresh the page constantly
+    if (useCache && (!options.method || options.method.toUpperCase() === 'GET')) {
+      const cacheKey = `r34_cache_${url}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsedData = JSON.parse(cached);
+          const fakeResponse = {
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve(parsedData)
+          };
+          return resolve(fakeResponse); // Instantly resolve from cache!
+        } catch (e) {
+          sessionStorage.removeItem(cacheKey);
+        }
+      }
+    }
+
+    const req = { url, options, resolve, reject, useCache };
     if (isBackground) {
       lowPriorityQueue.push(req);
     } else {
