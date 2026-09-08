@@ -545,23 +545,6 @@
               <p>Locally Secured Collection</p>
             </div>
           </div>
-          <div class="profile-actions" style="display: flex; gap: 12px; align-items: center;">
-            <button id="vault-new-folder-btn" class="timeframe-toggle-btn" title="Create New Folder"
-              aria-label="Create New Folder"
-              style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
-              <img src="Icons/icons8-xbox-cross-48.png" style="width: 22px; height: 22px;" alt="+">
-            </button>
-            <button id="vault-bulk-edit-btn" class="timeframe-toggle-btn" title="Bulk Edit Mode"
-              aria-label="Bulk Edit Mode"
-              style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
-              <img src="Icons/icons8-pen-48 (1).png" style="width: 22px; height: 22px;" alt="Edit">
-            </button>
-            <button id="vault-settings-btn" class="timeframe-toggle-btn" title="Global Settings"
-              aria-label="Global Settings"
-              style="width: 44px; height: 44px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border);">
-              <img src="Icons/icons8-setting-48.png" style="width: 22px; height: 22px;" alt="Settings">
-            </button>
-          </div>
         </header>
 
 
@@ -597,10 +580,10 @@
         </button>
       </nav>
 
-      <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 8px;"></div>
+      <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 16px;"></div>
 
-      <!-- Right: Search Bar with embedded Settings -->
-      <div style="display: flex; align-items: center; width: 340px;">
+      <!-- Center: Search Bar with embedded Settings -->
+      <div style="display: flex; align-items: center; flex: 1; min-width: 200px;">
         <input id="vault-search-input" type="search" placeholder="Search tags..." autocomplete="off"
           aria-label="Search Vault" style="width: 100%; background: transparent; border: none; color: var(--text); outline: none; padding: 4px 8px; font-size: 0.95rem; min-width: 0;" />
 
@@ -635,10 +618,24 @@
           </div>
         </div>
       </div>
-    </div>
 
+      <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 16px;"></div>
+
+      <!-- Right: Profile Actions -->
+      <div class="profile-actions" style="display: flex; gap: 12px; align-items: center;">
+        <button id="vault-new-folder-btn" class="timeframe-toggle-btn" title="Create New Folder" aria-label="Create New Folder" style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+          <img src="Icons/icons8-xbox-cross-48.png" style="width: 22px; height: 22px; filter: invert(1);" alt="+">
+        </button>
+        <button id="vault-bulk-edit-btn" class="timeframe-toggle-btn" title="Bulk Edit Mode" aria-label="Bulk Edit Mode" style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+          <img src="Icons/icons8-pen-48 (1).png" style="width: 22px; height: 22px; filter: invert(1);" alt="Edit">
+        </button>
+        <button id="vault-settings-btn" class="timeframe-toggle-btn" title="Global Settings" aria-label="Global Settings" style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+          <img src="Icons/icons8-setting-48.png" style="width: 22px; height: 22px; filter: invert(1);" alt="Settings">
+        </button>
+      </div>
+    </div>
     <!-- Bulk Actions Sticky Footer (Photoshop Taskbar Style) -->
-    <div id="vault-bulk-actions" class="photoshop-task-bar" style="display: none;">
+    <div id="vault-bulk-actions" class="photoshop-task-bar" style="display: none; bottom: 32px; z-index: 2000;">
       <span id="bulk-selection-count" class="task-bar-text">0 items selected</span>
       <div class="task-bar-divider"></div>
       <select id="bulk-folder-select" class="task-bar-select"></select>

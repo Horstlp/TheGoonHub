@@ -284,16 +284,23 @@ function renderVaultFoldersNav() {
       count = customPosts.length;
     }
 
-    let imgUrls = stackImages.map(p => p.preview_url || p.sample_url || p.file_url).filter(Boolean);
-    
-    let mainImgHtml = imgUrls[0] ? `<img src="${imgUrls[0]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+    let mainImgHtml = '';
     let sideImgHtml = '';
     
-    if (imgUrls[1] || imgUrls[2]) {
-      sideImgHtml += imgUrls[1] ? `<img src="${imgUrls[1]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
-      sideImgHtml += imgUrls[2] ? `<img src="${imgUrls[2]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+    if (count === 0) {
+      mainImgHtml = `<div class="folder-thumbnail-placeholder" style="display:flex;align-items:center;justify-content:center;"><img src="Icons/icons8-folder-48.png" style="width:48px;height:48px;opacity:0.2;filter:invert(1);object-fit:contain;" alt="Empty Folder"></div>`;
+      sideImgHtml = `<div class="folder-thumbnail-placeholder"></div><div class="folder-thumbnail-placeholder"></div>`;
     } else {
-      sideImgHtml += `<div class="folder-thumbnail-placeholder"></div><div class="folder-thumbnail-placeholder"></div>`;
+      let imgUrls = stackImages.map(p => p.preview_url || p.sample_url || p.file_url).filter(Boolean);
+      
+      mainImgHtml = imgUrls[0] ? `<img src="${imgUrls[0]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+      
+      if (imgUrls[1] || imgUrls[2]) {
+        sideImgHtml += imgUrls[1] ? `<img src="${imgUrls[1]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+        sideImgHtml += imgUrls[2] ? `<img src="${imgUrls[2]}" loading="lazy" />` : `<div class="folder-thumbnail-placeholder"></div>`;
+      } else {
+        sideImgHtml += `<div class="folder-thumbnail-placeholder"></div><div class="folder-thumbnail-placeholder"></div>`;
+      }
     }
 
     btn.innerHTML = `
@@ -1471,7 +1478,7 @@ function toggleBulkMode() {
     } else {
       vaultGrid.classList.remove('bulk-mode-active');
       // Clear selection visually without re-rendering the whole grid
-      vaultGrid.querySelectorAll('.card.selected').forEach(card => card.classList.remove('selected'));
+      document.querySelectorAll('.card.bulk-selected').forEach(card => card.classList.remove('bulk-selected'));
     }
   }
 }
