@@ -100,7 +100,6 @@ function openLightbox(index) {
       setTimeout(() => {
         lbShimmer.remove();
         v.style.opacity = '1';
-        document.getElementById('lightbox-info').style.height = `${v.clientHeight}px`;
       }, 100);
     };
     // Fallback: if metadata loads but data event doesn't fire quickly
@@ -109,7 +108,6 @@ function openLightbox(index) {
         if (v.style.opacity === '0') {
           lbShimmer.remove();
           v.style.opacity = '1';
-          document.getElementById('lightbox-info').style.height = `${v.clientHeight}px`;
         }
       }, 500);
     };
@@ -123,7 +121,6 @@ function openLightbox(index) {
       setTimeout(() => {
         lbShimmer.remove();
         img.style.opacity = '1';
-        document.getElementById('lightbox-info').style.height = `${img.clientHeight}px`;
       }, 120);
     };
   }

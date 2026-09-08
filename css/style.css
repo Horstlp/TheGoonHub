@@ -1342,7 +1342,6 @@ header p {
 
   30% {
     transform: rotate(45deg) scale(1.1);
-    /* The "thump" */
   }
 
   50% {
@@ -1355,7 +1354,7 @@ header p {
   }
 }
 
-/* ── Dynamic Lightbox Core Styling ── */
+/* ── Pinterest-Style Lightbox Card ── */
 #lightbox {
   visibility: hidden;
   opacity: 0;
@@ -1363,14 +1362,13 @@ header p {
   display: flex;
   position: fixed;
   inset: 0;
-  background: rgba(6, 6, 9, 0.55);
+  background: rgba(0, 0, 0, 0.65);
   z-index: 500;
   align-items: flex-start;
   justify-content: center;
-  padding: 64px 32px;
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  transition: opacity 0.25s ease, visibility 0.25s ease;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -1387,238 +1385,182 @@ header p {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  padding: 40px 24px 80px;
 }
 
-.lightbox-top-section {
+.lb-pinterest-card {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 24px;
+  max-width: 1100px;
   width: 100%;
-  max-width: 1400px;
+  min-height: 400px;
+  max-height: 88vh;
+  background: rgba(22, 22, 31, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 32px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  overflow: hidden;
+  animation: lbCardEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.lightbox-wrapper {
-  position: relative;
-  max-width: 85vw;
-  max-height: 80vh;
+@keyframes lbCardEnter {
+  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-#lightbox-media-container {
-  max-width: 100%;
-  max-height: 70vh;
-  min-width: clamp(280px, 50vw, 800px);
-  min-height: clamp(300px, 50vh, 800px);
+.lb-card-media {
+  flex: 1 1 58%;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 32px 0 0 32px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+#lightbox-media-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
 }
 
 #lightbox-media-container img,
 #lightbox-media-container video {
-  max-width: 85vw;
-  max-height: 66vh;
+  max-width: 100%;
+  max-height: 85vh;
   object-fit: contain;
   display: block;
   margin: 0 auto;
   outline: none;
 }
 
-.lb-nav-btn {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  font-size: 2.5rem;
-  width: 60px;
-  height: 60px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-  z-index: 510;
-  user-select: none;
+.lb-media-shimmer {
+  width: 100%;
+  max-height: 85vh;
+  min-height: 350px;
+  border-radius: 0;
 }
 
-.lb-nav-btn:hover {
-  color: var(--text);
-}
-
-#lb-prev-btn {
-  left: 40px;
-}
-
-#lb-next-btn {
-  right: 40px;
-}
-
-#lightbox-close {
-  position: fixed;
-  top: 32px;
-  left: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  color: var(--text);
-  font-size: 0.9rem;
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 520;
-}
-
-#lightbox-close:hover {
-  border-color: var(--danger);
-  color: var(--danger);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-#lightbox-back {
-  position: fixed;
-  top: 32px;
-  left: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  color: var(--text);
-  font-size: 0.9rem;
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 520;
-  display: none;
-}
-
-#lightbox-back:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(255, 255, 255, 0.1);
-}
-
-#lightbox-slim-close {
-  position: fixed;
-  top: 32px;
-  left: 160px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  color: var(--muted);
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 520;
-  display: none;
-}
-
-#lightbox-slim-close:hover {
-  border-color: var(--danger);
-  color: var(--danger);
-  background: rgba(233, 94, 140, 0.1);
-}
-
-#lightbox-info {
-  background: rgba(17, 17, 22, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-  border-radius: 16px;
-  padding: 24px;
-  font-size: 0.85rem;
-  color: var(--muted);
+.lb-card-details {
+  flex: 1 1 42%;
+  max-width: 420px;
+  min-width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: auto;
-  min-width: 250px;
-  max-width: 350px;
-  align-items: flex-start;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.lb-meta-row {
+.lb-card-details::-webkit-scrollbar { width: 4px; }
+.lb-card-details::-webkit-scrollbar-track { background: transparent; }
+.lb-card-details::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 4px; }
+
+.lb-card-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  width: 100%;
-  justify-content: flex-start;
   align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(22, 22, 31, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-.lb-action-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: var(--text);
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 0.8rem;
-  cursor: pointer;
-  display: inline-flex;
+.lb-header-left, .lb-header-right {
+  display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.lb-header-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.lb-action-btn:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+.lb-header-btn:hover {
   background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
-#lb-fav-btn.favorited {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: rgba(255, 94, 151, 0.05);
+.lb-header-btn svg { width: 18px; height: 18px; }
+
+#lb-pinterest-widget {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
+
+#lb-pinterest-widget .custom-select-wrapper,
+#lb-pinterest-widget .pinterest-save-btn {
+  opacity: 1;
+  transform: none;
+  position: relative;
+  top: auto; right: auto; left: auto;
+}
+
+#lb-pinterest-widget .pinterest-save-btn {
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+}
+
+#lb-pinterest-widget .pinterest-folder-select {
+  padding: 6px 10px 6px 12px;
+  font-size: 0.78rem;
+}
+
+.lb-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 24px 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.lb-meta-dot { opacity: 0.4; font-size: 0.7rem; }
 
 .lb-tags-stream {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-content: flex-start;
-  width: auto;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px 24px 24px;
   flex-grow: 1;
   min-height: 0;
-  overflow: hidden;
-  writing-mode: vertical-lr;
 }
 
 .lb-stream-tag {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   background: rgba(255, 255, 255, 0.05);
   color: #b5b5c6;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transition: all 0.2s ease;
-  writing-mode: horizontal-tb;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1630,6 +1572,39 @@ header p {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
+
+.lb-nav-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(22, 22, 31, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--muted);
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 510;
+  user-select: none;
+}
+
+.lb-nav-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#lb-prev-btn { left: 24px; }
+#lb-next-btn { right: 24px; }
+
+#lb-fav-btn.favorited { color: var(--accent); }
 
 /* ── Responsive Viewport Adaptive Matrix ── */
 @media (max-width: 1024px) {
@@ -1655,12 +1630,23 @@ header p {
     padding: 24px 20px;
   }
 
-  #lb-prev-btn {
-    left: 16px;
+  #lb-prev-btn { left: 16px; }
+  #lb-next-btn { right: 16px; }
+
+  .lb-pinterest-card {
+    flex-direction: column;
+    max-height: none;
+    border-radius: 24px;
   }
 
-  #lb-next-btn {
-    right: 16px;
+  .lb-card-media {
+    border-radius: 24px 24px 0 0;
+    max-height: 50vh;
+  }
+
+  .lb-card-details {
+    max-width: none;
+    min-width: 0;
   }
 }
 

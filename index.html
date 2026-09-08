@@ -667,36 +667,55 @@
 
   </div>
 
-  <!-- Accessibility: role="alert" for immediate notifications -->
-  <div id="toast" aria-live="assertive" role="alert"></div>
-
   <!-- Accessibility: Use role="dialog" and aria-modal for custom modals -->
   <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image Lightbox">
-    <button id="lightbox-close" aria-label="Close Lightbox">✕ Close</button>
-    <button id="lightbox-back" aria-label="Go Back">← Go Back</button>
-    <button id="lightbox-slim-close" aria-label="Close Lightbox Completely" style="display: none;">✕</button>
     <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous Image">‹</button>
 
     <div class="lightbox-scroll-content">
-      <div class="lightbox-top-section">
-        <div class="lightbox-wrapper">
+      <!-- Pinterest-Style Floating Card -->
+      <div class="lb-pinterest-card">
+        <!-- Left: Media -->
+        <div class="lb-card-media">
           <div id="lightbox-media-container" aria-live="polite"></div>
         </div>
 
-        <div id="lightbox-info">
-          <div class="lb-meta-row">
-            <span id="lb-score"></span>
-            <span id="lb-size"></span>
-
-            <div class="pinterest-save-widget" id="lb-pinterest-widget">
-              <div class="custom-select-wrapper" id="lb-folder-select-wrapper">
-                <button class="pinterest-folder-select" id="lb-folder-select">Saved</button>
-              </div>
-              <button class="pinterest-save-btn" id="lb-save-btn">Merken</button>
-              <ul class="custom-options-list card-folder-list" id="lb-folder-options"></ul>
+        <!-- Right: Details Panel -->
+        <div class="lb-card-details">
+          <!-- Action Bar Header -->
+          <div class="lb-card-header">
+            <div class="lb-header-left">
+              <button id="lightbox-back" class="lb-header-btn" aria-label="Go Back" style="display: none;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+              </button>
             </div>
-            <button class="lb-action-btn" id="lb-dl-btn" aria-label="Download Image">📥 Download</button>
+            <div class="lb-header-right">
+              <div class="pinterest-save-widget" id="lb-pinterest-widget">
+                <div class="custom-select-wrapper" id="lb-folder-select-wrapper">
+                  <button class="pinterest-folder-select" id="lb-folder-select">Saved</button>
+                </div>
+                <button class="pinterest-save-btn" id="lb-save-btn">Merken</button>
+                <ul class="custom-options-list card-folder-list" id="lb-folder-options"></ul>
+              </div>
+              <button class="lb-header-btn" id="lb-dl-btn" aria-label="Download Image" title="Download">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </button>
+              <button id="lightbox-close" class="lb-header-btn" aria-label="Close Lightbox" title="Close">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+              <button id="lightbox-slim-close" class="lb-header-btn" aria-label="Close Lightbox Completely" style="display: none;" title="Close">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>
+
+          <!-- Meta Info -->
+          <div class="lb-card-meta">
+            <span id="lb-score"></span>
+            <span class="lb-meta-dot">·</span>
+            <span id="lb-size"></span>
+          </div>
+
+          <!-- Tags -->
           <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
         </div>
       </div>
@@ -711,6 +730,9 @@
 
     <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next Image">›</button>
   </div>
+
+  <!-- Accessibility: role="alert" for immediate notifications -->
+  <div id="toast" aria-live="assertive" role="alert"></div>
 
   <!-- Manga Reader Modal -->
   <div id="manga-reader"
