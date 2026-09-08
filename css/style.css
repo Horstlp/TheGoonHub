@@ -1046,12 +1046,20 @@ header p {
 }
 
 .card:not(.skeleton-card) {
-  animation: cardReveal 0.32s ease-out both;
+  opacity: 0;
+  transform: scale(0.7);
+  will-change: transform, opacity;
 }
 
-@keyframes cardReveal {
-  from { opacity: 0; transform: translateY(8px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+.card.plop-in {
+  animation: cardPlop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cardPlop {
+  0%   { opacity: 0; transform: scale(0.7); }
+  50%  { opacity: 1; transform: scale(1.06); }
+  75%  { transform: scale(0.97); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .card:hover img,
@@ -1099,6 +1107,15 @@ header p {
   100% {
     background-position: -200% 0;
   }
+}
+
+/* Lightbox shimmer placeholder */
+.lb-media-shimmer {
+  width: 100%;
+  max-width: 85vw;
+  max-height: 66vh;
+  min-height: 300px;
+  border-radius: 16px;
 }
 
 .card img {
@@ -1746,19 +1763,20 @@ header p {
   width: 100%;
 }
 
-@keyframes vaultCardEntrance {
-  0% {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+@keyframes vaultCardPlop {
+  0%   { opacity: 0; transform: scale(0.6) translateY(20px); }
+  45%  { opacity: 1; transform: scale(1.08) translateY(-4px); }
+  70%  { transform: scale(0.96) translateY(2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-.vault-grid-layout .card {
-  animation: vaultCardEntrance 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+.vault-grid-layout .card:not(.skeleton-card) {
+  opacity: 0;
+  transform: scale(0.6) translateY(20px);
+}
+
+.vault-grid-layout .card.plop-in {
+  animation: vaultCardPlop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .vault-grid-layout {

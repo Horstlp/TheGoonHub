@@ -364,10 +364,16 @@ function injectMangaCardsIntoGrid(data, targetContainer = mangaGridContainer, re
     img.decoding = 'async';
     img.alt = '';
     img.style.aspectRatio = '2 / 3';
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 0.45s cubic-bezier(0.25, 0.1, 0.25, 1)';
     img.onload = () => {
-      card.classList.remove('is-media-loading');
-      card.setAttribute('aria-busy', 'false');
-      if (typeof resizeGridItem === 'function') resizeGridItem(card);
+      const revealDelay = Math.floor(Math.random() * 120) + 80;
+      setTimeout(() => {
+        card.classList.remove('is-media-loading');
+        card.setAttribute('aria-busy', 'false');
+        img.style.opacity = '1';
+        if (typeof resizeGridItem === 'function') resizeGridItem(card);
+      }, revealDelay);
     };
     if (typeof window.attachMediaFallback === 'function') {
       window.attachMediaFallback(card, img, previewUrl, 'Manga cover');

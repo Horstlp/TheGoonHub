@@ -95,8 +95,9 @@ function resizeGridItem(item) {
   const rowHeight = 10; // Matches grid-auto-rows in CSS
   const rowGap = 16;    // Matches gap in CSS
 
-  // Calculate how many 10px rows the card needs to fit its content
-  const rowSpan = Math.ceil((item.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
+  // Use offsetHeight instead of getBoundingClientRect().height because
+  // offsetHeight is NOT affected by CSS transforms (scale), preventing overlap.
+  const rowSpan = Math.ceil((item.offsetHeight + rowGap) / (rowHeight + rowGap));
   item.style.gridRowEnd = `span ${rowSpan}`;
 }
 
@@ -793,6 +794,9 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
   const fragment = document.createDocumentFragment();
   const newCards = []; // Store references for batch layout calculation
 
+  const isVault = targetContainer.id === 'vault-grid';
+  const plopStagger = isVault ? 50 : 40; // ms between each card's plop
+
   data.forEach((post, index) => {
     const fileUrl = post.file_url || post.sample_url || post.preview_url;
     const previewUrl = post.preview_url || post.sample_url || post.file_url;
@@ -805,10 +809,6 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     card.setAttribute('aria-busy', 'true');
     if (typeof window.makeCardKeyboardAccessible === 'function') {
       window.makeCardKeyboardAccessible(card, isVideo ? 'Open video' : 'Open image');
-    }
-    
-    if (targetContainer.id === 'vault-grid') {
-      card.style.animationDelay = `${Math.min(index * 0.04, 2)}s`;
     }
 
     // Detect extreme vertical aspect ratios (comic strips) to prevent layout breakage
@@ -828,13 +828,20 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     }
 
     img.style.opacity = '0';
-    img.style.transition = 'opacity 0.3s ease';
+    img.style.transition = 'opacity 0.35s cubic-bezier(0.25, 0.1, 0.25, 1)';
+
+    // Plop delay based on DOM index (not load order) so cards always
+    // appear top-left → bottom-right regardless of which image loads first.
+    const plopDelay = Math.min(index * plopStagger, 2000);
 
     img.onload = () => {
-      card.classList.remove('is-media-loading');
-      card.setAttribute('aria-busy', 'false');
-      img.style.opacity = '1';
-      if (typeof window.refreshMasonryLayout === 'function') window.refreshMasonryLayout(card.parentElement);
+      setTimeout(() => {
+        card.classList.remove('is-media-loading');
+        card.setAttribute('aria-busy', 'false');
+        img.style.opacity = '1';
+        card.classList.add('plop-in');
+        if (typeof window.refreshMasonryLayout === 'function') window.refreshMasonryLayout(card.parentElement);
+      }, plopDelay);
     };
 
     if (typeof window.attachMediaFallback === 'function') {
@@ -1207,8 +1214,8 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
   targetContainer.appendChild(fragment);
 
   // Synchronized Batch Read-then-Write to completely eliminate layout thrashing
-  // Phase 1: Read Phase
-  const cardHeights = newCards.map(card => card.getBoundingClientRect().height);
+  // Phase 1: Read Phase — use offsetHeight (immune to CSS transforms like scale)
+  const cardHeights = newCards.map(card => card.offsetHeight);
 
   // Phase 2: Write Phase
   const rowHeight = 10;

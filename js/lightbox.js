@@ -67,6 +67,16 @@ function openLightbox(index) {
   const posts = getLightboxPosts();
   currentPostIndex = index; const post = posts[index];
   lbContainer.innerHTML = ''; lbTagsStreamBox.innerHTML = '';
+  // Add a shimmer placeholder so the user never sees a blank lightbox
+  const lbShimmer = document.createElement('div');
+  lbShimmer.className = 'lb-media-shimmer skeleton-loader';
+  if (post.width && post.height) {
+    lbShimmer.style.aspectRatio = `${post.width} / ${post.height}`;
+  } else {
+    lbShimmer.style.aspectRatio = '4 / 3';
+  }
+  lbContainer.appendChild(lbShimmer);
+
   const originalExt = (post.file_url || '').split('.').pop().toLowerCase();
   const isVideo = ['mp4','webm'].includes(originalExt);
   const fileUrl = isVideo ? post.file_url : (post.sample_url || post.file_url);
@@ -83,11 +93,39 @@ function openLightbox(index) {
     v.disablePictureInPicture = true; 
     v.controlsList = "nodownload noplaybackrate"; 
     v.style.backgroundColor = "#000";
+    v.style.opacity = '0';
+    v.style.transition = 'opacity 0.4s ease';
     lbContainer.appendChild(v);
-    v.onloadedmetadata = () => document.getElementById('lightbox-info').style.height = `${v.clientHeight}px`;
+    v.onloadeddata = () => {
+      setTimeout(() => {
+        lbShimmer.remove();
+        v.style.opacity = '1';
+        document.getElementById('lightbox-info').style.height = `${v.clientHeight}px`;
+      }, 100);
+    };
+    // Fallback: if metadata loads but data event doesn't fire quickly
+    v.onloadedmetadata = () => {
+      setTimeout(() => {
+        if (v.style.opacity === '0') {
+          lbShimmer.remove();
+          v.style.opacity = '1';
+          document.getElementById('lightbox-info').style.height = `${v.clientHeight}px`;
+        }
+      }, 500);
+    };
   } else {
-    const img = document.createElement('img'); img.src = fileUrl; lbContainer.appendChild(img);
-    img.onload = () => document.getElementById('lightbox-info').style.height = `${img.clientHeight}px`;
+    const img = document.createElement('img');
+    img.style.opacity = '0';
+    img.style.transition = 'opacity 0.4s ease';
+    img.src = fileUrl;
+    lbContainer.appendChild(img);
+    img.onload = () => {
+      setTimeout(() => {
+        lbShimmer.remove();
+        img.style.opacity = '1';
+        document.getElementById('lightbox-info').style.height = `${img.clientHeight}px`;
+      }, 120);
+    };
   }
   lbScore.textContent = `Score: ${post.score ?? 0}`;
   lbSize.textContent  = post.width ? `${post.width}×${post.height}` : '';
