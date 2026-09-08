@@ -385,10 +385,17 @@ function renderVaultFoldersNav() {
           }
         });
         localforage.setItem('r34_vault_v2', vaultedPosts);
-        if (typeof triggerToastNotification === 'function') {
-          triggerToastNotification(`Moved ${selectedVaultPosts.size} items to ${f}.`);
+        if (typeof animateItemsToFolder === 'function') {
+          animateItemsToFolder(targetFolder, () => {
+            document.querySelectorAll('.card.bulk-selected').forEach(card => card.remove());
+            toggleBulkMode();
+            if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
+          });
+        } else {
+          document.querySelectorAll('.card.bulk-selected').forEach(card => card.remove());
+          toggleBulkMode();
+          if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
         }
-        toggleBulkMode();
       }
     });
 
@@ -1104,19 +1111,27 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
         
         // Custom drag ghost (using DOM for animation support)
         const ghostContainer = document.createElement('div');
-        ghostContainer.className = 'bulk-drag-ghost wobble-anim';
+        ghostContainer.style.position = 'absolute';
+        ghostContainer.style.top = '-9999px';
+        ghostContainer.style.left = '-9999px';
         ghostContainer.id = 'active-drag-ghost';
         
-        const selectedPostsArray = vaultedPosts.filter(p => selectedVaultPosts.has(String(p.id)));
-        const stackItems = selectedPostsArray.slice(0, 3);
+        const selectedCardsElements = Array.from(document.querySelectorAll('.card.bulk-selected')).slice(0, 3);
         
-        stackItems.forEach((sp, i) => {
-          const ghostImg = document.createElement('img');
-          ghostImg.src = sp.preview_url || sp.sample_url || sp.file_url;
-          ghostImg.className = 'bulk-drag-ghost-img';
-          ghostImg.style.transform = `translate(${i * 6}px, ${i * 6}px) rotate(${i * -3}deg)`;
-          ghostImg.style.zIndex = 3 - i;
-          ghostContainer.appendChild(ghostImg);
+        selectedCardsElements.forEach((sc, i) => {
+          const clone = sc.cloneNode(true);
+          clone.style.position = 'absolute';
+          clone.style.left = '0';
+          clone.style.top = '0';
+          clone.style.width = sc.offsetWidth + 'px';
+          clone.style.height = sc.offsetHeight + 'px';
+          clone.style.transform = `translate(${i * 6}px, ${i * 6}px) rotate(${i * -3}deg)`;
+          clone.style.zIndex = 3 - i;
+          clone.style.opacity = '1';
+          clone.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+          clone.style.margin = '0';
+          clone.classList.remove('bulk-selected');
+          ghostContainer.appendChild(clone);
         });
         
         if (selectedVaultPosts.size > 1) {
@@ -1141,42 +1156,14 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
 
         document.body.appendChild(ghostContainer);
         
-        // Hide default browser drag image
-        const emptyImage = new Image();
-        emptyImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-        e.dataTransfer.setDragImage(emptyImage, 0, 0);
-
-        setTimeout(() => {
-          document.querySelectorAll('.card.bulk-selected').forEach(c => {
-            if (c === card) {
-              // The dragged element must remain in layout flow technically, but position absolute removes it visually
-              c.style.position = 'absolute';
-              c.style.left = '-9999px';
-            } else {
-              // Other selected items can just be display none to force grid resort
-              c.style.display = 'none';
-            }
-          });
-        }, 0);
-      });
-      
-      card.addEventListener('drag', (e) => {
-        const ghost = document.getElementById('active-drag-ghost');
-        if (ghost && e.clientX !== 0 && e.clientY !== 0) {
-          ghost.style.left = (e.clientX + 15) + 'px';
-          ghost.style.top = (e.clientY + 15) + 'px';
-        }
+        // Let the browser handle the drag ghost natively
+        e.dataTransfer.setDragImage(ghostContainer, e.offsetX || 20, e.offsetY || 20);
+        // We intentionally do NOT hide the original cards so the masonry grid doesn't collapse during drag
       });
       
       card.addEventListener('dragend', () => {
         const ghost = document.getElementById('active-drag-ghost');
         if (ghost) ghost.remove();
-
-        document.querySelectorAll('.card.bulk-selected').forEach(c => {
-          c.style.display = '';
-          c.style.position = '';
-          c.style.left = '';
-        });
       });
     }
 
@@ -1483,6 +1470,160 @@ function toggleBulkMode() {
   }
 }
 
+function performFlipAnimation(updateFunc) {
+  const grid = document.getElementById('vault-grid');
+  if (!grid) {
+    updateFunc();
+    return;
+  }
+  
+  // 1. FIRST: Record current positions
+  const oldPositions = new Map();
+  Array.from(grid.querySelectorAll('.card')).forEach(card => {
+    oldPositions.set(card.id, card.getBoundingClientRect());
+  });
+
+  // 2. UPDATE DOM
+  updateFunc();
+
+  // 3. LAST, INVERT, PLAY
+  requestAnimationFrame(() => {
+    const newCards = Array.from(grid.querySelectorAll('.card'));
+    
+    // Invert
+    newCards.forEach(card => {
+      const oldRect = oldPositions.get(card.id);
+      if (oldRect) {
+        const newRect = card.getBoundingClientRect();
+        const deltaX = oldRect.left - newRect.left;
+        const deltaY = oldRect.top - newRect.top;
+        
+        // Only animate if position actually changed
+        if (deltaX !== 0 || deltaY !== 0) {
+          card.style.transition = 'none';
+          card.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+          card.dataset.flip = 'true';
+        }
+      }
+    });
+
+    // Force reflow
+    grid.offsetHeight; 
+
+    // Play
+    newCards.forEach(card => {
+      if (card.dataset.flip === 'true') {
+        card.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+        card.style.transform = 'translate(0, 0)';
+        delete card.dataset.flip;
+        
+        setTimeout(() => {
+          card.style.transition = '';
+          card.style.transform = '';
+        }, 400);
+      }
+    });
+  });
+}
+
+function animateItemsToFolder(targetFolder, updateFunc) {
+  const selectedCards = Array.from(document.querySelectorAll('.card.bulk-selected'));
+  if (selectedCards.length === 0) {
+    if (updateFunc) performFlipAnimation(updateFunc);
+    return;
+  }
+  
+  let targetBtn = Array.from(document.querySelectorAll('.pinterest-folder-title')).find(el => el.textContent === targetFolder);
+  if (targetBtn) targetBtn = targetBtn.closest('.vault-folder-btn');
+  
+  let targetRect = null;
+  if (targetBtn) {
+    targetRect = targetBtn.getBoundingClientRect();
+  } else {
+    targetRect = { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+  }
+  
+  const clones = [];
+  selectedCards.forEach(card => {
+    const rect = card.getBoundingClientRect();
+    const clone = card.cloneNode(true);
+    clone.style.position = 'fixed';
+    clone.style.left = rect.left + 'px';
+    clone.style.top = rect.top + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.height = rect.height + 'px';
+    clone.style.margin = '0';
+    clone.style.zIndex = '9999';
+    clone.style.transition = 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+    clone.style.pointerEvents = 'none';
+    
+    document.body.appendChild(clone);
+    clones.push(clone);
+  });
+  
+  requestAnimationFrame(() => {
+    clones.forEach(clone => {
+      const centerX = targetRect.left + targetRect.width / 2;
+      const centerY = targetRect.top + targetRect.height / 2;
+      
+      const currentRect = clone.getBoundingClientRect();
+      const currentCenterX = currentRect.left + currentRect.width / 2;
+      const currentCenterY = currentRect.top + currentRect.height / 2;
+      
+      const translateX = centerX - currentCenterX;
+      const translateY = centerY - currentCenterY;
+      
+      clone.style.transform = `translate(${translateX}px, ${translateY}px) scale(0.1)`;
+      clone.style.opacity = '0';
+    });
+  });
+  
+  setTimeout(() => {
+    clones.forEach(c => c.remove());
+  }, 400);
+
+  if (updateFunc) performFlipAnimation(updateFunc);
+}
+
+function animateItemsOut(updateFunc) {
+  const selectedCards = Array.from(document.querySelectorAll('.card.bulk-selected'));
+  if (selectedCards.length === 0) {
+    if (updateFunc) performFlipAnimation(updateFunc);
+    return;
+  }
+  
+  const clones = [];
+  selectedCards.forEach(card => {
+    const rect = card.getBoundingClientRect();
+    const clone = card.cloneNode(true);
+    clone.style.position = 'fixed';
+    clone.style.left = rect.left + 'px';
+    clone.style.top = rect.top + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.height = rect.height + 'px';
+    clone.style.margin = '0';
+    clone.style.zIndex = '9999';
+    clone.style.transition = 'all 0.3s ease';
+    clone.style.pointerEvents = 'none';
+    
+    document.body.appendChild(clone);
+    clones.push(clone);
+  });
+  
+  requestAnimationFrame(() => {
+    clones.forEach(clone => {
+      clone.style.transform = 'scale(0.8)';
+      clone.style.opacity = '0';
+    });
+  });
+  
+  setTimeout(() => {
+    clones.forEach(c => c.remove());
+  }, 300);
+
+  if (updateFunc) performFlipAnimation(updateFunc);
+}
+
 if (bulkEditBtn) bulkEditBtn.addEventListener('click', toggleBulkMode);
 if (bulkCancelBtn) bulkCancelBtn.addEventListener('click', toggleBulkMode);
 
@@ -1499,12 +1640,16 @@ document.getElementById('bulk-move-btn')?.addEventListener('click', () => {
 
   localforage.setItem('r34_vault_v2', vaultedPosts);
   triggerToastNotification(`Moved ${selectedVaultPosts.size} items to ${targetFolder}.`);
-  toggleBulkMode();
-  if (typeof renderVaultGridToDedicatedView === 'function') {
-    renderVaultGridToDedicatedView();
-  }
-  if (typeof renderVaultFoldersNav === 'function') {
-    renderVaultFoldersNav();
+  if (typeof animateItemsToFolder === 'function') {
+    animateItemsToFolder(targetFolder, () => {
+      document.querySelectorAll('.card.bulk-selected').forEach(card => card.remove());
+      toggleBulkMode();
+      if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
+    });
+  } else {
+    document.querySelectorAll('.card.bulk-selected').forEach(card => card.remove());
+    toggleBulkMode();
+    if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
   }
 });
 
@@ -1517,12 +1662,21 @@ document.getElementById('bulk-delete-btn')?.addEventListener('click', () => {
 
   triggerToastNotification(`Deleted ${selectedVaultPosts.size} items.`);
   syncVaultCounterDisplay();
-  toggleBulkMode();
-  if (typeof renderVaultGridToDedicatedView === 'function') {
-    renderVaultGridToDedicatedView();
-  }
-  if (typeof renderVaultFoldersNav === 'function') {
-    renderVaultFoldersNav();
+  
+  if (typeof animateItemsOut === 'function') {
+    animateItemsOut(() => {
+      document.querySelectorAll('.card.bulk-selected').forEach(card => card.remove());
+      toggleBulkMode();
+      if (typeof renderVaultFoldersNav === 'function') {
+        renderVaultFoldersNav();
+      }
+    });
+  } else {
+    document.querySelectorAll('.card.bulk-selected').forEach(card => card.remove());
+    toggleBulkMode();
+    if (typeof renderVaultFoldersNav === 'function') {
+      renderVaultFoldersNav();
+    }
   }
 });
 

@@ -3853,3 +3853,27 @@ body.video-mode .main-content {
   outline: 2px solid var(--accent) !important;
   outline-offset: 2px !important;
 }
+/* Glassmorphism for Taskbar Select */
+.task-bar-select {
+  background: rgba(30, 30, 40, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.task-bar-select:hover, .task-bar-select:focus {
+  background: rgba(40, 40, 50, 0.7);
+  border-color: var(--accent-purple);
+}
+
+.task-bar-select option {
+  background: var(--surface);
+  color: var(--text);
+}
