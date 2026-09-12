@@ -121,7 +121,7 @@ const masonryObserver = new ResizeObserver(entries => {
 
 window.refreshMasonryLayout = function (container = document) {
   const root = container instanceof Element || container instanceof Document ? container : document;
-  queueMasonryLayout(Array.from(root.querySelectorAll('.card:not(.skeleton-card)')));
+  queueMasonryLayout(Array.from(root.querySelectorAll('.card:not(.skeleton-card), .lb-hero-card')));
 };
 
 let masonryResizeTimer;
@@ -809,12 +809,19 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
   const newCards = []; // Store references for batch layout calculation
 
   const isVault = targetContainer.id === 'vault-grid';
-  const plopStagger = isVault ? 50 : 40; // ms between each card's plop
+  const plopStagger = isVault ? 15 : 10; // ms between each card's plop (reduced for speed)
 
   data.forEach((post, index) => {
-    const fileUrl = post.file_url || post.sample_url || post.preview_url;
-    const previewUrl = post.preview_url || post.sample_url || post.file_url;
+    let fileUrl = post.file_url || post.sample_url || post.preview_url;
+    let previewUrl = post.preview_url || post.sample_url || post.file_url;
     if (!fileUrl) return;
+
+    // Gelbooru tightly restricts hotlinking and requires spoofing the Referer header.
+    // We route their images through the proxy worker where the header is injected.
+    if (post._api_source === 'gelbooru') {
+      fileUrl = PROXY + encodeURIComponent(fileUrl);
+      previewUrl = PROXY + encodeURIComponent(previewUrl);
+    }
     const ext = fileUrl.split('.').pop().toLowerCase();
     const isVideo = ['mp4', 'webm'].includes(ext);
     const card = document.createElement('div');
@@ -831,6 +838,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     }
 
     const img = document.createElement('img');
+    img.referrerPolicy = 'no-referrer';
     img.loading = 'lazy';
     img.decoding = 'async'; // Offload image decoding from main thread
     img.alt = '';
@@ -849,13 +857,11 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     const plopDelay = Math.min(index * plopStagger, 2000);
 
     img.onload = () => {
-      setTimeout(() => {
-        card.classList.remove('is-media-loading');
-        card.setAttribute('aria-busy', 'false');
-        img.style.opacity = '1';
-        card.classList.add('plop-in');
-        if (typeof window.refreshMasonryLayout === 'function') window.refreshMasonryLayout(card.parentElement);
-      }, plopDelay);
+      card.classList.remove('is-media-loading');
+      card.setAttribute('aria-busy', 'false');
+      img.style.opacity = '1';
+      card.classList.add('plop-in');
+      if (typeof window.refreshMasonryLayout === 'function') window.refreshMasonryLayout(card.parentElement);
     };
 
     if (typeof window.attachMediaFallback === 'function') {
@@ -872,6 +878,7 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
       card.addEventListener('mouseenter', () => {
         if (typeof isVaultBulkMode !== 'undefined' && isVaultBulkMode) return;
         const v = document.createElement('video');
+        v.referrerPolicy = 'no-referrer';
         v.src = typeof getOptimizedVideoUrl === 'function' ? getOptimizedVideoUrl(fileUrl) : fileUrl; v.muted = true; v.loop = true; v.playsInline = true; v.disablePictureInPicture = true; v.controlsList = "nodownload noplaybackrate"; v.className = 'hover-video';
         v.style.pointerEvents = 'none'; // Block Opera UI injections
         card.appendChild(v); v.play().catch(() => { });
@@ -1715,16 +1722,24 @@ let currentPreloadPage = 0;
 const PRELOAD_BUFFER_SIZE = 3;
 
 async function fetchStandardBatch(tagsParam, page, isBackground = false) {
-  const url = `${API}&tags=${encodeURIComponent(tagsParam).replace(/%2B/g, '+')}&limit=${PER_PAGE}&pid=${page}&json=1`;
+  // Count actual search tags (Danbooru counts ALL tags including modifiers, negative tags, and meta-tags)
+  const tagCount = tagsParam.split(/[+ ]+/).filter(t => t && t !== 'all').length;
+  const source = getNextApiSource(tagCount);
+  const url = buildSearchUrl(source, tagsParam, PER_PAGE, page);
+  console.log(`[API ROTATION] Fetching from ${source.name} (page ${page})`);
   try {
     const res = await throttledFetch(PROXY + encodeURIComponent(url), {}, isBackground);
     const responseText = await res.text();
     if (!res.ok || !responseText.trim()) return null;
-    return JSON.parse(responseText);
+    const rawData = JSON.parse(responseText);
+    const posts = extractPostsArray(rawData, source.format);
+    if (!posts || posts.length === 0) return null;
+    return posts.map(p => normalizePost(p, source.format));
   } catch (err) {
     return null;
   }
 }
+
 
 async function startContinuousPreload(tagsParam, startPage) {
   // If already preloading for this EXACT query ahead of the requested start page, let it keep running

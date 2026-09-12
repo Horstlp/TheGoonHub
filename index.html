@@ -669,58 +669,65 @@
     <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous Image">‹</button>
 
     <div class="lightbox-scroll-content">
-      <!-- Pinterest-Style Floating Card -->
-      <div class="lb-pinterest-card">
-        <!-- Left: Media -->
-        <div class="lb-card-media">
-          <div id="lightbox-media-container" aria-live="polite"></div>
-        </div>
-
-        <!-- Right: Details Panel -->
-        <div class="lb-card-details">
-          <!-- Action Bar Header -->
-          <div class="lb-card-header">
-            <div class="lb-header-left">
-              <button id="lightbox-back" class="lb-header-btn" aria-label="Go Back" style="display: none;">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-              </button>
+      <!-- Recommendation Section (now acts as the main scrollable container) -->
+      <div id="lightbox-recommendations" style="width: 100%; padding: 24px; display: none;">
+        <div id="lb-recommendations-grid" class="vault-grid-layout" role="list" aria-label="Recommended Images">
+          <!-- Pinterest-Style Floating Card (now the first item in the grid) -->
+          <div id="lb-hero-card" class="lb-pinterest-card lb-hero-card">
+            <!-- Left: Media -->
+            <div class="lb-card-media">
+              <div id="lightbox-media-container" aria-live="polite"></div>
             </div>
-            <div class="lb-header-right">
-              <div class="pinterest-save-widget" id="lb-pinterest-widget">
-                <div class="custom-select-wrapper" id="lb-folder-select-wrapper">
-                  <button class="pinterest-folder-select" id="lb-folder-select">Saved</button>
+
+            <!-- Right: Details Panel -->
+            <div class="lb-card-details-wrapper" style="position: relative; flex: 1 1 42%; max-width: 420px; min-width: 280px;">
+              <div class="lb-card-details" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;">
+              <!-- Action Bar Header -->
+              <div class="lb-card-header">
+                <div class="lb-header-left">
+                  <button id="lightbox-back" class="lb-header-btn" aria-label="Go Back" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+                  </button>
                 </div>
-                <button class="pinterest-save-btn" id="lb-save-btn">Merken</button>
-                <ul class="custom-options-list card-folder-list" id="lb-folder-options"></ul>
+                <div class="lb-header-right">
+                  <div class="pinterest-save-widget" id="lb-pinterest-widget">
+                    <div class="custom-select-wrapper" id="lb-folder-select-wrapper">
+                      <button class="pinterest-folder-select" id="lb-folder-select">Saved</button>
+                    </div>
+                    <button class="pinterest-save-btn" id="lb-save-btn">Merken</button>
+                    <ul class="custom-options-list card-folder-list" id="lb-folder-options"></ul>
+                  </div>
+                  <button class="lb-header-btn" id="lb-dl-btn" aria-label="Download Image" title="Download">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  <button id="lightbox-close" class="lb-header-btn" aria-label="Close Lightbox" title="Close">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                  <button id="lightbox-slim-close" class="lb-header-btn" aria-label="Close Lightbox Completely" style="display: none;" title="Close">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
               </div>
-              <button class="lb-header-btn" id="lb-dl-btn" aria-label="Download Image" title="Download">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </button>
-              <button id="lightbox-close" class="lb-header-btn" aria-label="Close Lightbox" title="Close">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-              <button id="lightbox-slim-close" class="lb-header-btn" aria-label="Close Lightbox Completely" style="display: none;" title="Close">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+
+              <!-- Meta Info -->
+              <div class="lb-card-meta">
+                <span id="lb-score"></span>
+                <span class="lb-meta-dot">·</span>
+                <span id="lb-size"></span>
+              </div>
+
+              <!-- Tags Dropdown -->
+              <div class="lb-tags-header" id="lb-tags-toggle">
+                <span>Tags</span>
+                <svg id="lb-tags-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div id="lb-tags-collapse-container" style="display: none;">
+                <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
+              </div>
+              </div>
             </div>
           </div>
-
-          <!-- Meta Info -->
-          <div class="lb-card-meta">
-            <span id="lb-score"></span>
-            <span class="lb-meta-dot">·</span>
-            <span id="lb-size"></span>
-          </div>
-
-          <!-- Tags -->
-          <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
         </div>
-      </div>
-
-      <!-- Recommendation Section -->
-      <div id="lightbox-recommendations" style="width: 100%; max-width: 1400px; padding: 0 40px; margin-top: 60px; display: none;">
-        <h2 style="color: white; margin-bottom: 24px; font-size: 1.5rem; text-align: left; font-weight: bold;">More like this</h2>
-        <div id="lb-recommendations-grid" class="vault-grid-layout" role="list" aria-label="Recommended Images"></div>
         <div id="lb-recommendations-status" class="text-center text-muted p-4" aria-live="polite"></div>
       </div>
     </div>

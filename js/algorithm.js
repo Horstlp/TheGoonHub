@@ -239,24 +239,43 @@ async function resolveTopTagTypes(sortedTags, limit = 100) {
     }
 }
 
-// Fetch helper that normalizes the Rule34 JSON response
+// Fetch helper that uses multi-API rotation to distribute load
 async function fetchR34Posts(query, limit, page = 0, isBackground = false) {
-    // We MUST use the API constant from api.js to ensure api_key and user_id are passed, otherwise it 403s.
-    const baseUrl = typeof API !== 'undefined' ? API : 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index';
-    
     let finalQuery = query || '';
     if (typeof globalBlacklist !== 'undefined' && globalBlacklist.length > 0) {
         const blStr = globalBlacklist.map(t => `-${t}`).join(' ');
         finalQuery = finalQuery ? `${finalQuery} ${blStr}` : blStr;
     }
     
+    // Count tags to determine which sources can handle this query (Danbooru counts ALL tags including modifiers/negative tags)
+    const tagCount = finalQuery.split(/\s+/).filter(t => t).length;
+    
+    // Use rotation if available, otherwise fall back to Rule34 API constant
+    if (typeof getNextApiSource === 'function' && typeof buildSearchUrl === 'function') {
+        const source = getNextApiSource(tagCount);
+        const url = buildSearchUrl(source, finalQuery.replace(/\s+/g, '+'), limit, page);
+        console.log(`[ALGO ROTATION] Fetching from ${source.name} (query: ${finalQuery}, page ${page})`);
+        try {
+            const res = await throttledFetch(PROXY + encodeURIComponent(url), {}, isBackground);
+            const text = await res.text();
+            if (!res.ok || !text.trim()) return null;
+            const rawData = JSON.parse(text);
+            const posts = extractPostsArray(rawData, source.format);
+            if (!posts || posts.length === 0) return [];
+            return posts.map(p => normalizePost(p, source.format));
+        } catch (err) {
+            console.error('Fetch error for query:', query, err);
+            return [];
+        }
+    }
+    
+    // Fallback: use Rule34 API directly (in case api.js rotation not loaded)
+    const baseUrl = typeof API !== 'undefined' ? API : 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index';
     const url = `${baseUrl}&limit=${limit}&pid=${page}&tags=${encodeURIComponent(finalQuery)}&json=1&cb=${Date.now()}`;
     try {
         const res = await throttledFetch(PROXY + encodeURIComponent(url), {}, isBackground);
         const text = await res.text();
-        if (!text.trim()) {
-            return null;
-        }
+        if (!text.trim()) return null;
         const parsed = JSON.parse(text);
         if (!Array.isArray(parsed)) {
             if (typeof parsed === 'object' && parsed !== null && parsed.id) return [parsed];
@@ -759,7 +778,9 @@ window.getSimilarPostsForLightbox = async function(post, append = false) {
         const grid = document.getElementById('lb-recommendations-grid');
         const status = document.getElementById('lb-recommendations-status');
         if (grid) {
-            grid.innerHTML = '';
+            Array.from(grid.children).forEach(child => {
+                if (child.id !== 'lb-hero-card') child.remove();
+            });
             if (typeof window.renderGridSkeletons === 'function') window.renderGridSkeletons(grid, 6);
         }
         
@@ -810,7 +831,7 @@ window.getSimilarPostsForLightbox = async function(post, append = false) {
     });
     
     const primaryPool = subjectTags.length > 0 ? subjectTags : modifierTags;
-    const fetchAmount = 6;
+    const fetchAmount = 24;
     const countPerTag = 5;
     const queries = [];
     const tagsToQuery = selectWeightedTags(primaryPool, fetchAmount);

@@ -1,5 +1,161 @@
 let PROXY = localStorage.getItem('r34_proxy_url') || 'https://frosty-forest-2c7f.markus4free.workers.dev/?url='; // IMPORTANT: Keep the /?url= at the end
-const API = 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&api_key=2116381cf8a58c1de26faacfac84d760099e863311a98c1d060028461c82ab831d579f74e72983e6af34adbb661039c6a610d8f422be912fee3cb90b39d38f1a&user_id=6064624';
+
+// =============================================================================
+// --- Multi-API Source Configuration ---
+// Distributes requests across multiple booru APIs via round-robin rotation.
+// Each source tracks its own health; 429'd sources are temporarily skipped.
+// =============================================================================
+const API_SOURCES = {
+  rule34: {
+    key: 'rule34',
+    name: 'Rule34',
+    enabled: true,
+    baseUrl: 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index',
+    auth: '&api_key=2116381cf8a58c1de26faacfac84d760099e863311a98c1d060028461c82ab831d579f74e72983e6af34adbb661039c6a610d8f422be912fee3cb90b39d38f1a&user_id=6064624',
+    tagApiBase: 'https://api.rule34.xxx/index.php?page=dapi&s=tag&q=index',
+    autocompleteUrl: 'https://api.rule34.xxx/autocomplete.php?q=',
+    format: 'rule34',       // Flat JSON array, same field names as Rule34
+    maxTags: null,           // No tag limit
+    healthy: true,
+    lastError: 0,
+    cooldownMs: 10000,       // 10s cooldown on 429
+  },
+  gelbooru: {
+    key: 'gelbooru',
+    name: 'Gelbooru',
+    enabled: true,
+    baseUrl: 'https://gelbooru.com/index.php?page=dapi&s=post&q=index',
+    auth: '&api_key=ed1dcd5a900cf19731f4f4a53c1fe133b58f2d355fb2aec7b313b5b3d8a6095125efe0830c9d775962f85cdbe875d2784c454cb4905866c35585df93da5232d2&user_id=2052759',
+    tagApiBase: 'https://gelbooru.com/index.php?page=dapi&s=tag&q=index',
+    autocompleteUrl: 'https://gelbooru.com/index.php?page=autocomplete2&term=',
+    format: 'gelbooru',      // Wraps posts in { "@attributes":{}, "post":[] }
+    maxTags: null,
+    healthy: true,
+    lastError: 0,
+    cooldownMs: 10000,
+  }
+};
+
+// Backward compatibility — algorithm.js and other code reference the `API` constant directly
+const API = API_SOURCES.rule34.baseUrl + API_SOURCES.rule34.auth;
+const AUTOCOMPLETE_API = API_SOURCES.rule34.autocompleteUrl;
+
+// --- Round-Robin API Rotator ---
+let apiRotationIndex = 0;
+
+/**
+ * Returns the next healthy, enabled API source.
+ * Skips sources that are cooling down from a 429, and sources whose tag limit
+ * would be exceeded by the current query.
+ * @param {number} tagCount - Number of tags in the current query
+ * @returns {object} The chosen API_SOURCES entry
+ */
+function getNextApiSource(tagCount = 0) {
+  const enabledSources = Object.values(API_SOURCES).filter(s => s.enabled);
+  const healthySources = enabledSources.filter(s =>
+    s.healthy && (!s.maxTags || tagCount <= s.maxTags)
+  );
+
+  if (healthySources.length === 0) {
+    // All sources are unhealthy or incompatible — reset health and fall back to Rule34
+    console.warn('[API ROTATION] All sources exhausted, resetting health flags.');
+    enabledSources.forEach(s => { s.healthy = true; });
+    return API_SOURCES.rule34;
+  }
+
+  const source = healthySources[apiRotationIndex % healthySources.length];
+  apiRotationIndex++;
+  return source;
+}
+
+/**
+ * Mark an API source as temporarily unhealthy (e.g. after a 429).
+ * It auto-recovers after its configured cooldown period.
+ */
+function markApiUnhealthy(sourceKey) {
+  const src = API_SOURCES[sourceKey];
+  if (!src) return;
+  src.healthy = false;
+  src.lastError = Date.now();
+  console.warn(`[API ROTATION] ${src.name} marked unhealthy. Cooling down for ${src.cooldownMs / 1000}s...`);
+  if (typeof triggerToastNotification === 'function') {
+    triggerToastNotification(`${src.name} API rate-limited. Rotating to other sources...`);
+  }
+  setTimeout(() => {
+    src.healthy = true;
+    console.log(`[API ROTATION] ${src.name} recovered, re-entering rotation.`);
+  }, src.cooldownMs);
+}
+
+// --- URL Builder per source format ---
+/**
+ * Builds the correct search URL for a given API source.
+ * Danbooru uses a completely different URL structure than Rule34/Gelbooru.
+ */
+function buildSearchUrl(source, tags, limit, page) {
+  if (source.format === 'danbooru') {
+    // Danbooru: /posts.json?tags=X&limit=N&page=N (1-indexed pages)
+    const cleanTags = tags.replace(/\+/g, ' ').trim();
+    let url = `${source.baseUrl}?tags=${encodeURIComponent(cleanTags)}&limit=${limit}&page=${page + 1}`;
+    if (source.auth) url += source.auth;
+    return url;
+  }
+  // Rule34 / Gelbooru: /index.php?page=dapi&s=post&q=index&tags=X&limit=N&pid=N&json=1
+  let url = `${source.baseUrl}${source.auth}&tags=${encodeURIComponent(tags).replace(/%2B/g, '+')}&limit=${limit}&pid=${page}&json=1`;
+  return url;
+}
+
+// --- Response Normalizer ---
+// Maps different API response formats to the standard post object shape
+// that the rest of the app (grid, lightbox, vault, algorithm) expects:
+//   { id, score, file_url, preview_url, sample_url, tags, width, height, rating, source }
+
+/**
+ * Normalizes a single post from any source into the standard format.
+ */
+function normalizePost(post, sourceFormat) {
+  if (sourceFormat === 'danbooru') {
+    return {
+      id: post.id,
+      score: post.score || 0,
+      file_url: post.file_url || '',
+      preview_url: post.preview_file_url || '',
+      sample_url: post.large_file_url || post.file_url || '',
+      tags: post.tag_string || '',
+      width: post.image_width || 0,
+      height: post.image_height || 0,
+      rating: post.rating || '',
+      source: post.source || '',
+      _api_source: 'danbooru'
+    };
+  }
+  // Rule34 and Gelbooru already use the expected field names
+  post._api_source = sourceFormat;
+  return post;
+}
+
+/**
+ * Extracts the posts array from a raw API response, handling format differences.
+ * - Rule34 returns a flat array: [post, post, ...]
+ * - Gelbooru wraps it: { "@attributes":{}, "post":[...] }
+ * - Danbooru returns a flat array: [post, post, ...]
+ */
+function extractPostsArray(rawData, sourceFormat) {
+  if (!rawData) return [];
+
+  // Gelbooru wraps posts in { "post": [...] }
+  if (sourceFormat === 'gelbooru') {
+    if (rawData.post && Array.isArray(rawData.post)) return rawData.post;
+    if (Array.isArray(rawData)) return rawData;
+    return [];
+  }
+
+  // Rule34 and Danbooru return flat arrays
+  if (Array.isArray(rawData)) return rawData;
+  // Single-object fallback
+  if (typeof rawData === 'object' && rawData !== null && rawData.id) return [rawData];
+  return [];
+}
 
 // --- Cloudinary Video Optimization ---
 // 1. Create a Cloudinary account.
@@ -49,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-const AUTOCOMPLETE_API = 'https://api.rule34.xxx/autocomplete.php?q=';
 const PER_PAGE = 40;
 
 let latestPostId = null;
@@ -76,27 +231,39 @@ function processFetchQueue() {
   // Launch fetch without blocking the queue
   fetch(req.url, req.options)
     .then(async res => {
-      if (res.status === 429) {
-        console.warn(`[RATE LIMIT] 429 Too Many Requests. Backing off for 3 seconds...`);
-        
+      if (res.status === 429 || res.status === 403) {
+        console.warn(`[API BLOCK] ${res.status} error. Rotating away...`);
+
+        // Detect which API source was hit and mark it unhealthy
+        const hitSourceKey = Object.keys(API_SOURCES).find(k => req.url.includes(API_SOURCES[k].baseUrl.split('/')[2]));
+        if (hitSourceKey) {
+          markApiUnhealthy(hitSourceKey);
+        }
+
         // Show user-facing notification
         if (!isCoolingDown) {
           isCoolingDown = true;
           if (typeof triggerToastNotification === 'function') {
-            triggerToastNotification("API overloaded, waiting till it cooled down...");
+            triggerToastNotification("API overloaded, rotating to another source...");
           }
           setTimeout(() => { isCoolingDown = false; }, 3000);
         }
 
-        // Re-insert at the front of the queue it came from
-        if (isHighPriority) highPriorityQueue.unshift(req);
-        else lowPriorityQueue.unshift(req);
+        // IMPORTANT: Do NOT requeue the request! That causes an infinite loop.
+        // Instead, resolve with a fake failed response so the app can move on.
+        req.resolve({
+          ok: false,
+          status: res.status,
+          text: async () => "",
+          json: async () => []
+        });
 
         clearTimeout(queueTimeoutId);
-        queueTimeoutId = setTimeout(processFetchQueue, 3000); // 3 second backoff
+        queueTimeoutId = setTimeout(processFetchQueue, currentFetchDelay);
         return;
       }
-      
+
+
       // Save successful responses to cache
       if (res.ok && req.useCache && (!req.options.method || req.options.method.toUpperCase() === 'GET')) {
         const resClone = res.clone();
@@ -109,7 +276,7 @@ function processFetchQueue() {
           } else {
             try { sessionStorage.setItem(`r34_cache_${req.url}`, cacheEntry); } catch (_) { /* Cache is optional. */ }
           }
-        } catch(jsonErr) {}
+        } catch (jsonErr) { }
       }
 
       req.resolve(res);

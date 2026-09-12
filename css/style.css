@@ -1052,7 +1052,7 @@ header p {
 }
 
 .card.plop-in {
-  animation: cardPlop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: cardPlop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes cardPlop {
@@ -1070,8 +1070,7 @@ header p {
 
 /* ── Skeleton Loading ── */
 .skeleton-loader,
-.skeleton-card,
-.card.is-media-loading > img {
+.skeleton-card {
   background: linear-gradient(90deg, var(--surface) 25%, #1e1e2a 50%, var(--surface) 75%);
   background-size: 200% 100%;
   animation: skeletonLoading 1.5s infinite ease-in-out;
@@ -1115,9 +1114,56 @@ header p {
   max-width: 85vw;
   max-height: 66vh;
   min-height: 300px;
-  border-radius: 16px;
 }
 
+/* ✨ Glass Media Loader (Replaces empty space before images load) ✨ */
+.card.is-media-loading {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.card.is-media-loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  transform: translateX(-100%);
+  animation: glassShine 1.5s infinite ease-in-out;
+  pointer-events: none;
+}
+
+.card.is-media-loading::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  border: 3px solid rgba(233, 94, 140, 0.15);
+  border-top-color: #e95e8c;
+  animation: spinPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes glassShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes spinPulse {
+  0% { transform: rotate(0deg) scale(0.85); opacity: 0.6; }
+  50% { transform: rotate(180deg) scale(1.1); opacity: 1; border-top-color: #f7a6c0; }
+  100% { transform: rotate(360deg) scale(0.85); opacity: 0.6; }
+}
+
+/* Card Images */
 .card img {
   width: 100%;
   height: auto;
@@ -1383,18 +1429,18 @@ header p {
   margin: auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
   width: 100%;
-  padding: 40px 24px 80px;
 }
 
 .lb-pinterest-card {
   display: flex;
   flex-direction: row;
-  max-width: 1100px;
-  width: 100%;
-  min-height: 400px;
-  max-height: 88vh;
+  align-items: stretch;
+  grid-column: span 3;
+  width: fit-content;
+  max-width: 60vw;
+  height: fit-content;
+  max-height: 80vh;
   background: rgba(22, 22, 31, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 32px;
@@ -1411,15 +1457,12 @@ header p {
 }
 
 .lb-card-media {
-  flex: 1 1 58%;
-  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.35);
   border-radius: 32px 0 0 32px;
   overflow: hidden;
-  position: relative;
 }
 
 #lightbox-media-container {
@@ -1428,13 +1471,13 @@ header p {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 350px;
 }
 
 #lightbox-media-container img,
 #lightbox-media-container video {
   max-width: 100%;
-  max-height: 85vh;
+  height: auto;
+  max-height: 80vh;
   object-fit: contain;
   display: block;
   margin: 0 auto;
@@ -1449,13 +1492,38 @@ header p {
 }
 
 .lb-card-details {
-  flex: 1 1 42%;
-  max-width: 420px;
-  min-width: 280px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+.lb-tags-header {
+  cursor: pointer;
+  padding: 12px 24px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(22, 22, 31, 0.65);
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+}
+
+.lb-tags-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.lb-tags-header svg {
+  transition: transform 0.2s ease;
+}
+
+.lb-tags-header.open svg {
+  transform: rotate(180deg);
 }
 
 .lb-card-details::-webkit-scrollbar { width: 4px; }
@@ -1635,13 +1703,14 @@ header p {
 
   .lb-pinterest-card {
     flex-direction: column;
-    max-height: none;
+    grid-column: 1 / -1;
     border-radius: 24px;
+    max-width: none;
+    height: auto;
   }
 
   .lb-card-media {
     border-radius: 24px 24px 0 0;
-    max-height: 50vh;
   }
 
   .lb-card-details {
@@ -1747,6 +1816,21 @@ header p {
   grid-auto-rows: 10px;
   gap: 16px;
   width: 100%;
+  grid-auto-flow: dense;
+}
+
+@media (max-width: 1300px) {
+  #lb-recommendations-grid .lb-pinterest-card {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 800px) {
+  #lb-recommendations-grid .lb-pinterest-card {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    max-width: none;
+    height: auto;
+  }
 }
 
 @keyframes vaultCardPlop {
@@ -1762,7 +1846,7 @@ header p {
 }
 
 .vault-grid-layout .card.plop-in {
-  animation: vaultCardPlop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: vaultCardPlop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 .vault-grid-layout {

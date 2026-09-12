@@ -79,10 +79,15 @@ function openLightbox(index) {
 
   const originalExt = (post.file_url || '').split('.').pop().toLowerCase();
   const isVideo = ['mp4','webm'].includes(originalExt);
-  const fileUrl = isVideo ? post.file_url : (post.sample_url || post.file_url);
+  let fileUrl = isVideo ? post.file_url : (post.sample_url || post.file_url);
+  
+  if (post._api_source === 'gelbooru') {
+    fileUrl = typeof PROXY !== 'undefined' ? PROXY + encodeURIComponent(fileUrl) : fileUrl;
+  }
   
   if (isVideo) {
     const v = document.createElement('video'); 
+    v.referrerPolicy = 'no-referrer';
     v.src = typeof getOptimizedVideoUrl === 'function' ? getOptimizedVideoUrl(fileUrl) : fileUrl; 
     v.controls = true; 
     v.preload = "metadata";
@@ -100,6 +105,7 @@ function openLightbox(index) {
       setTimeout(() => {
         lbShimmer.remove();
         v.style.opacity = '1';
+        if (typeof refreshMasonryLayout === 'function') refreshMasonryLayout(document.getElementById('lb-recommendations-grid'));
       }, 100);
     };
     // Fallback: if metadata loads but data event doesn't fire quickly
@@ -108,11 +114,13 @@ function openLightbox(index) {
         if (v.style.opacity === '0') {
           lbShimmer.remove();
           v.style.opacity = '1';
+          if (typeof refreshMasonryLayout === 'function') refreshMasonryLayout(document.getElementById('lb-recommendations-grid'));
         }
-      }, 500);
+      }, 300);
     };
   } else {
     const img = document.createElement('img');
+    img.referrerPolicy = 'no-referrer';
     img.style.opacity = '0';
     img.style.transition = 'opacity 0.4s ease';
     img.src = fileUrl;
@@ -121,6 +129,7 @@ function openLightbox(index) {
       setTimeout(() => {
         lbShimmer.remove();
         img.style.opacity = '1';
+        if (typeof refreshMasonryLayout === 'function') refreshMasonryLayout(document.getElementById('lb-recommendations-grid'));
       }, 120);
     };
   }
@@ -245,6 +254,19 @@ function openLightbox(index) {
           getSimilarPostsForLightbox(post);
       }
   }
+  
+  // Apply saved tags state
+  const lbTagsToggle = document.getElementById('lb-tags-toggle');
+  const lbTagsContainer = document.getElementById('lb-tags-collapse-container');
+  if (lbTagsToggle && lbTagsContainer) {
+      if (window.lightboxTagsOpen) {
+          lbTagsContainer.style.display = 'block';
+          lbTagsToggle.classList.add('open');
+      } else {
+          lbTagsContainer.style.display = 'none';
+          lbTagsToggle.classList.remove('open');
+      }
+  }
 }
 
 function closeLightbox() {
@@ -276,3 +298,26 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
   document.querySelectorAll('.card-folder-list.open').forEach(list => list.classList.remove('open'));
 });
+
+// Tags Dropdown Toggle Logic
+const lbTagsToggleBtn = document.getElementById('lb-tags-toggle');
+const lbTagsContainerBox = document.getElementById('lb-tags-collapse-container');
+
+if (lbTagsToggleBtn && lbTagsContainerBox) {
+    lbTagsToggleBtn.addEventListener('click', () => {
+        const isOpen = lbTagsContainerBox.style.display === 'block';
+        if (isOpen) {
+            lbTagsContainerBox.style.display = 'none';
+            lbTagsToggleBtn.classList.remove('open');
+            window.lightboxTagsOpen = false;
+        } else {
+            lbTagsContainerBox.style.display = 'block';
+            lbTagsToggleBtn.classList.add('open');
+            window.lightboxTagsOpen = true;
+        }
+        // Force masonry layout update after toggle animation
+        setTimeout(() => {
+            if (typeof refreshMasonryLayout === 'function') refreshMasonryLayout(document.getElementById('lb-recommendations-grid'));
+        }, 50);
+    });
+}
