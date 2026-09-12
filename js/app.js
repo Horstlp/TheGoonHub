@@ -95,10 +95,20 @@ function resizeGridItem(item) {
   const rowHeight = 10; // Matches grid-auto-rows in CSS
   const rowGap = 16;    // Matches gap in CSS
 
+  // Reset explicit height to measure natural height
+  if (item.classList.contains('lb-hero-card')) {
+      item.style.height = '';
+  }
+
   // Use offsetHeight instead of getBoundingClientRect().height because
   // offsetHeight is NOT affected by CSS transforms (scale), preventing overlap.
   const rowSpan = Math.ceil((item.offsetHeight + rowGap) / (rowHeight + rowGap));
   item.style.gridRowEnd = `span ${rowSpan}`;
+
+  // Snap the hero card to the exact height of the allocated grid span to prevent bottom gaps
+  if (item.classList.contains('lb-hero-card')) {
+      item.style.height = (rowSpan * rowHeight + (rowSpan - 1) * rowGap) + 'px';
+  }
 }
 
 const pendingMasonryCards = new Set();
@@ -847,6 +857,8 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
     // doesn't have to wait for the image to download to calculate the layout.
     if (post.width && post.height) {
       img.style.aspectRatio = `${post.width} / ${post.height}`;
+    } else {
+      img.style.aspectRatio = '4 / 3'; // Fallback to prevent collapsed slivers
     }
 
     img.style.opacity = '0';
@@ -2263,24 +2275,9 @@ if (vaultImportInput) vaultImportInput.addEventListener('change', (e) => {
   if (e.target.files.length > 0) importVault(e.target.files[0]);
 });
 
-// Global Settings Modal Logic
-const globalSettingsModal = document.getElementById('global-settings-modal');
-const vaultSettingsBtn = document.getElementById('vault-settings-btn');
-const globalSettingsClose = document.getElementById('global-settings-close');
-
-if (vaultSettingsBtn) {
-  vaultSettingsBtn.addEventListener('click', () => {
-    renderBlacklist();
-    renderWhitelist();
-    globalSettingsModal.style.display = 'flex';
-  });
-}
-
-if (globalSettingsClose) {
-  globalSettingsClose.addEventListener('click', () => {
-    globalSettingsModal.style.display = 'none';
-  });
-}
+// Global Settings View Initialization
+renderBlacklist();
+renderWhitelist();
 
 function renderWhitelist() {
   const container = document.getElementById('whitelist-tags');
@@ -2487,3 +2484,115 @@ if (vaultView && mainTaskbar) {
     }
   }).observe(vaultView, { attributes: true, attributeFilter: ['style'] });
 }
+
+// Settings Tab Logic
+const settingsTabs = document.querySelectorAll('.settings-tab');
+const settingsPanes = document.querySelectorAll('.settings-pane');
+
+settingsTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Remove active from all
+    settingsTabs.forEach(t => t.classList.remove('active'));
+    settingsPanes.forEach(p => p.style.display = 'none');
+    
+    // Add active to clicked
+    tab.classList.add('active');
+    const targetId = tab.getAttribute('data-target');
+    const targetPane = document.getElementById(targetId);
+    if (targetPane) {
+      targetPane.style.display = 'flex';
+    }
+  });
+});
+
+// --- NEW SETTINGS LOGIC ---
+const bindSetting = async (id, type, defaultVal) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const stored = await localforage.getItem(id);
+  if (stored !== null) {
+    if (type === 'checkbox') el.checked = stored;
+    else el.value = stored;
+  } else {
+    if (type === 'checkbox') el.checked = defaultVal;
+    else el.value = defaultVal;
+  }
+  
+  el.addEventListener('change', () => {
+    const val = type === 'checkbox' ? el.checked : el.value;
+    localforage.setItem(id, val);
+  });
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Bind new inputs
+  await bindSetting('setting-username', 'text', '');
+  await bindSetting('setting-avatar', 'text', '');
+  await bindSetting('setting-algo-slider', 'range', '50');
+  await bindSetting('setting-score-slider', 'range', '0');
+  await bindSetting('setting-theme', 'select', 'purple');
+  await bindSetting('setting-autoplay', 'checkbox', true);
+  await bindSetting('setting-blur', 'checkbox', false);
+  await bindSetting('setting-data-saver', 'checkbox', false);
+  
+  // Dynamic Insights Calculation
+  const updateInsights = async () => {
+    const vault = await localforage.getItem('r34_vault') || [];
+    const liked = await localforage.getItem('r34_liked_posts') || [];
+    const folders = await localforage.getItem('r34_vault_folders') || [];
+    
+    const vaultEl = document.getElementById('insight-vault-items');
+    if (vaultEl) vaultEl.textContent = vault.length;
+    
+    const likedEl = document.getElementById('insight-liked-posts');
+    if (likedEl) likedEl.textContent = liked.length;
+    
+    const foldersEl = document.getElementById('insight-vault-folders');
+    if (foldersEl) foldersEl.textContent = folders.length;
+    
+    // Filtered Tags = globalWhitelist + globalBlacklist length
+    const totalFilters = globalWhitelist.length + globalBlacklist.length;
+    const filteredEl = document.getElementById('insight-filtered-tags');
+    if (filteredEl) filteredEl.textContent = totalFilters;
+  };
+
+  // Avatar and Profile live update
+  const avatarInput = document.getElementById('setting-avatar');
+  const sidebarAvatar = document.getElementById('sidebar-avatar');
+  const usernameInput = document.getElementById('setting-username');
+
+  const updateProfile = () => {
+    if (avatarInput && sidebarAvatar && avatarInput.value.trim() !== '') {
+      sidebarAvatar.src = avatarInput.value;
+    }
+    if (usernameInput && sidebarAvatar) {
+      sidebarAvatar.title = usernameInput.value || "Guest User";
+    }
+  };
+
+  if (avatarInput) avatarInput.addEventListener('input', updateProfile);
+  if (usernameInput) usernameInput.addEventListener('input', updateProfile);
+
+  // Danger Zone
+  const clearDataBtn = document.getElementById('setting-clear-data');
+  if (clearDataBtn) {
+    clearDataBtn.addEventListener('click', async () => {
+      if (confirm("Are you sure you want to permanently delete ALL your local data? This cannot be undone!")) {
+        await localforage.clear();
+        location.reload();
+      }
+    });
+  }
+
+  // Initial load
+  updateInsights();
+  updateProfile();
+  // Realtime display for score slider
+  const scoreSlider = document.getElementById('setting-score-slider');
+  const scoreVal = document.getElementById('setting-score-val');
+  if (scoreSlider && scoreVal) {
+    scoreSlider.addEventListener('input', () => scoreVal.textContent = scoreSlider.value);
+    scoreVal.textContent = scoreSlider.value;
+  }
+});
+

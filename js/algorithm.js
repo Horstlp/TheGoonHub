@@ -446,16 +446,16 @@ let currentAlgoPreloadPage = 0;
 const ALGO_PRELOAD_BUFFER_SIZE = 3;
 
 async function getAlgoBatchQueries(pageIndex, isBackground = false) {
-    const batchSize = parseInt(algoValBatch.value || 30);
+    const batchSize = parseInt(algoValBatch?.value || 30);
     const sortedTags = analyzeVaultTags(window.algoTargetFolder);
     const hasTags = sortedTags.length > 0;
     
     // If a targeted folder is selected, turn down random content to 0 (100% targeted)
     // If vault is empty, set ratio to 1.0 to load general discoveries
-    const ratio = hasTags ? (window.algoTargetFolder ? 0 : (parseInt(algoValRatio.value || 50) / 100)) : 1.0;
-    const fetchAmount = parseInt(algoValFetches.value || 9);
-    const freshnessRatio = window.algoTargetFolder ? 0.1 : (parseInt(algoValFreshness.value || 30) / 100);
-    const baseSearch = algoBaseSearch.value.trim();
+    const ratio = hasTags ? (window.algoTargetFolder ? 0 : (parseInt(algoValRatio?.value || 50) / 100)) : 1.0;
+    const fetchAmount = parseInt(algoValFetches?.value || 9);
+    const freshnessRatio = window.algoTargetFolder ? 0.1 : (parseInt(algoValFreshness?.value || 30) / 100);
+    const baseSearch = algoBaseSearch?.value?.trim() || '';
     
     const randomCount = Math.round(batchSize * ratio);
     const targetedCount = batchSize - randomCount;
@@ -465,11 +465,11 @@ async function getAlgoBatchQueries(pageIndex, isBackground = false) {
     await resolveTopTagTypes(sortedTags, 100);
     
     const multipliers = {
-        'character': parseFloat(algoValChar.value),
-        'artist': parseFloat(algoValArtist.value),
-        'copyright': parseFloat(algoValSeries.value),
-        'general': parseFloat(algoValGeneral.value),
-        'metadata': parseFloat(algoValGeneral.value)
+        'character': parseFloat(algoValChar?.value || 1.0),
+        'artist': parseFloat(algoValArtist?.value || 1.0),
+        'copyright': parseFloat(algoValSeries?.value || 1.0),
+        'general': parseFloat(algoValGeneral?.value || 1.0),
+        'metadata': parseFloat(algoValGeneral?.value || 1.0)
     };
     
     const subjectTags = [];
@@ -490,16 +490,18 @@ async function getAlgoBatchQueries(pageIndex, isBackground = false) {
     
     // Update Insights UI (Only visually updates when it resolves, which is fine)
     const allWeighted = [...subjectTags, ...modifierTags].sort((a,b) => b.weight - a.weight);
-    algoInsights.innerHTML = '<span class="text-muted text-sm mr-2">Top Weighted Influences:</span>';
-    allWeighted.slice(0, 5).forEach(t => {
-        const pill = document.createElement('span');
-        pill.className = 'lb-stream-tag';
-        pill.textContent = `${t.tag} (${t.weight.toFixed(1)})`;
-        if (t.type === 'character') pill.style.borderColor = '#34d399';
-        if (t.type === 'artist') pill.style.borderColor = '#fbbf24';
-        if (t.type === 'copyright') pill.style.borderColor = '#a78bfa';
-        algoInsights.appendChild(pill);
-    });
+    if (algoInsights) {
+        algoInsights.innerHTML = '<span class="text-muted text-sm mr-2">Top Weighted Influences:</span>';
+        allWeighted.slice(0, 5).forEach(t => {
+            const pill = document.createElement('span');
+            pill.className = 'lb-stream-tag';
+            pill.textContent = `${t.tag} (${t.weight.toFixed(1)})`;
+            if (t.type === 'character') pill.style.borderColor = '#34d399';
+            if (t.type === 'artist') pill.style.borderColor = '#fbbf24';
+            if (t.type === 'copyright') pill.style.borderColor = '#a78bfa';
+            algoInsights.appendChild(pill);
+        });
+    }
 
     const queries = [];
     
@@ -781,7 +783,7 @@ window.getSimilarPostsForLightbox = async function(post, append = false) {
             Array.from(grid.children).forEach(child => {
                 if (child.id !== 'lb-hero-card') child.remove();
             });
-            if (typeof window.renderGridSkeletons === 'function') window.renderGridSkeletons(grid, 6);
+            if (typeof window.renderGridSkeletons === 'function') window.renderGridSkeletons(grid, 15);
         }
         
         if (window.lbAlgoCache[post.id] && window.lbAlgoCache[post.id].length > 0) {
@@ -920,3 +922,4 @@ window.getSimilarPostsForLightbox = async function(post, append = false) {
         }
     });
 };
+

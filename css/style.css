@@ -1071,7 +1071,10 @@ header p {
 /* ── Skeleton Loading ── */
 .skeleton-loader,
 .skeleton-card {
-  background: linear-gradient(90deg, var(--surface) 25%, #1e1e2a 50%, var(--surface) 75%);
+  background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   background-size: 200% 100%;
   animation: skeletonLoading 1.5s infinite ease-in-out;
 }
@@ -1085,10 +1088,6 @@ header p {
   border-radius: 15px;
   overflow: hidden;
   pointer-events: none;
-}
-
-.skeleton-card {
-  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .skeleton-media {
@@ -1426,7 +1425,7 @@ header p {
 }
 
 .lightbox-scroll-content {
-  margin: auto;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -1437,10 +1436,9 @@ header p {
   flex-direction: row;
   align-items: stretch;
   grid-column: span 3;
-  width: fit-content;
-  max-width: 60vw;
+  width: 100%;
+  max-width: none;
   height: fit-content;
-  max-height: 80vh;
   background: rgba(22, 22, 31, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 32px;
@@ -1494,6 +1492,8 @@ header p {
 .lb-card-details {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 300px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -3960,4 +3960,211 @@ body.video-mode .main-content {
 .task-bar-select option {
   background: var(--surface);
   color: var(--text);
+}
+
+/* === FULL SCREEN SETTINGS PAGE === */
+#view-settings {
+  background: var(--bg);
+  min-height: 100vh;
+}
+.settings-page-content {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+}
+.settings-section {
+  background: rgba(30, 30, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.settings-section:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+.settings-section h3 {
+  font-size: 1.4rem !important;
+  color: #fff !important;
+  margin-bottom: 16px !important;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.settings-section h3::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 24px;
+  background: var(--accent-purple);
+  border-radius: 4px;
+}
+.settings-section p.modal-desc, .settings-section p.modal-label {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.settings-section input[type="text"], .settings-section select {
+  width: 100%;
+  background: rgba(0,0,0,0.3) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  color: #fff !important;
+  padding: 14px 16px !important;
+  border-radius: 12px !important;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+.settings-section input[type="text"]:focus, .settings-section select:focus {
+  border-color: var(--accent-purple) !important;
+  box-shadow: 0 0 0 2px rgba(233, 94, 140, 0.3) !important;
+}
+.settings-section .btn-surface-flex, .settings-section .btn-purple-md {
+  padding: 12px 24px !important;
+  border-radius: 12px !important;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+.settings-section .btn-surface-flex {
+  background: rgba(255,255,255,0.1) !important;
+  color: #fff !important;
+}
+.settings-section .btn-surface-flex:hover {
+  background: rgba(255,255,255,0.15) !important;
+}
+.settings-section .btn-purple-md {
+  background: var(--accent-purple) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 15px rgba(233, 94, 140, 0.4) !important;
+}
+.settings-section .btn-purple-md:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* === SETTINGS TABS (PINTEREST STYLE) === */
+.settings-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  gap: 60px;
+  padding: 0 40px 60px 40px;
+  align-items: flex-start;
+}
+
+.settings-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 250px;
+  position: sticky;
+  top: 40px;
+}
+
+.settings-tab {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 1.15rem;
+  font-weight: 500;
+  text-align: left;
+  padding: 0 0 8px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  width: fit-content;
+  white-space: nowrap;
+}
+
+.settings-tab:hover {
+  color: var(--accent-purple);
+}
+
+.settings-tab.active {
+  font-weight: 700;
+  border-bottom: 3px solid #fff; /* Pinterest uses stark contrast, white on dark mode */
+}
+
+.settings-content-area {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.settings-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+@media (max-width: 800px) {
+  .settings-container {
+    flex-direction: column;
+    gap: 32px;
+    padding: 0 20px 40px 20px;
+  }
+  .settings-sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    width: 100%;
+    gap: 20px;
+    position: static;
+    padding-bottom: 10px;
+  }
+  .settings-tab {
+    font-size: 1rem;
+  }
+}
+
+/* === PREMIUM TOGGLE SWITCHES === */
+.toggle-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-switch .slider {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  transition: .3s;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+.toggle-switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.toggle-switch input:checked + .slider {
+  background-color: var(--accent-purple);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 0 8px rgba(233, 94, 140, 0.4);
+}
+.toggle-switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+.toggle-switch .toggle-label {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 500;
 }

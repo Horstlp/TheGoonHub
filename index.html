@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -41,16 +41,13 @@
         <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images" aria-controls="view-images" aria-current="page">
           <img src="Icons/icons8-image-48.png" alt="Images" width="24" height="24" style="pointer-events:none;">
         </button>
-        <button class="sidebar-item" id="nav-manga" title="Manga" aria-label="View Manga" aria-controls="view-manga">
-          <img src="Icons/icons8-book-48.png" alt="Manga" width="24" height="24" style="pointer-events:none;">
-        </button>
-        <button class="sidebar-item" id="nav-algo" title="Algorithm" aria-label="View Algorithm" aria-controls="view-algo">
-          <img src="Icons/icons8-star-48.png" alt="Algorithm" width="24" height="24" style="pointer-events:none;">
-        </button>
         <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" aria-controls="view-vault">
           <img src="Icons/icons8-safe-48.png" alt="Vault" width="24" height="24" style="pointer-events:none;">
         </button>
       </div>
+      <button class="sidebar-item" id="nav-settings" title="Settings" aria-label="Settings" aria-controls="view-settings">
+        <img src="Icons/icons8-setting-48.png" alt="Settings" width="24" height="24" style="pointer-events:none;">
+      </button>
     </nav>
 
     <main class="main-content">
@@ -129,7 +126,7 @@
 
 
         <div id="status" aria-live="polite">
-          <span class="icon" aria-hidden="true">🔍</span>
+          <span class="icon" aria-hidden="true">ðŸ”</span>
           Enter tags above to start scanning files
         </div>
 
@@ -145,393 +142,7 @@
 
         <div id="scroll-sentinel" aria-hidden="true"></div>
       </section>
-
-      <!-- MANGA VIEW -->
-      <section id="view-manga" class="app-view" style="display: none;" aria-labelledby="manga-title">
-        <h1 id="manga-title" class="sr-only">Manga browser</h1>
-        <!-- Simplified & Sleek Manga Search Suite (Unified with Main Search Bar) -->
-        <div class="manga-search-section">
-          <!-- Main Search Bar Row -->
-          <div class="search-row manga-search-row">
-            <!-- Search Pill Capsule Container -->
-            <div class="search-input-container manga-search-capsule" id="manga-search-container">
-              <span class="manga-search-icon" aria-hidden="true">🔍</span>
-              <!-- Inline Active Tag Pills -->
-              <div id="manga-active-tag-pills" class="flex-wrap gap-1 align-center" aria-live="polite"></div>
-              <!-- Manga Search Input -->
-              <input id="manga-grid-search-input" type="search" placeholder="Search titles, authors, keywords..." autocomplete="off" aria-label="Search manga" />
-              <button type="button" id="manga-search-clear-btn" class="manga-input-clear-btn" title="Clear search" style="display: none;">✕</button>
-              
-              <!-- Autocomplete Suggestions Dropdown -->
-              <div class="autocomplete-dropdown" id="manga-autocomplete-box" role="listbox" aria-label="Manga search suggestions"></div>
-
-              <!-- Inline Capsule Controls -->
-              <div class="manga-inline-controls">
-                <!-- 🏷️ Tags Capsule Trigger -->
-                <button type="button" id="manga-tags-trigger-btn" class="manga-pill-capsule-btn" title="Filter Tags" aria-label="Filter manga by tags" aria-expanded="false" aria-controls="manga-tags-modal">
-                  <span class="capsule-icon">🏷️</span>
-                  <span class="capsule-label" id="manga-tags-trigger-text">Tags</span>
-                  <span id="manga-tags-badge" class="manga-filter-badge" style="display: none;">0</span>
-                </button>
-
-                <!-- 🔞 Content Rating Capsule -->
-                <div class="manga-rating-capsule-wrapper">
-                  <button type="button" id="manga-rating-trigger-btn" class="manga-pill-capsule-btn active" title="Content Rating" aria-label="Choose content ratings" aria-expanded="false">
-                    <span class="capsule-icon">🔞</span>
-                    <span id="manga-rating-trigger-text" class="capsule-label">Erotica+</span>
-                    <span id="manga-rating-badge" class="manga-filter-badge">+2</span>
-                  </button>
-                  
-                  <!-- Rating Dropdown Popover -->
-                  <div id="manga-rating-dropdown-menu" class="manga-dropdown-popover" style="display: none;">
-                    <div class="popover-heading">Content Rating</div>
-                    <label class="manga-checkbox-option">
-                      <input type="checkbox" name="manga-rating" value="safe">
-                      <span class="custom-check"></span>
-                      <span class="opt-label">🟢 Safe</span>
-                    </label>
-                    <label class="manga-checkbox-option">
-                      <input type="checkbox" name="manga-rating" value="suggestive">
-                      <span class="custom-check"></span>
-                      <span class="opt-label">🟡 Suggestive</span>
-                    </label>
-                    <label class="manga-checkbox-option">
-                      <input type="checkbox" name="manga-rating" value="erotica" checked>
-                      <span class="custom-check"></span>
-                      <span class="opt-label">🟠 Erotica</span>
-                    </label>
-                    <label class="manga-checkbox-option">
-                      <input type="checkbox" name="manga-rating" value="pornographic" checked>
-                      <span class="custom-check"></span>
-                      <span class="opt-label">🔴 Pornographic</span>
-                    </label>
-                  </div>
-                </div>
-
-                <!-- ⚙️ Advanced Filters Toggle -->
-                <button type="button" id="manga-toggle-filters-btn" class="manga-pill-capsule-btn" title="Toggle Advanced Filters" aria-label="Toggle advanced manga filters" aria-expanded="false" aria-controls="manga-filters-panel">
-                  <span class="capsule-icon">⚙️</span>
-                  <span class="capsule-label toggle-text">Filters</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Action Buttons beside the bar -->
-            <button type="button" id="manga-lucky-btn" class="manga-action-icon-btn" title="Surprise Me (Random Manga)">
-              <span>🎲</span>
-            </button>
-            <button type="button" id="manga-grid-search-btn" class="manga-action-icon-btn primary" title="Search Manga">
-              <span>🔍</span>
-            </button>
-          </div>
-
-          <!-- Inline Expandable Tag Selection Drawer (Scrolls with grid!) -->
-          <div id="manga-tags-modal" class="manga-inline-tag-drawer" style="display: none;">
-            <div class="manga-tag-drawer-header">
-              <div class="drawer-search-box">
-                <span class="drawer-search-icon">🔍</span>
-                <input type="search" id="manga-modal-tag-search" placeholder="Filter tags (e.g. Romance, Yuri, Action)..." class="manga-drawer-search-input">
-              </div>
-              <div class="manga-modal-tag-modes">
-                <label class="manga-radio-label">
-                  <input type="radio" name="manga-tag-mode" value="AND" checked>
-                  <span>Match ALL (AND)</span>
-                </label>
-                <label class="manga-radio-label">
-                  <input type="radio" name="manga-tag-mode" value="OR">
-                  <span>Match ANY (OR)</span>
-                </label>
-              </div>
-              <div class="drawer-actions">
-                <button type="button" id="manga-modal-tags-clear" class="btn-manga-text-action">Clear Tags</button>
-                <button type="button" id="manga-tags-modal-close" class="manga-drawer-close-btn" title="Close tags">✕</button>
-              </div>
-            </div>
-            <div class="manga-modal-tags-body" id="manga-modal-tags-container">
-              <!-- Categorized tag chips rendered dynamically -->
-              <div class="manga-tags-loading"><div class="spinner"></div>Loading tags...</div>
-            </div>
-          </div>
-
-          <!-- Inline Collapsible Advanced Filters Panel (Scrolls with grid!) -->
-          <div class="manga-filters-panel" id="manga-filters-panel" style="display: none;">
-            <div class="manga-filter-chips-row">
-              <!-- Sort Select -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Sort</span>
-                <select id="manga-filter-sort" class="manga-glass-chip-select">
-                  <option value="relevance" selected>Relevance</option>
-                  <option value="rating">Highest Rating</option>
-                  <option value="followedCount">Most Followed</option>
-                  <option value="latestUploadedChapter">Latest Uploads</option>
-                  <option value="createdAt">Newest Titles</option>
-                  <option value="updatedAt">Recently Updated</option>
-                  <option value="title_asc">Title (A-Z)</option>
-                  <option value="title_desc">Title (Z-A)</option>
-                  <option value="year_desc">Year (Newest)</option>
-                  <option value="year_asc">Year (Oldest)</option>
-                </select>
-              </div>
-
-              <!-- Demographic Select -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Demographic</span>
-                <select id="manga-filter-demo" class="manga-glass-chip-select">
-                  <option value="any" selected>Any</option>
-                  <option value="shounen">Shounen</option>
-                  <option value="shoujo">Shoujo</option>
-                  <option value="seinen">Seinen</option>
-                  <option value="josei">Josei</option>
-                  <option value="none">None</option>
-                </select>
-              </div>
-
-              <!-- Status Select -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Status</span>
-                <select id="manga-filter-status" class="manga-glass-chip-select">
-                  <option value="any" selected>Any</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="completed">Completed</option>
-                  <option value="hiatus">Hiatus</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <!-- Original Language Select -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Original</span>
-                <select id="manga-filter-orig-lang" class="manga-glass-chip-select">
-                  <option value="all" selected>All</option>
-                  <option value="ja">🇯🇵 Japanese</option>
-                  <option value="zh">🇨🇳 Chinese</option>
-                  <option value="ko">🇰🇷 Korean</option>
-                  <option value="en">🇬🇧 English</option>
-                  <option value="es">🇪🇸 Spanish</option>
-                  <option value="fr">🇫🇷 French</option>
-                </select>
-              </div>
-
-              <!-- Translated Language Select -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Translated</span>
-                <select id="manga-filter-trans-lang" class="manga-glass-chip-select">
-                  <option value="all" selected>Any</option>
-                  <option value="en">🇬🇧 English</option>
-                  <option value="ja">🇯🇵 Japanese</option>
-                  <option value="zh">🇨🇳 Chinese</option>
-                  <option value="ko">🇰🇷 Korean</option>
-                  <option value="es">🇪🇸 Spanish</option>
-                  <option value="es-la">🇲🇽 Spanish (LATAM)</option>
-                  <option value="fr">🇫🇷 French</option>
-                  <option value="pt-br">🇧🇷 Portuguese</option>
-                  <option value="ru">🇷🇺 Russian</option>
-                  <option value="de">🇩🇪 German</option>
-                  <option value="it">🇮🇹 Italian</option>
-                </select>
-              </div>
-
-              <!-- Publication Year Stepper -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Year</span>
-                <div class="manga-inline-stepper">
-                  <button type="button" id="manga-year-minus" class="stepper-btn">−</button>
-                  <input type="text" id="manga-filter-year" placeholder="Any" class="stepper-input" maxlength="4">
-                  <button type="button" id="manga-year-plus" class="stepper-btn">+</button>
-                </div>
-              </div>
-
-              <!-- Author -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Author</span>
-                <input type="text" id="manga-filter-author" placeholder="Any" class="manga-chip-text-input">
-              </div>
-
-              <!-- Artist -->
-              <div class="manga-filter-chip-group">
-                <span class="group-label">Artist</span>
-                <input type="text" id="manga-filter-artist" placeholder="Any" class="manga-chip-text-input">
-              </div>
-
-              <!-- Has translated chapters -->
-              <div class="manga-filter-chip-group">
-                <label class="manga-checkbox-inline" for="manga-filter-has-translated">
-                  <input type="checkbox" id="manga-filter-has-translated" checked>
-                  <span class="custom-check-small"></span>
-                  <span class="manga-filter-label-inline">Has Chapters</span>
-                </label>
-              </div>
-
-              <!-- Reset Button -->
-              <button type="button" id="manga-reset-filters-btn" class="btn-manga-chip-reset" title="Reset all filters">
-                ↺ Reset
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div id="manga-grid" class="vault-grid-layout" style="margin-bottom: 20px;" role="list"
-          aria-label="Manga Results" aria-busy="false"></div>
-
-        <div id="manga-grid-status" class="text-center text-muted p-4" aria-live="polite">
-          <span class="icon" aria-hidden="true">🔍</span> Search to load comic covers...
-        </div>
-        <div id="manga-scroll-sentinel" class="intersection-observer-target" aria-hidden="true"></div>
-
-
-        <!-- The Manga details will now expand inline inside the grid! -->
-      </section>
-
-      <!-- ALGORITHM VIEW -->
-      <section id="view-algo" class="app-view" style="display: none;" aria-labelledby="algo-title">
-        <h1 id="algo-title" class="sr-only">Recommendation settings</h1>
-
-        <div class="algo-panel insight-box">
-          <div
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
-
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">🧑‍🦰 Character Weight (x)</label>
-                <input type="number" id="algo-val-char" value="2.5" step="0.1"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-char" min="0" max="3" step="0.1" value="2.5" style="width: 100%;">
-            </div>
-
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">🎨 Artist Weight (x)</label>
-                <input type="number" id="algo-val-artist" value="2.0" step="0.1"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-artist" min="0" max="3" step="0.1" value="2.0" style="width: 100%;">
-            </div>
-
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">📺 Series Weight (x)</label>
-                <input type="number" id="algo-val-series" value="1.0" step="0.1"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-series" min="0" max="3" step="0.1" value="1.0" style="width: 100%;">
-            </div>
-
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">🏷️ General Weight (x)</label>
-                <input type="number" id="algo-val-general" value="0.3" step="0.1"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-general" min="0" max="3" step="0.1" value="0.3" style="width: 100%;">
-            </div>
-
-          </div>
-
-          <div
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">📦 Batch Size</label>
-                <input type="number" id="algo-val-batch" value="30" step="10"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-batch" min="10" max="100" step="10" value="30" style="width: 100%;">
-            </div>
-
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">🎲 Discovery Ratio (%)</label>
-                <input type="number" id="algo-val-ratio" value="50" step="5"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-ratio" min="0" max="100" step="5" value="50" style="width: 100%;">
-            </div>
-
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">🌱 Freshness (%)</label>
-                <input type="number" id="algo-val-freshness" value="30" step="5"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-freshness" min="0" max="100" step="5" value="30" style="width: 100%;">
-            </div>
-
-            <div class="algo-control">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="font-weight: bold;">⚡ Concurrent Fetches</label>
-                <input type="number" id="algo-val-fetches" value="9" step="1"
-                  style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg); color: var(--text);">
-              </div>
-              <input type="range" id="algo-weight-fetches" min="1" max="10" step="1" value="9" style="width: 100%;">
-            </div>
-
-            <div class="algo-control">
-              <label style="display: block; font-weight: bold; margin-bottom: 8px;">🔍 Base Search (Optional)</label>
-              <input type="text" id="algo-base-search" placeholder="e.g. yuri" class="form-input">
-            </div>
-          </div>
-
-          <div id="algo-console" class="console-box">
-            <div>> Algorithm Engine Initialized...</div>
-          </div>
-
-          <details class="settings-group">
-            <summary class="settings-row">🧬 View Algorithm DNA & Roulette Wheel
-            </summary>
-
-            <div class="settings-group-header">
-              <h3 class="mt-0 mb-1">Roulette Wheel Visualizer</h3>
-              <p class="settings-desc">This is the
-                exact mathematical wheel the algorithm spins to generate your feed.</p>
-              <div id="algo-roulette-wheel" class="vault-btn">
-              </div>
-              <div id="algo-roulette-legend" class="vault-stats">
-              </div>
-            </div>
-
-            <div class="modal-body-scroll">
-              <table class="algo-table">
-                <thead class="sticky-header">
-                  <tr>
-                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Tag</th>
-                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Type</th>
-                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Occurrences</th>
-                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Multiplier</th>
-                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">Final Score</th>
-                    <th style="padding: 8px; border-bottom: 1px solid var(--border);">% of DNA</th>
-                  </tr>
-                </thead>
-                <tbody id="algo-dna-table-body">
-                  <!-- Data injected via JS -->
-                </tbody>
-              </table>
-            </div>
-          </details>
-
-          <div class="text-center">
-            <button id="algo-generate-btn" class="btn-primary-large">
-              Generate Personalized Feed
-            </button>
-          </div>
-        </div>
-
-        <div id="algo-status" class="text-center text-muted p-4 d-none" aria-live="polite"></div>
-
-        <!-- Algo Insights Panel -->
-        <div id="algo-insights" class="flex-wrap gap-2 mb-4"></div>
-
-        <div id="algo-grid" class="vault-grid-layout" role="list" aria-label="Algorithm Results"></div>
-
-        <div class="text-center my-5">
-          <button id="algo-load-more-btn"
-            style="display: none; background: var(--surface-light); color: var(--text); border: 1px solid var(--border); border-radius: 30px; padding: 12px 32px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.2s;">
-            🔄 Load More Discoveries
-          </button>
-        </div>
-      </section>
-
-      <!-- VAULT VIEW -->
+        <!-- VAULT VIEW -->
       <section id="view-vault" class="app-view" style="display: none;" aria-labelledby="vault-title">
 
         <!-- Profile Header -->
@@ -565,6 +176,143 @@
         <div id="vault-status" class="text-center text-muted p-5 d-none" aria-live="polite"></div>
 
       </section>
+
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="app-view" style="display: none;" aria-labelledby="settings-title">
+          <div class="settings-container">
+            <h2 id="settings-title" style="margin-bottom: 24px;">Settings</h2>
+            
+            <div class="settings-layout" style="display: flex; gap: 40px; align-items: flex-start; max-width: 1200px; margin: 0 auto; height: 100%;">
+              <aside class="settings-sidebar" style="width: 240px; flex-shrink: 0;">
+                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                  <li><button class="settings-tab active" data-target="settings-account" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer; font-weight: 500;">Account</button></li>
+                  <li><button class="settings-tab" data-target="settings-tuning" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-weight: 500;">Tuning</button></li>
+                  <li><button class="settings-tab" data-target="settings-preferences" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-weight: 500;">Preferences</button></li>
+                  <li><button class="settings-tab" data-target="settings-network" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-weight: 500;">Network</button></li>
+                </ul>
+              </aside>
+
+              <div class="settings-content" style="flex: 1; max-width: 600px;">
+                <!-- Account Panel -->
+                <div id="settings-account" class="settings-panel">
+                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Public Profile</h3>
+                  <p style="color: #a1a1aa; margin-bottom: 32px;">People visiting your profile will see the following info.</p>
+                  
+                  <div class="setting-group" style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Avatar URL</label>
+                    <input type="text" id="setting-avatar" placeholder="https://example.com/avatar.png" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
+                  </div>
+                  
+                  <div class="setting-group" style="margin-bottom: 32px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Username</label>
+                    <input type="text" id="setting-username" placeholder="Guest" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
+                  </div>
+
+                  <h3 style="margin-bottom: 24px; margin-top: 48px; font-size: 1.5rem;">Account Insights</h3>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                    <div style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                      <div id="insight-vault-items" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
+                      <div style="color: #a1a1aa; font-size: 0.85rem;">Vaulted Items</div>
+                    </div>
+                    <div style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                      <div id="insight-likes" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
+                      <div style="color: #a1a1aa; font-size: 0.85rem;">Total Likes</div>
+                    </div>
+                    <div style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                      <div id="insight-tags" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
+                      <div style="color: #a1a1aa; font-size: 0.85rem;">Filtered Tags</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tuning Panel -->
+                <div id="settings-tuning" class="settings-panel" style="display: none;">
+                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Feed Tuning</h3>
+                  
+                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <label style="font-weight: 500; font-size: 1rem;">Minimum Score Threshold</label>
+                      <span id="setting-score-val" style="background: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">0</span>
+                    </div>
+                    <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Filter out posts that fall below this community score.</p>
+                    <input type="range" id="setting-score-slider" min="0" max="1000" step="10" value="0" class="custom-slider" style="width: 100%;">
+                  </div>
+
+                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <label style="font-weight: 500; font-size: 1rem;">Algorithm Aggressiveness</label>
+                      <span id="setting-algo-val" style="background: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">50%</span>
+                    </div>
+                    <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">How strongly the recommendation algorithm tailors content to your likes.</p>
+                    <input type="range" id="setting-algo-slider" min="0" max="100" step="5" value="50" class="custom-slider" style="width: 100%;">
+                  </div>
+                </div>
+
+                <!-- Preferences Panel -->
+                <div id="settings-preferences" class="settings-panel" style="display: none;">
+                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Viewing Preferences</h3>
+                  
+                  <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <div style="font-weight: 500; font-size: 1rem;">Video Autoplay</div>
+                      <div style="color: #a1a1aa; font-size: 0.85rem;">Automatically play videos when in view.</div>
+                    </div>
+                    <label class="premium-toggle">
+                      <input type="checkbox" id="setting-autoplay" checked>
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  
+                  <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <div style="font-weight: 500; font-size: 1rem;">Blur NSFW Content</div>
+                      <div style="color: #a1a1aa; font-size: 0.85rem;">Blur explicit images until hovered or clicked.</div>
+                    </div>
+                    <label class="premium-toggle">
+                      <input type="checkbox" id="setting-blur">
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+
+                  <div class="setting-group" style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Theme Accent Color</label>
+                    <select id="setting-theme" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none; cursor: pointer;">
+                      <option value="purple">Royal Purple (Default)</option>
+                      <option value="blue">Ocean Blue</option>
+                      <option value="green">Emerald Green</option>
+                      <option value="pink">Neon Pink</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Network Panel -->
+                <div id="settings-network" class="settings-panel" style="display: none;">
+                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Network & Data</h3>
+                  
+                  <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <div style="font-weight: 500; font-size: 1rem;">Data Saver Mode</div>
+                      <div style="color: #a1a1aa; font-size: 0.85rem;">Load lower resolution thumbnails to save bandwidth.</div>
+                    </div>
+                    <label class="premium-toggle">
+                      <input type="checkbox" id="setting-data-saver">
+                      <span class="toggle-slider"></span>
+                    </label>
+                  </div>
+                  
+                  <div class="setting-group" style="margin-top: 48px; border-top: 1px solid rgba(255,60,60,0.3); padding-top: 24px;">
+                    <h4 style="color: #ff4d4d; margin-bottom: 8px;">Danger Zone</h4>
+                    <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Irreversibly delete all local settings, algorithms, and vault data.</p>
+                    <button id="setting-clear-data" style="background: rgba(255, 60, 60, 0.1); color: #ff4d4d; border: 1px solid rgba(255, 60, 60, 0.3); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
+                      Clear Local Data
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </section>
 
     </main>
 
@@ -666,7 +414,6 @@
 
   <!-- Accessibility: Use role="dialog" and aria-modal for custom modals -->
   <div id="lightbox" role="dialog" aria-modal="true" aria-label="Image Lightbox">
-    <button id="lb-prev-btn" class="lb-nav-btn" aria-label="Previous Image">‹</button>
 
     <div class="lightbox-scroll-content">
       <!-- Recommendation Section (now acts as the main scrollable container) -->
@@ -680,7 +427,7 @@
             </div>
 
             <!-- Right: Details Panel -->
-            <div class="lb-card-details-wrapper" style="position: relative; flex: 1 1 42%; max-width: 420px; min-width: 280px;">
+            <div class="lb-card-details-wrapper" style="position: relative; flex: 1 1 42%; min-width: 280px;">
               <div class="lb-card-details" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;">
               <!-- Action Bar Header -->
               <div class="lb-card-header">
@@ -712,7 +459,7 @@
               <!-- Meta Info -->
               <div class="lb-card-meta">
                 <span id="lb-score"></span>
-                <span class="lb-meta-dot">·</span>
+                <span class="lb-meta-dot">Â·</span>
                 <span id="lb-size"></span>
               </div>
 
@@ -731,8 +478,6 @@
         <div id="lb-recommendations-status" class="text-center text-muted p-4" aria-live="polite"></div>
       </div>
     </div>
-
-    <button id="lb-next-btn" class="lb-nav-btn" aria-label="Next Image">›</button>
   </div>
 
   <!-- Accessibility: role="alert" for immediate notifications -->
@@ -752,7 +497,7 @@
         <input type="checkbox" id="manga-paged-toggle"> Single Page Mode
       </label>
     </div>
-    <button id="manga-reader-close" class="floating-action-btn-right" aria-label="Close Manga Reader">✕ Close
+    <button id="manga-reader-close" class="floating-action-btn-right" aria-label="Close Manga Reader">âœ• Close
       Reader</button>
     <div id="manga-pages-container"
       style="display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 1000px; margin: 0 auto;"
@@ -766,7 +511,7 @@
     <div id="save-modal-content" class="modal-content-small">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <h3 id="save-modal-title" style="margin: 0; font-size: 1.2rem;">Save to folder</h3>
-        <button id="save-modal-close" class="btn-close" aria-label="Close Save Modal">✕</button>
+        <button id="save-modal-close" class="btn-close" aria-label="Close Save Modal">âœ•</button>
       </div>
 
       <form class="search-input-container modal-header-spaced" onsubmit="event.preventDefault();" role="search">
@@ -834,7 +579,7 @@
     <div
       style="background: var(--bg); border: 1px solid var(--border); border-radius: 16px; width: 90%; max-width: 400px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 id="report-title" class="modal-title-danger">🚨 Report Image</h2>
+        <h2 id="report-title" class="modal-title-danger">ðŸš¨ Report Image</h2>
         <button onclick="document.getElementById('report-modal').style.display='none'"
           style="background: none; border: none; color: var(--text); font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
@@ -914,9 +659,9 @@
           <p class="modal-desc">Export your Vault securely to a local
             JSON file or import a previous backup.</p>
           <div style="display: flex; gap: 12px;">
-            <button id="vault-export-btn" class="btn-surface-flex">📤
+            <button id="vault-export-btn" class="btn-surface-flex">ðŸ“¤
               Export Vault</button>
-            <button id="vault-import-btn" class="btn-surface-flex">📥
+            <button id="vault-import-btn" class="btn-surface-flex">ðŸ“¥
               Import Vault</button>
             <input type="file" id="vault-import-input" accept=".json" style="display: none;">
           </div>
@@ -978,3 +723,6 @@
 </body>
 
 </html>
+
+
+

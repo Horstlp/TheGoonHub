@@ -2,8 +2,6 @@
 const lightbox         = document.getElementById('lightbox');
 const lbContainer      = document.getElementById('lightbox-media-container');
 const lbClose          = document.getElementById('lightbox-close');
-const lbPrevBtn        = document.getElementById('lb-prev-btn');
-const lbNextBtn        = document.getElementById('lb-next-btn');
 const lbScore          = document.getElementById('lb-score');
 const lbSize           = document.getElementById('lb-size');
 const lbFavBtn         = document.getElementById('lb-fav-btn');
@@ -238,14 +236,49 @@ function openLightbox(index) {
       s.onclick = (e) => { e.stopPropagation(); disableVaultViewMode(); addPill(obj.tag); };
       lbTagsStreamBox.appendChild(s);
   });
-  lbPrevBtn.style.display = currentPostIndex > 0 ? 'flex' : 'none';
-  lbNextBtn.style.display = currentPostIndex < posts.length - 1 ? 'flex' : 'none';
   
   const activeView = document.querySelector('.app-view.active-view')?.id?.replace('view-', '') || 'images';
   window.lightboxOpenInView = activeView;
   
   lightbox.classList.add('open'); document.body.style.overflow = 'hidden';
+
   
+  // Dynamic Grid Span Calculation for Pinterest Layout
+  const heroCard = document.getElementById('lb-hero-card');
+  if (heroCard && post.width && post.height && window.innerWidth > 800) {
+      const vh = window.innerHeight;
+      const vw = window.innerWidth;
+      const targetHeight = vh * 0.8;
+      const imgAspect = post.width / post.height;
+      const desiredImgWidth = targetHeight * imgAspect;
+      const detailsWidth = 350; // Approximated width of right panel
+      let desiredTotalWidth = desiredImgWidth + detailsWidth;
+      
+      const maxAllowedWidth = vw * 0.6; // Max 60% of screen width
+      const finalWidth = Math.min(desiredTotalWidth, maxAllowedWidth);
+      
+      // Dynamically get the real grid column width
+      const grid = document.getElementById('lb-recommendations-grid');
+      let colWidth = 256; // Fallback
+      if (grid) {
+          const gridStyle = window.getComputedStyle(grid);
+          const cols = gridStyle.gridTemplateColumns;
+          if (cols) {
+              const firstCol = cols.split(' ')[0];
+              if (firstCol && firstCol !== 'none') {
+                  colWidth = parseFloat(firstCol) + 16; // column width + gap
+              }
+          }
+      }
+      
+      let colsNeeded = Math.round(finalWidth / colWidth);
+      if (colsNeeded < 3) colsNeeded = 3; // Give it at least 3 columns to look good
+      
+      heroCard.style.gridColumn = 'span ' + colsNeeded;
+  } else if (heroCard) {
+      heroCard.style.gridColumn = '';
+  }
+
   // Trigger recommendations
   const recsContainer = document.getElementById('lightbox-recommendations');
   if (recsContainer) {
@@ -284,8 +317,6 @@ function navigateLightbox(dir) {
 lbClose.addEventListener('click', closeLightbox);
 const lbSlimClose = document.getElementById('lightbox-slim-close');
 if (lbSlimClose) lbSlimClose.addEventListener('click', closeLightbox);
-lbPrevBtn.addEventListener('click', (e) => { e.stopPropagation(); navigateLightbox(-1); });
-lbNextBtn.addEventListener('click', (e) => { e.stopPropagation(); navigateLightbox(1); });
 lightbox.addEventListener('click', e => { if (e.target === lightbox) closeLightbox(); });
 document.addEventListener('keydown', e => { 
   if (e.key === 'Escape') closeLightbox();
@@ -321,3 +352,6 @@ if (lbTagsToggleBtn && lbTagsContainerBox) {
         }, 50);
     });
 }
+
+
+

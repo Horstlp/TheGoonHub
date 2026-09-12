@@ -1,7 +1,7 @@
 window.viewScrollPositions = window.viewScrollPositions || {};
 
 window.handleViewSwitch = function(view) {
-    const validViews = ['images', 'manga', 'vault', 'algo'];
+    const validViews = ['images', 'vault', 'settings'];
     if (!validViews.includes(view)) view = 'images'; // Default fallback
 
     const targetView = document.getElementById(`view-${view}`);
@@ -78,7 +78,7 @@ window.handleViewSwitch = function(view) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  const views = ['images', 'manga', 'vault', 'algo'];
+  const views = ['images', 'vault', 'settings'];
   
   // Set up click listeners to push state to URL Hash instead of immediate DOM manipulation
   views.forEach(view => {
@@ -111,3 +111,4 @@ document.addEventListener('DOMContentLoaded', () => {
   let initialHash = window.location.hash.replace('#', '');
   handleViewSwitch(initialHash || 'images');
 });
+
