@@ -1439,12 +1439,12 @@ header p {
   width: 100%;
   max-width: none;
   height: fit-content;
-  background: rgba(22, 22, 31, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 20, 30, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 32px;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(40px) saturate(160%);
-  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  backdrop-filter: blur(48px) saturate(200%);
+  -webkit-backdrop-filter: blur(48px) saturate(200%);
   overflow: hidden;
   animation: lbCardEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -1458,9 +1458,48 @@ header p {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.35);
+  background: transparent;
   border-radius: 32px 0 0 32px;
   overflow: hidden;
+}
+
+.lb-glass-pill-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 50;
+  display: flex;
+  gap: 2px;
+}
+
+.lb-glass-btn {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 32px;
+  color: white;
+  padding: 10px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.lb-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.lb-glass-btn-left {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.lb-glass-btn-right {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
 }
 
 #lightbox-media-container {
@@ -1508,7 +1547,9 @@ header p {
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(22, 22, 31, 0.65);
+  background: rgba(30, 30, 40, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   position: sticky;
   bottom: 0;
   z-index: 5;
@@ -1539,9 +1580,9 @@ header p {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(22, 22, 31, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(30, 30, 40, 0.4);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
 }
 
 .lb-header-left, .lb-header-right {
@@ -4050,9 +4091,9 @@ body.video-mode .main-content {
   max-width: 1000px;
   margin: 0 auto;
   display: flex;
-  gap: 60px;
+  flex-direction: column;
+  gap: 24px;
   padding: 0 40px 60px 40px;
-  align-items: flex-start;
 }
 
 .settings-sidebar {
@@ -4065,27 +4106,28 @@ body.video-mode .main-content {
 }
 
 .settings-tab {
+  width: 100%;
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 8px;
   background: transparent;
   border: none;
-  color: var(--text);
-  font-size: 1.15rem;
+  color: #a1a1aa;
+  font-size: 1.05rem;
   font-weight: 500;
-  text-align: left;
-  padding: 0 0 8px 0;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-bottom: 3px solid transparent;
-  width: fit-content;
-  white-space: nowrap;
 }
 
 .settings-tab:hover {
-  color: var(--accent-purple);
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .settings-tab.active {
   font-weight: 700;
-  border-bottom: 3px solid #fff; /* Pinterest uses stark contrast, white on dark mode */
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
 
 .settings-content-area {
@@ -4168,3 +4210,5 @@ body.video-mode .main-content {
   font-size: 1rem;
   font-weight: 500;
 }
+. a r t i s t - s o c i a l - l i n k   {   b a c k g r o u n d :   r g b a ( 2 5 5 , 2 5 5 , 2 5 5 , 0 . 1 ) ;   c o l o r :   w h i t e ;   b o r d e r :   1 p x   s o l i d   r g b a ( 2 5 5 , 2 5 5 , 2 5 5 , 0 . 2 ) ;   b o r d e r - r a d i u s :   2 0 p x ;   p a d d i n g :   6 p x   1 4 p x ;   f o n t - s i z e :   0 . 8 5 r e m ;   t e x t - d e c o r a t i o n :   n o n e ;   d i s p l a y :   f l e x ;   a l i g n - i t e m s :   c e n t e r ;   g a p :   6 p x ;   t r a n s i t i o n :   a l l   0 . 2 s ;   }   . a r t i s t - s o c i a l - l i n k : h o v e r   {   b a c k g r o u n d :   r g b a ( 2 5 5 , 2 5 5 , 2 5 5 , 0 . 2 ) ;   t r a n s f o r m :   t r a n s l a t e Y ( - 1 p x ) ;   }  
+ 

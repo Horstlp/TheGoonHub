@@ -404,3 +404,28 @@ async function queryAutocomplete(query, callback = null) {
     }
   }
 }
+
+/**
+ * Fetches artist social links from Danbooru.
+ * @param {string} artistName 
+ * @returns {Promise<Array<{url: string, is_active: boolean}>>}
+ */
+async function fetchArtistSocials(artistName) {
+  try {
+    const url = `https://danbooru.donmai.us/artists.json?search[name]=${encodeURIComponent(artistName)}&only=name,urls`;
+    const res = await fetch(PROXY + encodeURIComponent(url), {
+      headers: {
+        'User-Agent': 'TheGoonHub/1.0'
+      }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (data && data.length > 0 && data[0].urls) {
+      return data[0].urls.filter(u => u.is_active);
+    }
+    return [];
+  } catch (err) {
+    console.error('Failed to fetch artist socials:', err);
+    return [];
+  }
+}

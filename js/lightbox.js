@@ -122,6 +122,7 @@ function openLightbox(index) {
     img.style.opacity = '0';
     img.style.transition = 'opacity 0.4s ease';
     img.src = fileUrl;
+    img.alt = post.tags ? 'Image with tags: ' + post.tags.split(' ').slice(0, 10).join(', ') : 'Full size media';
     lbContainer.appendChild(img);
     img.onload = () => {
       setTimeout(() => {

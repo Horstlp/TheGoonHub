@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -117,6 +117,9 @@
             </div>
           </form>
 
+          <!-- Artist Socials Panel -->
+          <div id="artist-info-panel" style="display: none; margin-top: 12px; margin-bottom: -4px; background: rgba(30, 30, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px 20px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: fadeIn 0.3s ease; display: flex; flex-direction: column; gap: 16px;">
+          </div>
           <!-- Pinterest-style Home View Folder Tabs -->
           <nav class="home-folders-nav" id="home-folders-nav" aria-label="Home Feed Categories">
             <!-- Folder tabs dynamically injected here -->
@@ -158,8 +161,14 @@
           </div>
         </header>
 
-
-
+        <!-- Backup Reminder -->
+        <div style="background: rgba(30, 30, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; margin: 0 40px 24px 40px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="Icons/icons8-error-30.png" style="width: 20px; height: 20px; filter: grayscale(1) opacity(0.7);" alt="Info">
+            <span style="color: #a1a1aa; font-size: 0.9rem;">Your vault is stored locally. Don't forget to periodically export your data to back it up!</span>
+          </div>
+          <button onclick="document.getElementById('vault-main-taskbar').style.display='flex'; triggerToastNotification('Click Export on the taskbar below!');" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Backup Now</button>
+        </div>
         <nav class="folder-nav" id="vault-folders-nav"
           style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 8px; padding-left: 8px; padding-right: 8px; min-height: 120px; align-items: flex-start;"
           aria-label="Vault Folders">
@@ -185,16 +194,17 @@
             <div class="settings-layout" style="display: flex; gap: 40px; align-items: flex-start; max-width: 1200px; margin: 0 auto; height: 100%;">
               <aside class="settings-sidebar" style="width: 240px; flex-shrink: 0;">
                 <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                  <li><button class="settings-tab active" data-target="settings-account" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer; font-weight: 500;">Account</button></li>
-                  <li><button class="settings-tab" data-target="settings-tuning" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-weight: 500;">Tuning</button></li>
-                  <li><button class="settings-tab" data-target="settings-preferences" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-weight: 500;">Preferences</button></li>
-                  <li><button class="settings-tab" data-target="settings-network" style="width: 100%; text-align: left; padding: 12px 16px; border-radius: 8px; background: transparent; border: none; color: #a1a1aa; cursor: pointer; font-weight: 500;">Network</button></li>
+                  <li><button class="settings-tab active" data-target="settings-account">Account</button></li>
+                  <li><button class="settings-tab" data-target="settings-tuning">Tuning</button></li>
+                  <li><button class="settings-tab" data-target="settings-preferences">Preferences</button></li>
+                  <li><button class="settings-tab" data-target="settings-network">Network</button></li>
+                  <li><button class="settings-tab" data-target="settings-legal">Legal & Privacy</button></li>
                 </ul>
               </aside>
 
               <div class="settings-content" style="flex: 1; max-width: 600px;">
                 <!-- Account Panel -->
-                <div id="settings-account" class="settings-panel">
+                <div id="settings-account" class="settings-pane">
                   <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Public Profile</h3>
                   <p style="color: #a1a1aa; margin-bottom: 32px;">People visiting your profile will see the following info.</p>
                   
@@ -226,7 +236,7 @@
                 </div>
 
                 <!-- Tuning Panel -->
-                <div id="settings-tuning" class="settings-panel" style="display: none;">
+                <div id="settings-tuning" class="settings-pane" style="display: none;">
                   <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Feed Tuning</h3>
                   
                   <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
@@ -249,7 +259,7 @@
                 </div>
 
                 <!-- Preferences Panel -->
-                <div id="settings-preferences" class="settings-panel" style="display: none;">
+                <div id="settings-preferences" class="settings-pane" style="display: none;">
                   <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Viewing Preferences</h3>
                   
                   <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
@@ -286,7 +296,7 @@
                 </div>
 
                 <!-- Network Panel -->
-                <div id="settings-network" class="settings-panel" style="display: none;">
+                <div id="settings-network" class="settings-pane" style="display: none;">
                   <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Network & Data</h3>
                   
                   <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
@@ -306,6 +316,25 @@
                     <button id="setting-clear-data" style="background: rgba(255, 60, 60, 0.1); color: #ff4d4d; border: 1px solid rgba(255, 60, 60, 0.3); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
                       Clear Local Data
                     </button>
+                  </div>
+                </div>
+
+                <!-- Legal Panel -->
+                <div id="settings-legal" class="settings-pane" style="display: none;">
+                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Legal & Privacy</h3>
+                  
+                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <h4 style="margin: 0 0 12px 0; font-size: 1.1rem; color: #fff;">Privacy Policy</h4>
+                    <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin: 0;">
+                      All data, including your Vault, liked items, and application settings, is stored entirely locally on your device via standard browser storage APIs. We do not collect personal data, track your IP address, or send your analytics to any centralized server.
+                    </p>
+                  </div>
+                  
+                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <h4 style="margin: 0 0 12px 0; font-size: 1.1rem; color: #fff;">Terms of Service</h4>
+                    <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin: 0;">
+                      This application acts solely as a client-side browser interface for public, third-party APIs. We do not host, generate, or manage any of the media content displayed. By using this application, you acknowledge that you are responsible for the content you view and save.
+                    </p>
                   </div>
                 </div>
 
@@ -422,7 +451,18 @@
           <!-- Pinterest-Style Floating Card (now the first item in the grid) -->
           <div id="lb-hero-card" class="lb-pinterest-card lb-hero-card">
             <!-- Left: Media -->
-            <div class="lb-card-media">
+            <div class="lb-card-media" style="position: relative;">
+              <div class="lb-glass-pill-container">
+                <button id="lightbox-back" class="lb-glass-btn lb-glass-btn-left" aria-label="Go Back" style="display: none;">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+                </button>
+                <button id="lightbox-slim-close" class="lb-glass-btn lb-glass-btn-right" aria-label="Close Lightbox Completely" style="display: none;" title="Close">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <button id="lightbox-close" class="lb-glass-btn lb-glass-btn-right" aria-label="Close Lightbox" title="Close">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
               <div id="lightbox-media-container" aria-live="polite"></div>
             </div>
 
@@ -432,9 +472,7 @@
               <!-- Action Bar Header -->
               <div class="lb-card-header">
                 <div class="lb-header-left">
-                  <button id="lightbox-back" class="lb-header-btn" aria-label="Go Back" style="display: none;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
-                  </button>
+                  <!-- Back button moved to media container -->
                 </div>
                 <div class="lb-header-right">
                   <div class="pinterest-save-widget" id="lb-pinterest-widget">
@@ -447,12 +485,7 @@
                   <button class="lb-header-btn" id="lb-dl-btn" aria-label="Download Image" title="Download">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   </button>
-                  <button id="lightbox-close" class="lb-header-btn" aria-label="Close Lightbox" title="Close">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                  <button id="lightbox-slim-close" class="lb-header-btn" aria-label="Close Lightbox Completely" style="display: none;" title="Close">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
+                  <!-- Close buttons moved to media container -->
                 </div>
               </div>
 
@@ -720,8 +753,16 @@
     </div>
   </div>
 
-</body>
+  <!-- Storage Consent Banner -->
+  <div id="storage-banner" style="display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; background: rgba(30, 30, 42, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 20px 24px; z-index: 9999; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+    <div>
+      <h4 style="margin: 0 0 8px 0; color: #fff; font-size: 1.1rem;">Storage & Privacy</h4>
+      <p style="margin: 0; color: #a1a1aa; font-size: 0.9rem; line-height: 1.4;">This app stores your Vault and Settings locally on your device to function. We do not track you, collect personal data, or use third-party cookies.</p>
+    </div>
+    <button id="btn-accept-storage" style="background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: background 0.2s ease;">Understood</button>
+  </div>
 
+</body>
 </html>
 
 

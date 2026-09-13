@@ -1818,6 +1818,85 @@ async function search(tags, page, append = false) {
     // STOP OLD PRELOAD LOOP AND CLEAR QUEUE
     isPreloading = false;
     preloadedPagesQueue = [];
+
+    // --- Artist Socials Panel Logic ---
+    const artistPanel = document.getElementById('artist-info-panel');
+    
+    if (artistPanel) {
+      artistPanel.style.display = 'none'; // Hide by default
+      artistPanel.innerHTML = '';
+      
+      const userTags = tags.trim() ? tags.trim().split(/\s+/) : [];
+      if (userTags.length > 0 && typeof algoTagsCache !== 'undefined') {
+        
+        const artistTags = userTags.filter(queryTag => {
+          let tagType = algoTagsCache[queryTag];
+          if (tagType && typeof tagType === 'object') tagType = tagType.type;
+          return tagType === 'artist' || tagType === '1' || tagType === 1;
+        });
+        
+        if (artistTags.length > 0) {
+          artistPanel.style.display = 'flex';
+          
+          artistTags.forEach(artistName => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;';
+            
+            const leftCol = document.createElement('div');
+            leftCol.style.cssText = 'display: flex; align-items: center; gap: 12px;';
+            leftCol.innerHTML = `
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(233, 94, 140, 0.3);">
+                <img src="Icons/icons8-pen-48.png" style="width: 20px; height: 20px; filter: invert(1);" alt="Artist">
+              </div>
+              <div>
+                <h3 style="margin: 0; color: #fff; font-size: 1.2rem; text-transform: capitalize;">${artistName.replace(/_/g, ' ')}</h3>
+                <p style="margin: 0; color: #a1a1aa; font-size: 0.85rem;">Verified Artist Links</p>
+              </div>
+            `;
+            
+            const rightCol = document.createElement('div');
+            rightCol.style.cssText = 'display: flex; gap: 8px; flex-wrap: wrap;';
+            rightCol.innerHTML = '<span style="color: #a1a1aa; font-size: 0.85rem;">Searching for links...</span>';
+            
+            row.appendChild(leftCol);
+            row.appendChild(rightCol);
+            artistPanel.appendChild(row);
+            
+            if (typeof fetchArtistSocials === 'function') {
+              fetchArtistSocials(artistName).then(socials => {
+                rightCol.innerHTML = '';
+                if (socials.length === 0) {
+                  rightCol.innerHTML = '<span style="color: #a1a1aa; font-size: 0.85rem;">No verified links found.</span>';
+                  return;
+                }
+                socials.forEach(social => {
+                  const urlObj = new URL(social.url);
+                  const hostname = urlObj.hostname.toLowerCase();
+                  let iconSrc = 'Icons/icons8-link-48.png';
+                  let label = 'Link';
+                  
+                  if (hostname.includes('twitter.com') || hostname.includes('x.com')) { iconSrc = 'Icons/icons8-twitter-48.png'; label = 'Twitter'; }
+                  else if (hostname.includes('pixiv.net')) { iconSrc = 'Icons/icons8-pixiv-48.png'; label = 'Pixiv'; }
+                  else if (hostname.includes('patreon.com')) { iconSrc = 'Icons/icons8-patreon-48.png'; label = 'Patreon'; }
+                  else if (hostname.includes('instagram.com')) { iconSrc = 'Icons/icons8-instagram-48.png'; label = 'Instagram'; }
+                  else if (hostname.includes('youtube.com')) { iconSrc = 'Icons/icons8-youtube-48.png'; label = 'YouTube'; }
+                  
+                  const linkEl = document.createElement('a');
+                  linkEl.href = social.url;
+                  linkEl.target = '_blank';
+                  linkEl.className = 'artist-social-link';
+                  linkEl.innerHTML = `<img src="${iconSrc}" width="16" height="16" style="filter: invert(1); opacity: 0.8;" alt="${label}"> ${label}`;
+                  rightCol.appendChild(linkEl);
+                });
+              }).catch(err => {
+                rightCol.innerHTML = '<span style="color: #ff4d4d; font-size: 0.85rem;">Failed to fetch links.</span>';
+              });
+            }
+          });
+        }
+      }
+    }
+    // ----------------------------------
   } else {
     if (bottomStatusEl) bottomStatusEl.style.display = 'block'; // Show spinner at bottom
   }
