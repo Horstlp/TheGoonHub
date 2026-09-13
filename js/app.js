@@ -1863,33 +1863,68 @@ async function search(tags, page, append = false) {
             artistPanel.appendChild(row);
             
             if (typeof fetchArtistSocials === 'function') {
-              fetchArtistSocials(artistName).then(socials => {
+              const renderLinks = (socials) => {
                 rightCol.innerHTML = '';
                 if (socials.length === 0) {
-                  rightCol.innerHTML = '<span style="color: #a1a1aa; font-size: 0.85rem;">No verified links found.</span>';
+                  row.style.display = 'none'; // Hide the entire panel if no links found
                   return;
                 }
+                
                 socials.forEach(social => {
                   const urlObj = new URL(social.url);
                   const hostname = urlObj.hostname.toLowerCase();
-                  let iconSrc = 'Icons/icons8-link-48.png';
-                  let label = 'Link';
+                  let iconSvg = '';
+                  let label = '';
                   
-                  if (hostname.includes('twitter.com') || hostname.includes('x.com')) { iconSrc = 'Icons/icons8-twitter-48.png'; label = 'Twitter'; }
-                  else if (hostname.includes('pixiv.net')) { iconSrc = 'Icons/icons8-pixiv-48.png'; label = 'Pixiv'; }
-                  else if (hostname.includes('patreon.com')) { iconSrc = 'Icons/icons8-patreon-48.png'; label = 'Patreon'; }
-                  else if (hostname.includes('instagram.com')) { iconSrc = 'Icons/icons8-instagram-48.png'; label = 'Instagram'; }
-                  else if (hostname.includes('youtube.com')) { iconSrc = 'Icons/icons8-youtube-48.png'; label = 'YouTube'; }
-                  
-                  const linkEl = document.createElement('a');
-                  linkEl.href = social.url;
-                  linkEl.target = '_blank';
-                  linkEl.className = 'artist-social-link';
-                  linkEl.innerHTML = `<img src="${iconSrc}" width="16" height="16" style="filter: invert(1); opacity: 0.8;" alt="${label}"> ${label}`;
-                  rightCol.appendChild(linkEl);
+                  if (hostname.includes('twitter.com') || hostname.includes('x.com')) { 
+                    iconSvg = '<img src="Icons/X-Twitter--Streamline-Font-Awesome.png" style="width: 28px; height: 28px; filter: brightness(0) invert(1);" alt="Twitter">';
+                    label = 'Twitter'; 
+                  }
+                  else if (hostname.includes('pixiv.net')) { 
+                    iconSvg = '<svg viewBox="0 0 24 24"><path d="M12 2c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2zm-1 14h2v-2h-2v2zm0-4h2V7h-2v5z"/></svg>';
+                    label = 'Pixiv'; 
+                  }
+                  else if (hostname.includes('patreon.com')) { 
+                    iconSvg = '<img src="Icons/Patreon--Streamline-Font-Awesome.png" style="width: 28px; height: 28px; filter: brightness(0) invert(1);" alt="Patreon">';
+                    label = 'Patreon'; 
+                  }
+                  else if (hostname.includes('instagram.com')) { 
+                    iconSvg = '<svg viewBox="0 0 24 24"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.64-.07-4.85s.01-3.58.07-4.85c.15-3.23 1.66-4.77 4.92-4.92C8.42 2.17 8.8 2.16 12 2.16zM12 0C8.74 0 8.33.01 7.05.07 2.69.27.27 2.69.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.2 4.36 2.62 6.78 6.98 6.98 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c4.35-.2 6.77-2.62 6.97-6.98.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.2-4.36-2.62-6.78-6.97-6.98C15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1 0 18.16 12 6.16 6.16 0 0 0 12 5.84zm0 10.16A4 4 0 1 1 16 12a4 4 0 0 1-4 4zm5.23-11.4a1.44 1.44 0 1 0 1.44-1.44 1.44 1.44 0 0 0-1.44 1.44z"/></svg>';
+                    label = 'Instagram'; 
+                  }
+                  else if (hostname.includes('discord')) {
+                    iconSvg = '<img src="Icons/Discord--Streamline-Font-Awesome.png" style="width: 28px; height: 28px; filter: brightness(0) invert(1);" alt="Discord">';
+                    label = 'Discord';
+                  }
+                  if (iconSvg !== '') {
+                    const linkEl = document.createElement('a');
+                    linkEl.href = social.url;
+                    linkEl.target = '_blank';
+                    linkEl.className = 'artist-social-link';
+                    linkEl.title = label; // Tooltip on hover
+                    linkEl.innerHTML = `${iconSvg}`;
+                    rightCol.appendChild(linkEl);
+                  }
                 });
+                
+                if (rightCol.children.length === 0) {
+                  row.style.display = 'none';
+                }
+              };
+
+              fetchArtistSocials(artistName).then(socials => {
+                if (socials.length === 0 && typeof guessArtistSocials === 'function') {
+                  rightCol.innerHTML = '<span style="color: #a1a1aa; font-size: 0.85rem;">Guessing links...</span>';
+                  guessArtistSocials(artistName).then(guessedSocials => {
+                    renderLinks(guessedSocials);
+                  }).catch(() => {
+                    renderLinks([]);
+                  });
+                } else {
+                  renderLinks(socials);
+                }
               }).catch(err => {
-                rightCol.innerHTML = '<span style="color: #ff4d4d; font-size: 0.85rem;">Failed to fetch links.</span>';
+                row.style.display = 'none';
               });
             }
           });

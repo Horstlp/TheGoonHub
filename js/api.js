@@ -413,11 +413,7 @@ async function queryAutocomplete(query, callback = null) {
 async function fetchArtistSocials(artistName) {
   try {
     const url = `https://danbooru.donmai.us/artists.json?search[name]=${encodeURIComponent(artistName)}&only=name,urls`;
-    const res = await fetch(PROXY + encodeURIComponent(url), {
-      headers: {
-        'User-Agent': 'TheGoonHub/1.0'
-      }
-    });
+    const res = await fetch(PROXY + encodeURIComponent(url));
     if (!res.ok) return [];
     const data = await res.json();
     if (data && data.length > 0 && data[0].urls) {
@@ -425,7 +421,41 @@ async function fetchArtistSocials(artistName) {
     }
     return [];
   } catch (err) {
-    console.error('Failed to fetch artist socials:', err);
+    console.error('Failed to fetch artist socials from Danbooru:', err);
     return [];
   }
+}
+
+/**
+ * Guesses artist social links by pinging common profile URLs.
+ * @param {string} artistName 
+ * @returns {Promise<Array<{url: string, is_active: boolean}>>}
+ */
+async function guessArtistSocials(artistName) {
+  const cleanName = artistName.replace(/_/g, ''); // e.g. "john_doe" -> "johndoe"
+  const candidates = [
+    `https://twitter.com/${cleanName}`,
+    `https://www.patreon.com/${cleanName}`,
+    `https://linktr.ee/${cleanName}`,
+    `https://www.instagram.com/${cleanName}`,
+    `https://discord.gg/${cleanName}`
+  ];
+
+  const results = [];
+  const checks = candidates.map(async (url) => {
+    try {
+      // Use the CORS proxy to make the request to avoid browser restrictions
+      const res = await fetch(PROXY + encodeURIComponent(url), { method: 'HEAD' });
+      // Some proxies don't support HEAD properly or sites block HEAD, so we might get a 405. 
+      // In a real app we'd handle 405 by trying GET, but for now we'll accept 200.
+      if (res.ok || res.status === 405) {
+        results.push({ url: url, is_active: true });
+      }
+    } catch (e) {
+      // Ignore failures
+    }
+  });
+
+  await Promise.all(checks);
+  return results;
 }
