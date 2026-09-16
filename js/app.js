@@ -93,7 +93,7 @@ function triggerToastNotification(msg) {
 function resizeGridItem(item) {
   if (!item || !item.isConnected) return;
   const rowHeight = 10; // Matches grid-auto-rows in CSS
-  const rowGap = 16;    // Matches gap in CSS
+  const rowGap = window.innerWidth <= 768 ? 24 : 16; // Dynamic gap for mobile
 
   // Reset explicit height to measure natural height
   if (item.classList.contains('lb-hero-card')) {
@@ -102,7 +102,8 @@ function resizeGridItem(item) {
 
   // Use offsetHeight instead of getBoundingClientRect().height because
   // offsetHeight is NOT affected by CSS transforms (scale), preventing overlap.
-  const rowSpan = Math.ceil((item.offsetHeight + rowGap) / (rowHeight + rowGap));
+  // We add +2 to the height as a buffer against browser sub-pixel rendering bugs
+  const rowSpan = Math.ceil((item.offsetHeight + 2 + rowGap) / (rowHeight + rowGap));
   item.style.gridRowEnd = `span ${rowSpan}`;
 
   // Snap the hero card to the exact height of the allocated grid span to prevent bottom gaps
@@ -1250,11 +1251,11 @@ function injectPostCardsIntoGrid(data, targetContainer = grid) {
 
   // Phase 2: Write Phase
   const rowHeight = 10;
-  const rowGap = 16;
-  newCards.forEach((card, i) => {
-    const rowSpan = Math.ceil((cardHeights[i] + rowGap) / (rowHeight + rowGap));
-    card.style.gridRowEnd = `span ${rowSpan}`;
-  });
+  const rowGap = window.innerWidth <= 768 ? 24 : 16;
+  for (let i = 0; i < newCards.length; i++) {
+    const rowSpan = Math.ceil((cardHeights[i] + 2 + rowGap) / (rowHeight + rowGap));
+    newCards[i].style.gridRowEnd = `span ${rowSpan}`;
+  }
 }
 
 // Global Panic Button (Space + Tab)

@@ -270,7 +270,7 @@ function openLightbox(index) {
       const grid = document.getElementById('lb-recommendations-grid');
       let colWidth = 256; // Fallback
       const rowHeight = 10;
-      const rowGap = 16;
+      const rowGap = window.innerWidth <= 768 ? 24 : 16;
       if (grid) {
           const gridStyle = window.getComputedStyle(grid);
           const cols = gridStyle.gridTemplateColumns;
@@ -278,17 +278,28 @@ function openLightbox(index) {
               const firstCol = cols.split(' ')[0];
               const parsedCol = parseFloat(firstCol);
               if (!isNaN(parsedCol)) {
-                  colWidth = parsedCol + 16; // column width + gap
+                  colWidth = parsedCol + rowGap; // column width + gap
               }
           }
       }
       
       let colsNeeded = Math.round(desiredTotalWidth / colWidth);
-      if (colsNeeded < 3) colsNeeded = 3; 
+      if (colsNeeded < 2) colsNeeded = 2;
       
       // Calculate exact dimensions to leave NO gap with masonry grid
-      const actualCardWidth = (colsNeeded * colWidth) - 16;
-      let rowSpan = Math.round((targetImgHeight + rowGap) / (rowHeight + rowGap));
+      const actualCardWidth = (colsNeeded * colWidth) - rowGap;
+      const lbImg = lbContainer.querySelector('img, video');
+      targetImgHeight = lbImg ? lbImg.offsetHeight : targetImgHeight;
+
+      // Ensure minimal height for aesthetic framing when height is known
+      if (targetImgHeight > 0) {
+        targetImgHeight = Math.max(targetImgHeight, 300);
+      } else {
+        targetImgHeight = window.innerHeight * 0.75;
+      }
+
+      // Add a 2px buffer to prevent edge cases with sub-pixel rounding
+      let rowSpan = Math.round((targetImgHeight + 2 + rowGap) / (rowHeight + rowGap));
       let exactGridHeight = rowSpan * rowHeight + (rowSpan - 1) * rowGap;
       let exactImgWidth = exactGridHeight * imgAspect;
       let exactDetailsWidth = actualCardWidth - exactImgWidth;

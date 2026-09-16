@@ -53,6 +53,19 @@
         <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" aria-controls="view-vault">
           <img src="Icons/icons8-safe-48.png" alt="Vault" width="24" height="24" style="pointer-events:none;">
         </button>
+        <div class="profile-dropdown-wrapper" style="position: relative;">
+          <button class="sidebar-item" id="nav-profile" type="button" aria-label="View Profile"
+            onclick="toggleProfileDropdown(event)">
+            <img src="Icons/icons8-user-48.png" width="24" height="24" alt="Profile" style="pointer-events:none;">
+          </button>
+          <div id="profile-dropdown" class="profile-dropdown-menu">
+            <ul>
+              <li><button type="button" onclick="window.location.href='login.html'">Login / Register</button></li>
+              <li><button type="button" onclick="document.getElementById('nav-vault').click(); document.getElementById('profile-dropdown').classList.remove('show');">Account</button></li>
+              <li><button type="button" onclick="document.getElementById('nav-settings').click(); document.getElementById('profile-dropdown').classList.remove('show');">Settings</button></li>
+            </ul>
+          </div>
+        </div>
       </div>
       <button class="sidebar-item" id="nav-settings" title="Settings" aria-label="Settings"
         aria-controls="view-settings">
@@ -120,21 +133,6 @@
                   </div>
                 </div>
               </div>
-              <div class="profile-dropdown-wrapper" style="position: relative;">
-                <button id="search-btn" type="button" aria-label="View Profile"
-                  onclick="toggleProfileDropdown(event)">
-                  <img src="Icons/icons8-user-48.png" width="24" height="24" alt="Profile"
-                    style="filter: invert(1); opacity: 0.8; transition: opacity 0.2s;">
-                </button>
-                <div id="profile-dropdown" class="profile-dropdown-menu">
-                  <ul>
-                    <li><button type="button" onclick="window.location.href='login.html'">Login / Register</button></li>
-                    <li><button type="button" onclick="document.getElementById('nav-vault').click(); document.getElementById('profile-dropdown').classList.remove('show');">Account</button></li>
-                    <li><button type="button" onclick="document.getElementById('nav-settings').click(); document.getElementById('profile-dropdown').classList.remove('show');">Settings</button></li>
-                  </ul>
-                </div>
-              </div>
-
             </div>
           </form>
 
