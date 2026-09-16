@@ -795,9 +795,27 @@ window.savePostToFolder = function(post, folderName, btnElement) {
     if (typeof renderVaultFoldersNav === 'function') renderVaultFoldersNav();
   }
   
-  // Re-render home folder nav so new/empty folders show up immediately once an item is added
   if (typeof renderHomeFolderTabs === 'function') renderHomeFolderTabs();
 };
+
+// Profile Dropdown Logic
+window.toggleProfileDropdown = function(event) {
+  event.stopPropagation();
+  const dropdown = document.getElementById('profile-dropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('show');
+  }
+};
+
+document.addEventListener('click', function(event) {
+  const dropdown = document.getElementById('profile-dropdown');
+  const btn = document.getElementById('search-btn');
+  if (dropdown && dropdown.classList.contains('show')) {
+    if (!dropdown.contains(event.target) && !btn.contains(event.target)) {
+      dropdown.classList.remove('show');
+    }
+  }
+});
 
 function openFolderMenu(e, post, anchorBtn, onUpdateCallback = null) {
   e.stopPropagation();

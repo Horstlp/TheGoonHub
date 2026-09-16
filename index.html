@@ -35,17 +35,27 @@
 <body>
 
   <div class="app-container">
+    <svg width="0" height="0" style="position:absolute; width:0; height:0; overflow:hidden;">
+      <filter id="aura-noise-warp">
+        <feTurbulence type="fractalNoise" baseFrequency="0.008" numOctaves="3" result="noise">
+          <animate attributeName="baseFrequency" values="0.008;0.012;0.008" dur="4s" repeatCount="indefinite" />
+        </feTurbulence>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="40" xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+    </svg>
     <!-- Accessibility & Semantic HTML: Use <nav> and aria-label for navigation -->
     <nav class="sidebar" aria-label="Primary Navigation">
       <div class="sidebar-nav">
-        <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images" aria-controls="view-images" aria-current="page">
+        <button class="sidebar-item active" id="nav-images" title="Images" aria-label="View Images"
+          aria-controls="view-images" aria-current="page">
           <img src="Icons/icons8-image-48.png" alt="Images" width="24" height="24" style="pointer-events:none;">
         </button>
         <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" aria-controls="view-vault">
           <img src="Icons/icons8-safe-48.png" alt="Vault" width="24" height="24" style="pointer-events:none;">
         </button>
       </div>
-      <button class="sidebar-item" id="nav-settings" title="Settings" aria-label="Settings" aria-controls="view-settings">
+      <button class="sidebar-item" id="nav-settings" title="Settings" aria-label="Settings"
+        aria-controls="view-settings">
         <img src="Icons/icons8-setting-48.png" alt="Settings" width="24" height="24" style="pointer-events:none;">
       </button>
     </nav>
@@ -71,7 +81,8 @@
 
                 <!-- Inline Search Timeframe Capsule -->
                 <div class="search-timeframe-container" id="search-timeframe-container" style="display: none;">
-                  <button type="button" id="timeframe-toggle-btn" class="timeframe-toggle-btn" title="Choose Timeframe" aria-label="Choose timeframe" aria-expanded="false" aria-controls="search-timeframe-options">
+                  <button type="button" id="timeframe-toggle-btn" class="timeframe-toggle-btn" title="Choose Timeframe"
+                    aria-label="Choose timeframe" aria-expanded="false" aria-controls="search-timeframe-options">
                     <img src="Icons/icons8-calendar-32.png" alt="" aria-hidden="true" width="20" height="20">
                   </button>
                   <div class="search-timeframe-options" id="search-timeframe-options">
@@ -89,7 +100,8 @@
 
                 <!-- Inline Search Sort Capsule -->
                 <div class="search-sort-container" id="search-sort-container" style="display: none;">
-                  <button type="button" id="sort-toggle-btn" class="sort-toggle-btn" title="Choose Sort Order" aria-label="Choose sort order" aria-expanded="false" aria-controls="search-sort-options">
+                  <button type="button" id="sort-toggle-btn" class="sort-toggle-btn" title="Choose Sort Order"
+                    aria-label="Choose sort order" aria-expanded="false" aria-controls="search-sort-options">
                     <img src="Icons\icons8-dice-32.png" alt="" aria-hidden="true" width="20" height="20">
                   </button>
                   <div class="search-sort-options" id="search-sort-options">
@@ -108,18 +120,26 @@
                   </div>
                 </div>
               </div>
-              <button id="search-btn" type="button" aria-label="View Profile"
-                onclick="document.getElementById('nav-vault').click()">
-                <img src="Icons/icons8-user-48.png" width="24" height="24" alt="Profile"
-                  style="filter: invert(1); opacity: 0.8; transition: opacity 0.2s;">
-              </button>
+              <div class="profile-dropdown-wrapper" style="position: relative;">
+                <button id="search-btn" type="button" aria-label="View Profile"
+                  onclick="toggleProfileDropdown(event)">
+                  <img src="Icons/icons8-user-48.png" width="24" height="24" alt="Profile"
+                    style="filter: invert(1); opacity: 0.8; transition: opacity 0.2s;">
+                </button>
+                <div id="profile-dropdown" class="profile-dropdown-menu">
+                  <ul>
+                    <li><button type="button" onclick="window.location.href='login.html'">Login / Register</button></li>
+                    <li><button type="button" onclick="document.getElementById('nav-vault').click(); document.getElementById('profile-dropdown').classList.remove('show');">Account</button></li>
+                    <li><button type="button" onclick="document.getElementById('nav-settings').click(); document.getElementById('profile-dropdown').classList.remove('show');">Settings</button></li>
+                  </ul>
+                </div>
+              </div>
 
             </div>
           </form>
 
           <!-- Artist Socials Panel -->
-          <div id="artist-info-panel" style="display: none; margin-top: 12px; margin-bottom: -4px; background: rgba(30, 30, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px 20px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: fadeIn 0.3s ease; display: flex; flex-direction: column; gap: 16px;">
-          </div>
+          <div id="artist-info-panel"></div>
           <!-- Pinterest-style Home View Folder Tabs -->
           <nav class="home-folders-nav" id="home-folders-nav" aria-label="Home Feed Categories">
             <!-- Folder tabs dynamically injected here -->
@@ -145,7 +165,7 @@
 
         <div id="scroll-sentinel" aria-hidden="true"></div>
       </section>
-        <!-- VAULT VIEW -->
+      <!-- VAULT VIEW -->
       <section id="view-vault" class="app-view" style="display: none;" aria-labelledby="vault-title">
 
         <!-- Profile Header -->
@@ -162,12 +182,18 @@
         </header>
 
         <!-- Backup Reminder -->
-        <div style="background: rgba(30, 30, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; margin: 0 40px 24px 40px; display: flex; align-items: center; justify-content: space-between;">
+        <div
+          style="background: rgba(30, 30, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; margin: 0 40px 24px 40px; display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <img src="Icons/icons8-error-30.png" style="width: 20px; height: 20px; filter: grayscale(1) opacity(0.7);" alt="Info">
-            <span style="color: #a1a1aa; font-size: 0.9rem;">Your vault is stored locally. Don't forget to periodically export your data to back it up!</span>
+            <img src="Icons/icons8-error-30.png" style="width: 20px; height: 20px; filter: grayscale(1) opacity(0.7);"
+              alt="Info">
+            <span style="color: #a1a1aa; font-size: 0.9rem;">Your vault is stored locally. Don't forget to periodically
+              export your data to back it up!</span>
           </div>
-          <button onclick="document.getElementById('vault-main-taskbar').style.display='flex'; triggerToastNotification('Click Export on the taskbar below!');" style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Backup Now</button>
+          <button
+            onclick="document.getElementById('vault-main-taskbar').style.display='flex'; triggerToastNotification('Click Export on the taskbar below!');"
+            style="background: rgba(255,255,255,0.1); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;">Backup
+            Now</button>
         </div>
         <nav class="folder-nav" id="vault-folders-nav"
           style="display: flex; gap: 16px; margin-bottom: 0px; overflow-x: auto; padding-bottom: 16px; padding-top: 8px; padding-left: 8px; padding-right: 8px; min-height: 120px; align-items: flex-start;"
@@ -186,162 +212,207 @@
 
       </section>
 
-        <!-- SETTINGS VIEW -->
-        <section id="view-settings" class="app-view" style="display: none;" aria-labelledby="settings-title">
-          <div class="settings-container">
-            <h2 id="settings-title" style="margin-bottom: 24px;">Settings</h2>
-            
-            <div class="settings-layout" style="display: flex; gap: 40px; align-items: flex-start; max-width: 1200px; margin: 0 auto; height: 100%;">
-              <aside class="settings-sidebar" style="width: 240px; flex-shrink: 0;">
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
-                  <li><button class="settings-tab active" data-target="settings-account">Account</button></li>
-                  <li><button class="settings-tab" data-target="settings-tuning">Tuning</button></li>
-                  <li><button class="settings-tab" data-target="settings-preferences">Preferences</button></li>
-                  <li><button class="settings-tab" data-target="settings-network">Network</button></li>
-                  <li><button class="settings-tab" data-target="settings-legal">Legal & Privacy</button></li>
-                </ul>
-              </aside>
+      <!-- SETTINGS VIEW -->
+      <section id="view-settings" class="app-view" style="display: none;" aria-labelledby="settings-title">
+        <div class="settings-container">
+          <h2 id="settings-title" style="margin-bottom: 24px;">Settings</h2>
 
-              <div class="settings-content" style="flex: 1; max-width: 600px;">
-                <!-- Account Panel -->
-                <div id="settings-account" class="settings-pane">
-                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Public Profile</h3>
-                  <p style="color: #a1a1aa; margin-bottom: 32px;">People visiting your profile will see the following info.</p>
-                  
-                  <div class="setting-group" style="margin-bottom: 24px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Avatar URL</label>
-                    <input type="text" id="setting-avatar" placeholder="https://example.com/avatar.png" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
-                  </div>
-                  
-                  <div class="setting-group" style="margin-bottom: 32px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Username</label>
-                    <input type="text" id="setting-username" placeholder="Guest" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
-                  </div>
+          <div class="settings-layout"
+            style="display: flex; gap: 40px; align-items: flex-start; max-width: 1200px; margin: 0 auto; height: 100%;">
+            <aside class="settings-sidebar" style="width: 240px; flex-shrink: 0;">
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                <li><button class="settings-tab active" data-target="settings-account">Account</button></li>
+                <li><button class="settings-tab" data-target="settings-tuning">Tuning</button></li>
+                <li><button class="settings-tab" data-target="settings-preferences">Preferences</button></li>
+                <li><button class="settings-tab" data-target="settings-network">Network</button></li>
+                <li><button class="settings-tab" data-target="settings-legal">Legal & Privacy</button></li>
+              </ul>
+            </aside>
 
-                  <h3 style="margin-bottom: 24px; margin-top: 48px; font-size: 1.5rem;">Account Insights</h3>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
-                    <div style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
-                      <div id="insight-vault-items" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
-                      <div style="color: #a1a1aa; font-size: 0.85rem;">Vaulted Items</div>
-                    </div>
-                    <div style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
-                      <div id="insight-likes" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
-                      <div style="color: #a1a1aa; font-size: 0.85rem;">Total Likes</div>
-                    </div>
-                    <div style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
-                      <div id="insight-tags" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
-                      <div style="color: #a1a1aa; font-size: 0.85rem;">Filtered Tags</div>
-                    </div>
-                  </div>
+            <div class="settings-content" style="flex: 1; max-width: 600px;">
+              <!-- Account Panel -->
+              <div id="settings-account" class="settings-pane">
+                <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Public Profile</h3>
+                <p style="color: #a1a1aa; margin-bottom: 32px;">People visiting your profile will see the following
+                  info.</p>
+
+                <div class="setting-group" style="margin-bottom: 24px;">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Avatar
+                    URL</label>
+                  <input type="text" id="setting-avatar" placeholder="https://example.com/avatar.png"
+                    style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
                 </div>
 
-                <!-- Tuning Panel -->
-                <div id="settings-tuning" class="settings-pane" style="display: none;">
-                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Feed Tuning</h3>
-                  
-                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                      <label style="font-weight: 500; font-size: 1rem;">Minimum Score Threshold</label>
-                      <span id="setting-score-val" style="background: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">0</span>
-                    </div>
-                    <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Filter out posts that fall below this community score.</p>
-                    <input type="range" id="setting-score-slider" min="0" max="1000" step="10" value="0" class="custom-slider" style="width: 100%;">
-                  </div>
-
-                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                      <label style="font-weight: 500; font-size: 1rem;">Algorithm Aggressiveness</label>
-                      <span id="setting-algo-val" style="background: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">50%</span>
-                    </div>
-                    <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">How strongly the recommendation algorithm tailors content to your likes.</p>
-                    <input type="range" id="setting-algo-slider" min="0" max="100" step="5" value="50" class="custom-slider" style="width: 100%;">
-                  </div>
+                <div class="setting-group" style="margin-bottom: 32px;">
+                  <label
+                    style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Username</label>
+                  <input type="text" id="setting-username" placeholder="Guest"
+                    style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
                 </div>
 
-                <!-- Preferences Panel -->
-                <div id="settings-preferences" class="settings-pane" style="display: none;">
-                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Viewing Preferences</h3>
-                  
-                  <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                      <div style="font-weight: 500; font-size: 1rem;">Video Autoplay</div>
-                      <div style="color: #a1a1aa; font-size: 0.85rem;">Automatically play videos when in view.</div>
+                <h3 style="margin-bottom: 24px; margin-top: 48px; font-size: 1.5rem;">Account Insights</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px;">
+                  <div
+                    style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                    <div id="insight-vault-items" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0
                     </div>
-                    <label class="premium-toggle">
-                      <input type="checkbox" id="setting-autoplay" checked>
-                      <span class="toggle-slider"></span>
-                    </label>
+                    <div style="color: #a1a1aa; font-size: 0.85rem;">Vaulted Items</div>
                   </div>
-                  
-                  <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                      <div style="font-weight: 500; font-size: 1rem;">Blur NSFW Content</div>
-                      <div style="color: #a1a1aa; font-size: 0.85rem;">Blur explicit images until hovered or clicked.</div>
-                    </div>
-                    <label class="premium-toggle">
-                      <input type="checkbox" id="setting-blur">
-                      <span class="toggle-slider"></span>
-                    </label>
+                  <div
+                    style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                    <div id="insight-likes" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
+                    <div style="color: #a1a1aa; font-size: 0.85rem;">Total Likes</div>
                   </div>
-
-                  <div class="setting-group" style="margin-bottom: 24px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Theme Accent Color</label>
-                    <select id="setting-theme" style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none; cursor: pointer;">
-                      <option value="purple">Royal Purple (Default)</option>
-                      <option value="blue">Ocean Blue</option>
-                      <option value="green">Emerald Green</option>
-                      <option value="pink">Neon Pink</option>
-                    </select>
+                  <div
+                    style="background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                    <div id="insight-tags" style="font-size: 2rem; font-weight: bold; margin-bottom: 4px;">0</div>
+                    <div style="color: #a1a1aa; font-size: 0.85rem;">Filtered Tags</div>
                   </div>
                 </div>
-
-                <!-- Network Panel -->
-                <div id="settings-network" class="settings-pane" style="display: none;">
-                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Network & Data</h3>
-                  
-                  <div class="setting-group" style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                      <div style="font-weight: 500; font-size: 1rem;">Data Saver Mode</div>
-                      <div style="color: #a1a1aa; font-size: 0.85rem;">Load lower resolution thumbnails to save bandwidth.</div>
-                    </div>
-                    <label class="premium-toggle">
-                      <input type="checkbox" id="setting-data-saver">
-                      <span class="toggle-slider"></span>
-                    </label>
-                  </div>
-                  
-                  <div class="setting-group" style="margin-top: 48px; border-top: 1px solid rgba(255,60,60,0.3); padding-top: 24px;">
-                    <h4 style="color: #ff4d4d; margin-bottom: 8px;">Danger Zone</h4>
-                    <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Irreversibly delete all local settings, algorithms, and vault data.</p>
-                    <button id="setting-clear-data" style="background: rgba(255, 60, 60, 0.1); color: #ff4d4d; border: 1px solid rgba(255, 60, 60, 0.3); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
-                      Clear Local Data
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Legal Panel -->
-                <div id="settings-legal" class="settings-pane" style="display: none;">
-                  <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Legal & Privacy</h3>
-                  
-                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <h4 style="margin: 0 0 12px 0; font-size: 1.1rem; color: #fff;">Privacy Policy</h4>
-                    <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin: 0;">
-                      All data, including your Vault, liked items, and application settings, is stored entirely locally on your device via standard browser storage APIs. We do not collect personal data, track your IP address, or send your analytics to any centralized server.
-                    </p>
-                  </div>
-                  
-                  <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                    <h4 style="margin: 0 0 12px 0; font-size: 1.1rem; color: #fff;">Terms of Service</h4>
-                    <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin: 0;">
-                      This application acts solely as a client-side browser interface for public, third-party APIs. We do not host, generate, or manage any of the media content displayed. By using this application, you acknowledge that you are responsible for the content you view and save.
-                    </p>
-                  </div>
-                </div>
-
               </div>
+
+              <!-- Tuning Panel -->
+              <div id="settings-tuning" class="settings-pane" style="display: none;">
+                <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Feed Tuning</h3>
+
+                <div class="setting-group"
+                  style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <label style="font-weight: 500; font-size: 1rem;">Minimum Score Threshold</label>
+                    <span id="setting-score-val"
+                      style="background: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">0</span>
+                  </div>
+                  <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Filter out posts that fall below
+                    this community score.</p>
+                  <input type="range" id="setting-score-slider" min="0" max="1000" step="10" value="0"
+                    class="custom-slider" style="width: 100%;">
+                </div>
+
+                <div class="setting-group"
+                  style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <label style="font-weight: 500; font-size: 1rem;">Algorithm Aggressiveness</label>
+                    <span id="setting-algo-val"
+                      style="background: var(--primary); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;">50%</span>
+                  </div>
+                  <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">How strongly the recommendation
+                    algorithm tailors content to your likes.</p>
+                  <input type="range" id="setting-algo-slider" min="0" max="100" step="5" value="50"
+                    class="custom-slider" style="width: 100%;">
+                </div>
+              </div>
+
+              <!-- Preferences Panel -->
+              <div id="settings-preferences" class="settings-pane" style="display: none;">
+                <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Viewing Preferences</h3>
+
+                <div class="setting-group"
+                  style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-weight: 500; font-size: 1rem;">Video Autoplay</div>
+                    <div style="color: #a1a1aa; font-size: 0.85rem;">Automatically play videos when in view.</div>
+                  </div>
+                  <label class="premium-toggle">
+                    <input type="checkbox" id="setting-autoplay" checked>
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="setting-group"
+                  style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-weight: 500; font-size: 1rem;">Blur NSFW Content</div>
+                    <div style="color: #a1a1aa; font-size: 0.85rem;">Blur explicit images until hovered or clicked.
+                    </div>
+                  </div>
+                  <label class="premium-toggle">
+                    <input type="checkbox" id="setting-blur">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="setting-group" style="margin-bottom: 24px;">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Theme Accent
+                    Color</label>
+                  <select id="setting-theme"
+                    style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(22,22,31,0.8); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none; cursor: pointer;">
+                    <option value="purple">Royal Purple (Default)</option>
+                    <option value="blue">Ocean Blue</option>
+                    <option value="green">Emerald Green</option>
+                    <option value="pink">Neon Pink</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Network Panel -->
+              <div id="settings-network" class="settings-pane" style="display: none;">
+                <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Network & Data</h3>
+
+                <div class="setting-group"
+                  style="margin-bottom: 16px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between;">
+                  <div>
+                    <div style="font-weight: 500; font-size: 1rem;">Data Saver Mode</div>
+                    <div style="color: #a1a1aa; font-size: 0.85rem;">Load lower resolution thumbnails to save bandwidth.
+                    </div>
+                  </div>
+                  <label class="premium-toggle">
+                    <input type="checkbox" id="setting-data-saver">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="setting-group"
+                  style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem;">Search API Key
+                    (Optional)</label>
+                  <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 12px;">Provide a <a
+                      href="https://serper.dev" target="_blank" style="color: var(--accent-pink);">Serper.dev</a> API
+                    key to enable fallback web searches for artist social links.</p>
+                  <input type="password" id="setting-serper-key" placeholder="Enter API Key (Starts with a...)"
+                    style="width: 100%; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none; font-family: monospace;">
+                </div>
+
+                <div class="setting-group"
+                  style="margin-top: 48px; border-top: 1px solid rgba(255,60,60,0.3); padding-top: 24px;">
+                  <h4 style="color: #ff4d4d; margin-bottom: 8px;">Danger Zone</h4>
+                  <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Irreversibly delete all local
+                    settings, algorithms, and vault data.</p>
+                  <button id="setting-clear-data"
+                    style="background: rgba(255, 60, 60, 0.1); color: #ff4d4d; border: 1px solid rgba(255, 60, 60, 0.3); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
+                    Clear Local Data
+                  </button>
+                </div>
+              </div>
+
+              <!-- Legal Panel -->
+              <div id="settings-legal" class="settings-pane" style="display: none;">
+                <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Legal & Privacy</h3>
+
+                <div class="setting-group"
+                  style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                  <h4 style="margin: 0 0 12px 0; font-size: 1.1rem; color: #fff;">Privacy Policy</h4>
+                  <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin: 0;">
+                    All data, including your Vault, liked items, and application settings, is stored entirely locally on
+                    your device via standard browser storage APIs. We do not collect personal data, track your IP
+                    address, or send your analytics to any centralized server.
+                  </p>
+                </div>
+
+                <div class="setting-group"
+                  style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                  <h4 style="margin: 0 0 12px 0; font-size: 1.1rem; color: #fff;">Terms of Service</h4>
+                  <p style="color: #a1a1aa; font-size: 0.95rem; line-height: 1.6; margin: 0;">
+                    This application acts solely as a client-side browser interface for public, third-party APIs. We do
+                    not host, generate, or manage any of the media content displayed. By using this application, you
+                    acknowledge that you are responsible for the content you view and save.
+                  </p>
+                </div>
+              </div>
+
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
     </main>
 
@@ -349,11 +420,15 @@
     <div class="photoshop-task-bar" id="vault-main-taskbar" style="bottom: 32px; z-index: 1999; display: none;">
       <!-- Left: Library Selector -->
       <nav class="vault-tabs" id="vault-main-tabs" style="display: flex; gap: 4px;" aria-label="Vault View Tabs">
-        <button class="vault-tab-btn active" data-tab="images" style="padding: 8px 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text); display: flex; align-items: center; gap: 8px;">
-          <img src="Icons/icons8-image-48.png" width="20" height="20" style="filter: invert(1); opacity: 0.9;" alt=""> Posts
+        <button class="vault-tab-btn active" data-tab="images"
+          style="padding: 8px 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <img src="Icons/icons8-image-48.png" width="20" height="20" style="filter: invert(1); opacity: 0.9;" alt="">
+          Posts
         </button>
-        <button class="vault-tab-btn" data-tab="bookshelf" style="padding: 8px 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text); display: flex; align-items: center; gap: 8px;">
-          <img src="Icons/icons8-book-48.png" width="20" height="20" style="filter: invert(1); opacity: 0.9;" alt=""> Mangas
+        <button class="vault-tab-btn" data-tab="bookshelf"
+          style="padding: 8px 16px; border-radius: 50px; font-weight: bold; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--text); display: flex; align-items: center; gap: 8px;">
+          <img src="Icons/icons8-book-48.png" width="20" height="20" style="filter: invert(1); opacity: 0.9;" alt="">
+          Mangas
         </button>
       </nav>
 
@@ -362,10 +437,12 @@
       <!-- Center: Search Bar with embedded Settings -->
       <div style="display: flex; align-items: center; flex: 1; min-width: 200px;">
         <input id="vault-search-input" type="search" placeholder="Search tags..." autocomplete="off"
-          aria-label="Search Vault" style="width: 100%; background: transparent; border: none; color: var(--text); outline: none; padding: 4px 8px; font-size: 0.95rem; min-width: 0;" />
+          aria-label="Search Vault"
+          style="width: 100%; background: transparent; border: none; color: var(--text); outline: none; padding: 4px 8px; font-size: 0.95rem; min-width: 0;" />
 
         <div class="search-sort-container" id="vault-sort-capsule" style="margin-left: 4px;">
-          <button type="button" id="vault-sort-toggle-btn" class="sort-toggle-btn" title="Vault Sorting" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px;">
+          <button type="button" id="vault-sort-toggle-btn" class="sort-toggle-btn" title="Vault Sorting"
+            style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px;">
             <img id="vault-sort-toggle-icon" src="Icons/icons8-clock-30.png" alt="Settings" aria-hidden="true"
               width="18" height="18" style="filter: brightness(0) invert(1); opacity: 0.8; transition: all 0.2s;">
           </button>
@@ -385,13 +462,18 @@
         </div>
 
         <div class="search-sort-container" id="vault-slideshow-capsule" style="margin-left: 4px;">
-          <button type="button" id="vault-slideshow-toggle-btn" class="sort-toggle-btn" title="Vault Slideshow Settings" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px;">
+          <button type="button" id="vault-slideshow-toggle-btn" class="sort-toggle-btn" title="Vault Slideshow Settings"
+            style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; padding: 4px;">
             <img id="vault-slideshow-icon" src="Icons/icons8-switch-camera-48.png" alt="Slideshow" aria-hidden="true"
               width="18" height="18" style="filter: brightness(0) invert(1); opacity: 0.8; transition: all 0.2s;">
           </button>
-          <div class="search-sort-options" id="vault-slideshow-options" style="align-items: center; gap: 8px; display: flex; width: 100%;">
-             <span style="color: var(--text); font-size: 0.8rem; font-weight: bold; white-space: nowrap; width: 32px; text-align: center;" id="vault-slideshow-speed-label">Off</span>
-             <input type="range" id="vault-slideshow-speed" class="custom-slider" min="0" max="100" value="0" style="flex: 1; cursor: pointer; min-width: 80px;">
+          <div class="search-sort-options" id="vault-slideshow-options"
+            style="align-items: center; gap: 8px; display: flex; width: 100%;">
+            <span
+              style="color: var(--text); font-size: 0.8rem; font-weight: bold; white-space: nowrap; width: 32px; text-align: center;"
+              id="vault-slideshow-speed-label">Off</span>
+            <input type="range" id="vault-slideshow-speed" class="custom-slider" min="0" max="100" value="0"
+              style="flex: 1; cursor: pointer; min-width: 80px;">
           </div>
         </div>
       </div>
@@ -400,13 +482,18 @@
 
       <!-- Right: Profile Actions -->
       <div class="profile-actions" style="display: flex; gap: 12px; align-items: center;">
-        <button id="vault-new-folder-btn" class="timeframe-toggle-btn" title="Create New Folder" aria-label="Create New Folder" style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+        <button id="vault-new-folder-btn" class="timeframe-toggle-btn" title="Create New Folder"
+          aria-label="Create New Folder"
+          style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
           <img src="Icons/icons8-xbox-cross-48.png" style="width: 22px; height: 22px; filter: invert(1);" alt="+">
         </button>
-        <button id="vault-bulk-edit-btn" class="timeframe-toggle-btn" title="Bulk Edit Mode" aria-label="Bulk Edit Mode" style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+        <button id="vault-bulk-edit-btn" class="timeframe-toggle-btn" title="Bulk Edit Mode" aria-label="Bulk Edit Mode"
+          style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
           <img src="Icons/icons8-pen-48 (1).png" style="width: 22px; height: 22px; filter: invert(1);" alt="Edit">
         </button>
-        <button id="vault-settings-btn" class="timeframe-toggle-btn" title="Global Settings" aria-label="Global Settings" style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+        <button id="vault-settings-btn" class="timeframe-toggle-btn" title="Global Settings"
+          aria-label="Global Settings"
+          style="width: 48px; height: 48px; background: rgba(30, 30, 40, 0.5); border: 1px solid var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
           <img src="Icons/icons8-setting-48.png" style="width: 22px; height: 22px; filter: invert(1);" alt="Settings">
         </button>
       </div>
@@ -453,14 +540,29 @@
             <!-- Left: Media -->
             <div class="lb-card-media" style="position: relative;">
               <div class="lb-glass-pill-container">
-                <button id="lightbox-back" class="lb-glass-btn lb-glass-btn-left" aria-label="Go Back" style="display: none;">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+                <button id="lightbox-back" class="lb-glass-btn lb-glass-btn-left" aria-label="Go Back"
+                  style="display: none;">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5" />
+                    <polyline points="12 19 5 12 12 5" />
+                  </svg>
                 </button>
-                <button id="lightbox-slim-close" class="lb-glass-btn lb-glass-btn-right" aria-label="Close Lightbox Completely" style="display: none;" title="Close">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <button id="lightbox-slim-close" class="lb-glass-btn lb-glass-btn-right"
+                  aria-label="Close Lightbox Completely" style="display: none;" title="Close">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                 </button>
-                <button id="lightbox-close" class="lb-glass-btn lb-glass-btn-right" aria-label="Close Lightbox" title="Close">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <button id="lightbox-close" class="lb-glass-btn lb-glass-btn-right" aria-label="Close Lightbox"
+                  title="Close">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                 </button>
               </div>
               <div id="lightbox-media-container" aria-live="polite"></div>
@@ -469,41 +571,49 @@
             <!-- Right: Details Panel -->
             <div class="lb-card-details-wrapper" style="position: relative; flex: 1 1 42%; min-width: 280px;">
               <div class="lb-card-details" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;">
-              <!-- Action Bar Header -->
-              <div class="lb-card-header">
-                <div class="lb-header-left">
-                  <!-- Back button moved to media container -->
-                </div>
-                <div class="lb-header-right">
-                  <div class="pinterest-save-widget" id="lb-pinterest-widget">
-                    <div class="custom-select-wrapper" id="lb-folder-select-wrapper">
-                      <button class="pinterest-folder-select" id="lb-folder-select">Saved</button>
-                    </div>
-                    <button class="pinterest-save-btn" id="lb-save-btn">Merken</button>
-                    <ul class="custom-options-list card-folder-list" id="lb-folder-options"></ul>
+                <!-- Action Bar Header -->
+                <div class="lb-card-header">
+                  <div class="lb-header-left">
+                    <!-- Back button moved to media container -->
                   </div>
-                  <button class="lb-header-btn" id="lb-dl-btn" aria-label="Download Image" title="Download">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  </button>
-                  <!-- Close buttons moved to media container -->
+                  <div class="lb-header-right">
+                    <div class="pinterest-save-widget" id="lb-pinterest-widget">
+                      <div class="custom-select-wrapper" id="lb-folder-select-wrapper">
+                        <button class="pinterest-folder-select" id="lb-folder-select">Saved</button>
+                      </div>
+                      <button class="pinterest-save-btn" id="lb-save-btn">Merken</button>
+                      <ul class="custom-options-list card-folder-list" id="lb-folder-options"></ul>
+                    </div>
+                    <button class="lb-header-btn" id="lb-dl-btn" aria-label="Download Image" title="Download">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                    </button>
+                    <!-- Close buttons moved to media container -->
+                  </div>
                 </div>
-              </div>
 
-              <!-- Meta Info -->
-              <div class="lb-card-meta">
-                <span id="lb-score"></span>
-                <span class="lb-meta-dot">Â·</span>
-                <span id="lb-size"></span>
-              </div>
+                <!-- Meta Info -->
+                <div class="lb-card-meta">
+                  <span id="lb-score"></span>
+                  <span class="lb-meta-dot">Â·</span>
+                  <span id="lb-size"></span>
+                </div>
 
-              <!-- Tags Dropdown -->
-              <div class="lb-tags-header" id="lb-tags-toggle">
-                <span>Tags</span>
-                <svg id="lb-tags-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <div id="lb-tags-collapse-container" style="display: none;">
-                <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
-              </div>
+                <!-- Tags Dropdown -->
+                <div class="lb-tags-header" id="lb-tags-toggle">
+                  <span>Tags</span>
+                  <svg id="lb-tags-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+                <div id="lb-tags-collapse-container" style="display: none;">
+                  <div class="lb-tags-stream" id="lb-tags-stream-box" aria-label="Image Tags"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -659,16 +769,22 @@
         <div class="settings-section">
           <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Insights & Statistics</h3>
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px;">
-            <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-vault-items">0</div>
+            <div
+              style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-vault-items">0
+              </div>
               <div class="modal-desc" style="margin: 0;">Vault Items</div>
             </div>
-            <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-liked-posts">0</div>
+            <div
+              style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-liked-posts">0
+              </div>
               <div class="modal-desc" style="margin: 0;">Liked Posts</div>
             </div>
-            <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
-              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-vault-folders">0</div>
+            <div
+              style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;">
+              <div style="font-size: 2rem; font-weight: bold; color: var(--accent-purple);" id="insight-vault-folders">0
+              </div>
               <div class="modal-desc" style="margin: 0;">Vault Folders</div>
             </div>
           </div>
@@ -679,7 +795,8 @@
           <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">UI & Layout</h3>
           <label style="display: block; margin-bottom: 8px; color: var(--text); font-weight: bold;">Grid Density</label>
           <p class="modal-desc">Adjust the size of the thumbnails across all grid views (Home, Vault, Manga).</p>
-          <select id="grid-density-select" class="filter-select" style="width: 100%; max-width: 300px; padding: 10px; border-radius: 8px; background: var(--surface); color: var(--text); border: 1px solid var(--border);">
+          <select id="grid-density-select" class="filter-select"
+            style="width: 100%; max-width: 300px; padding: 10px; border-radius: 8px; background: var(--surface); color: var(--text); border: 1px solid var(--border);">
             <option value="compact">Compact (More items)</option>
             <option value="normal" selected>Normal (Default)</option>
             <option value="large">Large (Bigger images)</option>
@@ -754,16 +871,17 @@
   </div>
 
   <!-- Storage Consent Banner -->
-  <div id="storage-banner" style="display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; background: rgba(30, 30, 42, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 20px 24px; z-index: 9999; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: space-between; gap: 24px;">
+  <div id="storage-banner"
+    style="display: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; background: rgba(30, 30, 42, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 20px 24px; z-index: 9999; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: space-between; gap: 24px;">
     <div>
       <h4 style="margin: 0 0 8px 0; color: #fff; font-size: 1.1rem;">Storage & Privacy</h4>
-      <p style="margin: 0; color: #a1a1aa; font-size: 0.9rem; line-height: 1.4;">This app stores your Vault and Settings locally on your device to function. We do not track you, collect personal data, or use third-party cookies.</p>
+      <p style="margin: 0; color: #a1a1aa; font-size: 0.9rem; line-height: 1.4;">This app stores your Vault and Settings
+        locally on your device to function. We do not track you, collect personal data, or use third-party cookies.</p>
     </div>
-    <button id="btn-accept-storage" style="background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: background 0.2s ease;">Understood</button>
+    <button id="btn-accept-storage"
+      style="background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: background 0.2s ease;">Understood</button>
   </div>
 
 </body>
+
 </html>
-
-
-

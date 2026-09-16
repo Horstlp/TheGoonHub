@@ -1036,8 +1036,38 @@ header p {
   border-radius: 16px;
   cursor: pointer;
   position: relative;
+  z-index: 2;
   border: 1px solid transparent;
-  transition: border-color 0.25s ease, transform 0.25s ease, grid-row-end 0.3s ease;
+  transition: border-color 0.25s ease, transform 0.25s ease, grid-row-end 0.3s ease, z-index 0s 0.25s;
+}
+
+.card:hover {
+  z-index: 1;
+  transition: border-color 0.25s ease, transform 0.25s ease, grid-row-end 0.3s ease, z-index 0s 0s;
+}
+
+@keyframes auraBlob {
+  0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+  34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+  67% { border-radius: 30% 70% 40% 60% / 60% 40% 50% 40%; }
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: -30px; left: -30px; right: -30px; bottom: -30px;
+  background: linear-gradient(135deg, var(--accent), var(--pill-copyright-bg), var(--accent));
+  filter: url(#aura-noise-warp) blur(16px);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.4s ease;
+  border-radius: 50%;
+  animation: auraBlob 8s infinite alternate ease-in-out;
+  pointer-events: none;
+}
+
+.card:hover::before {
+  opacity: 0.75;
 }
 
 .card:focus-visible {
@@ -1494,6 +1524,8 @@ header p {
 
 .lb-card-media {
   display: flex;
+  flex: 1;
+  min-width: 0;
   align-items: center;
   justify-content: center;
   background: transparent;
@@ -1550,12 +1582,11 @@ header p {
 
 #lightbox-media-container img,
 #lightbox-media-container video {
-  max-width: 100%;
-  height: auto;
-  max-height: 80vh;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  margin: 0 auto;
+  margin: 0;
   outline: none;
 }
 
@@ -4363,4 +4394,186 @@ body.video-mode .main-content {
 .artist-social-link svg {
   width: 28px !important;
   height: 28px !important;
+}
+
+/* Profile Dropdown */
+.profile-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 12px;
+  background: rgba(30, 30, 42, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  width: 200px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.profile-dropdown-menu.show {
+  display: block;
+}
+
+.profile-dropdown-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.profile-dropdown-menu li button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.profile-dropdown-menu li button:hover {
+  background: rgba(139, 92, 246, 0.2);
+  color: var(--accent-purple);
+}
+
+/* Auth Modal (Premium Design) */
+.auth-modal-content {
+  background: linear-gradient(145deg, rgba(30, 30, 42, 0.9), rgba(20, 20, 30, 0.95));
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 24px;
+  width: 90%;
+  max-width: 400px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(139, 92, 246, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.auth-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-modal-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.auth-modal-header button {
+  background: none;
+  border: none;
+  color: #a1a1aa;
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.auth-modal-header button:hover {
+  color: #ef4444;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  border-radius: 12px;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  padding: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-tab.active {
+  background: var(--accent-purple);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-group label {
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.auth-submit-btn {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 1.05rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.auth-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

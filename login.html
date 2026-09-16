@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Login or Register for R34 Media Hub Pro">
+  <title>Login / Register - R34 Media Hub Pro</title>
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .auth-page-container {
+      background: linear-gradient(145deg, rgba(30, 30, 42, 0.9), rgba(20, 20, 30, 0.95));
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 440px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(139, 92, 246, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .auth-header h1 {
+      margin: 0 0 8px 0;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .auth-header p {
+      margin: 0;
+      color: #a1a1aa;
+      font-size: 0.95rem;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 6px;
+      border-radius: 12px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .auth-tab.active {
+      background: var(--accent-purple);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .input-group label {
+      color: #a1a1aa;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .input-group input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    .auth-submit-btn {
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .auth-submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
+    }
+
+    .back-to-home {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      color: #a1a1aa;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    .back-to-home:hover {
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-page-container">
+    <div class="auth-header">
+      <h1 id="auth-title">Welcome Back</h1>
+      <p id="auth-subtitle">Login to access your personalized vault.</p>
+    </div>
+    
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <form id="login-form" class="auth-form" onsubmit="event.preventDefault(); alert('Login coming soon!'); window.location.href='index.html';">
+      <div class="input-group">
+        <label for="login-identifier">Username or Email</label>
+        <input type="text" id="login-identifier" placeholder="you@example.com or username" required>
+      </div>
+      <div class="input-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="auth-submit-btn">Login</button>
+    </form>
+
+    <form id="register-form" class="auth-form" style="display: none;" onsubmit="event.preventDefault(); alert('Registration coming soon!'); window.location.href='index.html';">
+      <div class="input-group">
+        <label for="register-username">Username</label>
+        <input type="text" id="register-username" placeholder="cooluser123" required>
+      </div>
+      <div class="input-group">
+        <label for="register-email">Email <span style="text-transform: none; font-weight: normal; font-size: 0.75rem; color: #6b7280;">(Optional)</span></label>
+        <input type="email" id="register-email" placeholder="you@example.com">
+      </div>
+      <div class="input-group">
+        <label for="register-password">Password</label>
+        <input type="password" id="register-password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="auth-submit-btn">Register</button>
+    </form>
+    
+    <a href="index.html" class="back-to-home">← Back to Home</a>
+  </div>
+
+  <script>
+    function switchAuthTab(tab) {
+      const tabs = document.querySelectorAll('.auth-tab');
+      tabs.forEach(t => t.classList.remove('active'));
+      
+      const title = document.getElementById('auth-title');
+      const subtitle = document.getElementById('auth-subtitle');
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      
+      if (tab === 'login') {
+        tabs[0].classList.add('active');
+        title.textContent = 'Welcome Back';
+        subtitle.textContent = 'Login to access your personalized vault.';
+        loginForm.style.display = 'flex';
+        registerForm.style.display = 'none';
+      } else {
+        tabs[1].classList.add('active');
+        title.textContent = 'Create Account';
+        subtitle.textContent = 'Join to save and organize your favorites.';
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'flex';
+      }
+    }
+  </script>
+</body>
+</html>

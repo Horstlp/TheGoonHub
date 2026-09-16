@@ -90,7 +90,7 @@ function openLightbox(index) {
     v.controls = true; 
     v.preload = "metadata";
     v.poster = post.sample_url || post.preview_url || '';
-    v.autoplay = false; 
+    v.autoplay = true; 
     v.loop = true; 
     v.playsInline = true; 
     v.disablePictureInPicture = true; 
@@ -249,35 +249,71 @@ function openLightbox(index) {
   if (heroCard && post.width && post.height && window.innerWidth > 800) {
       const vh = window.innerHeight;
       const vw = window.innerWidth;
-      const targetHeight = vh * 0.8;
-      const imgAspect = post.width / post.height;
-      const desiredImgWidth = targetHeight * imgAspect;
-      const detailsWidth = 350; // Approximated width of right panel
-      let desiredTotalWidth = desiredImgWidth + detailsWidth;
+      
+      const pWidth = parseFloat(post.width);
+      const pHeight = parseFloat(post.height);
+      const imgAspect = pWidth / pHeight;
+      
+      let targetImgHeight = vh * 0.8;
+      let desiredImgWidth = targetImgHeight * imgAspect;
+      const baseDetailsWidth = 350; 
+      let desiredTotalWidth = desiredImgWidth + baseDetailsWidth;
       
       const maxAllowedWidth = vw * 0.6; // Max 60% of screen width
-      const finalWidth = Math.min(desiredTotalWidth, maxAllowedWidth);
+      if (desiredTotalWidth > maxAllowedWidth) {
+          desiredTotalWidth = maxAllowedWidth;
+          desiredImgWidth = desiredTotalWidth - baseDetailsWidth;
+          targetImgHeight = desiredImgWidth / imgAspect;
+      }
       
       // Dynamically get the real grid column width
       const grid = document.getElementById('lb-recommendations-grid');
       let colWidth = 256; // Fallback
+      const rowHeight = 10;
+      const rowGap = 16;
       if (grid) {
           const gridStyle = window.getComputedStyle(grid);
           const cols = gridStyle.gridTemplateColumns;
           if (cols) {
               const firstCol = cols.split(' ')[0];
-              if (firstCol && firstCol !== 'none') {
-                  colWidth = parseFloat(firstCol) + 16; // column width + gap
+              const parsedCol = parseFloat(firstCol);
+              if (!isNaN(parsedCol)) {
+                  colWidth = parsedCol + 16; // column width + gap
               }
           }
       }
       
-      let colsNeeded = Math.round(finalWidth / colWidth);
-      if (colsNeeded < 3) colsNeeded = 3; // Give it at least 3 columns to look good
+      let colsNeeded = Math.round(desiredTotalWidth / colWidth);
+      if (colsNeeded < 3) colsNeeded = 3; 
+      
+      // Calculate exact dimensions to leave NO gap with masonry grid
+      const actualCardWidth = (colsNeeded * colWidth) - 16;
+      let rowSpan = Math.round((targetImgHeight + rowGap) / (rowHeight + rowGap));
+      let exactGridHeight = rowSpan * rowHeight + (rowSpan - 1) * rowGap;
+      let exactImgWidth = exactGridHeight * imgAspect;
+      let exactDetailsWidth = actualCardWidth - exactImgWidth;
+      
+      // If the details panel gets squished too much, give it another column
+      if (exactDetailsWidth < 280) {
+          colsNeeded += 1;
+      }
       
       heroCard.style.gridColumn = 'span ' + colsNeeded;
+      
+      const mediaContainer = heroCard.querySelector('.lb-card-media');
+      if (mediaContainer) {
+          mediaContainer.style.flex = `0 0 ${exactImgWidth}px`;
+      }
+      const imgContainer = document.getElementById('lightbox-media-container');
+      if (imgContainer) {
+          imgContainer.style.height = exactGridHeight + 'px';
+      }
   } else if (heroCard) {
       heroCard.style.gridColumn = '';
+      const mediaContainer = heroCard.querySelector('.lb-card-media');
+      if (mediaContainer) mediaContainer.style.flex = '';
+      const imgContainer = document.getElementById('lightbox-media-container');
+      if (imgContainer) imgContainer.style.height = '';
   }
 
   // Trigger recommendations

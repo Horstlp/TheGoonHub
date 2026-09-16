@@ -4,6 +4,27 @@
   const CACHE_MAX_AGE = 6 * 60 * 60 * 1000;
   const CACHE_LIMIT = 60;
 
+  const CONSENT_KEY = 'storage_consent';
+  let hasConsent = false;
+  
+  const cookies = document.cookie.split(';');
+  for (let i = 0; i < cookies.length; i++) {
+    const cookie = cookies[i].trim();
+    if (cookie.startsWith(CONSENT_KEY + '=')) {
+      if (cookie.substring(CONSENT_KEY.length + 1) === 'true') {
+        hasConsent = true;
+      }
+      break;
+    }
+  }
+
+  // Override localStorage setItem globally to respect consent
+  const originalLocalStorageSet = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    if (!hasConsent) return;
+    return originalLocalStorageSet(key, value);
+  };
+
   function isQuotaError(error) {
     return error && (
       error.name === 'QuotaExceededError' ||
@@ -56,14 +77,15 @@
   };
 
   window.safeLocalStorageSet = function (key, value) {
+    if (!hasConsent) return false;
     try {
-      localStorage.setItem(key, value);
+      originalLocalStorageSet(key, value);
       return true;
     } catch (error) {
       if (isQuotaError(error)) {
         window.cleanupTransientCache();
         try {
-          localStorage.setItem(key, value);
+          originalLocalStorageSet(key, value);
           return true;
         } catch (_) {
           notify('Storage is full. Recent temporary data was cleared, but this change could not be saved.');
@@ -76,6 +98,7 @@
   };
 
   window.safeSessionStorageSet = function (key, value) {
+    if (!hasConsent) return false;
     try {
       sessionStorage.setItem(key, value);
       return true;
@@ -121,6 +144,7 @@
   if (window.localforage && !window.localforage.__r34StorageGuard) {
     const originalSetItem = window.localforage.setItem.bind(window.localforage);
     window.localforage.setItem = async function (...args) {
+      if (!hasConsent) return null;
       try {
         return await originalSetItem(...args);
       } catch (error) {
@@ -183,5 +207,24 @@
   document.addEventListener('DOMContentLoaded', () => {
     window.cleanupTransientCache();
     renderNetworkState();
+
+    const banner = document.getElementById('storage-banner');
+    const btnAccept = document.getElementById('btn-accept-storage');
+
+    if (banner) {
+      if (!hasConsent) {
+        banner.style.display = 'flex';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    if (btnAccept) {
+      btnAccept.addEventListener('click', () => {
+        document.cookie = `${CONSENT_KEY}=true; max-age=31536000; path=/`;
+        if (banner) banner.style.display = 'none';
+        hasConsent = true;
+      });
+    }
   });
 }());
