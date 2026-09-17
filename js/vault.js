@@ -109,15 +109,29 @@ async function initVault() {
           
         if (data && data.vault_data) {
           const vd = data.vault_data;
-          vaultedPosts = vd.vaultedPosts || [];
-          vaultedManga = vd.vaultedManga || [];
-          vaultedFolders = vd.vaultedFolders || ["Default"];
-          vaultedMangaFolders = vd.vaultedMangaFolders || ["All"];
-          recentSearches = vd.recentSearches || [];
-          pinnedSearches = vd.pinnedSearches || [];
-          vaultFolderSettings = vd.vaultFolderSettings || {};
-          globalBlacklist = vd.globalBlacklist || [];
-          globalWhitelist = vd.globalWhitelist || [];
+          
+          const mergeById = (localArr, cloudArr) => {
+             const map = new Map();
+             cloudArr.forEach(item => map.set(String(item.id), item));
+             localArr.forEach(item => { if (!map.has(String(item.id))) map.set(String(item.id), item); });
+             return Array.from(map.values());
+          };
+          const mergeByVal = (localArr, cloudArr) => Array.from(new Set([...cloudArr, ...localArr]));
+
+          vaultedPosts = mergeById(vaultedPosts, vd.vaultedPosts || []);
+          vaultedManga = mergeById(vaultedManga, vd.vaultedManga || []);
+          
+          vaultedFolders = mergeByVal(vaultedFolders, vd.vaultedFolders || ["Default"]);
+          vaultedMangaFolders = mergeByVal(vaultedMangaFolders, vd.vaultedMangaFolders || ["All"]);
+          recentSearches = mergeByVal(recentSearches, vd.recentSearches || []);
+          pinnedSearches = mergeByVal(pinnedSearches, vd.pinnedSearches || []);
+          globalBlacklist = mergeByVal(globalBlacklist, vd.globalBlacklist || []);
+          globalWhitelist = mergeByVal(globalWhitelist, vd.globalWhitelist || []);
+          
+          vaultFolderSettings = { ...(vd.vaultFolderSettings || {}), ...vaultFolderSettings };
+          
+          // Trigger a sync back to cloud with the merged data
+          syncToSupabase();
           
           triggerToastNotification("Vault synced from cloud!");
         }
