@@ -11,6 +11,42 @@ let globalWhitelist = [];
 let vaultReadyResolve;
 const vaultReadyPromise = new Promise(r => vaultReadyResolve = r);
 
+let syncTimeout;
+async function syncToSupabase() {
+  if (typeof supabaseClient === 'undefined') return;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return;
+  
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    const vault_data = {
+      vaultedPosts, vaultedManga, vaultedFolders, vaultedMangaFolders,
+      recentSearches, pinnedSearches, vaultFolderSettings, globalBlacklist, globalWhitelist
+    };
+    
+    const { data: existing } = await supabaseClient.from('user_vaults').select('user_id').eq('user_id', session.user.id).single();
+    if (existing) {
+       await supabaseClient.from('user_vaults').update({ vault_data }).eq('user_id', session.user.id);
+    } else {
+       await supabaseClient.from('user_vaults').insert({ user_id: session.user.id, vault_data });
+    }
+  }, 1000);
+}
+
+// Intercept localforage to trigger sync
+setTimeout(() => {
+  if (window.localforage) {
+    const originalLocalForageSet = window.localforage.setItem.bind(window.localforage);
+    window.localforage.setItem = async function(key, value) {
+      const result = await originalLocalForageSet(key, value);
+      if (key.startsWith('r34_')) {
+        syncToSupabase();
+      }
+      return result;
+    };
+  }
+}, 500);
+
 async function initVault() {
   try {
     // Migration logic
@@ -60,6 +96,33 @@ async function initVault() {
     vaultFolderSettings = (await localforage.getItem('r34_folder_settings_v2')) || {};
     globalBlacklist = (await localforage.getItem('r34_blacklist')) || [];
     globalWhitelist = (await localforage.getItem('r34_whitelist')) || [];
+    
+    // Attempt Supabase Fetch
+    if (typeof supabaseClient !== 'undefined') {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        const { data, error } = await supabaseClient
+          .from('user_vaults')
+          .select('vault_data')
+          .eq('user_id', session.user.id)
+          .single();
+          
+        if (data && data.vault_data) {
+          const vd = data.vault_data;
+          vaultedPosts = vd.vaultedPosts || [];
+          vaultedManga = vd.vaultedManga || [];
+          vaultedFolders = vd.vaultedFolders || ["Default"];
+          vaultedMangaFolders = vd.vaultedMangaFolders || ["All"];
+          recentSearches = vd.recentSearches || [];
+          pinnedSearches = vd.pinnedSearches || [];
+          vaultFolderSettings = vd.vaultFolderSettings || {};
+          globalBlacklist = vd.globalBlacklist || [];
+          globalWhitelist = vd.globalWhitelist || [];
+          
+          triggerToastNotification("Vault synced from cloud!");
+        }
+      }
+    }
     
     // Resolve promise so other scripts know vault is ready
     if (typeof vaultReadyResolve === 'function') vaultReadyResolve();

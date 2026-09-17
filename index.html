@@ -20,6 +20,8 @@
   <link rel="stylesheet" href="css/style.css?v=3">
 
   <!-- Performance: Defer scripts so they don't block HTML parsing, keeping them in <head> -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" defer></script>
   <script src="js/api.js" defer></script>
   <script src="js/resilience.js" defer></script>
@@ -60,7 +62,7 @@
           </button>
           <div id="profile-dropdown" class="profile-dropdown-menu">
             <ul>
-              <li><button type="button" onclick="window.location.href='login.html'">Login / Register</button></li>
+              <li id="auth-menu-item"><button type="button" onclick="window.location.href='login.html'">Login / Register</button></li>
               <li><button type="button" onclick="document.getElementById('nav-vault').click(); document.getElementById('profile-dropdown').classList.remove('show');">Account</button></li>
               <li><button type="button" onclick="document.getElementById('nav-settings').click(); document.getElementById('profile-dropdown').classList.remove('show');">Settings</button></li>
             </ul>
@@ -879,6 +881,24 @@
     <button id="btn-accept-storage"
       style="background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: background 0.2s ease;">Understood</button>
   </div>
+
+  <script>
+    // Supabase Auth State Listener
+    async function updateAuthUI() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const authMenuItem = document.getElementById('auth-menu-item');
+      if (session) {
+        authMenuItem.innerHTML = `<button type="button" onclick="supabaseClient.auth.signOut().then(() => window.location.reload())">Logout (${session.user.email})</button>`;
+      } else {
+        authMenuItem.innerHTML = `<button type="button" onclick="window.location.href='login.html'">Login / Register</button>`;
+      }
+    }
+    updateAuthUI();
+    
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      updateAuthUI();
+    });
+  </script>
 
 </body>
 

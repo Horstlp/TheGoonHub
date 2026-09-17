@@ -6,6 +6,9 @@
   <meta name="description" content="Login or Register for R34 Media Hub Pro">
   <title>Login / Register - R34 Media Hub Pro</title>
   <link rel="stylesheet" href="css/style.css?v=3">
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
   <style>
     body {
       margin: 0;
@@ -161,10 +164,10 @@
       <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
     </div>
 
-    <form id="login-form" class="auth-form" onsubmit="event.preventDefault(); alert('Login coming soon!'); window.location.href='index.html';">
+    <form id="login-form" class="auth-form">
       <div class="input-group">
-        <label for="login-identifier">Username or Email</label>
-        <input type="text" id="login-identifier" placeholder="you@example.com or username" required>
+        <label for="login-identifier">Email</label>
+        <input type="email" id="login-identifier" placeholder="you@example.com" required>
       </div>
       <div class="input-group">
         <label for="login-password">Password</label>
@@ -173,7 +176,7 @@
       <button type="submit" class="auth-submit-btn">Login</button>
     </form>
 
-    <form id="register-form" class="auth-form" style="display: none;" onsubmit="event.preventDefault(); alert('Registration coming soon!'); window.location.href='index.html';">
+    <form id="register-form" class="auth-form" style="display: none;">
       <div class="input-group">
         <label for="register-username">Username</label>
         <input type="text" id="register-username" placeholder="cooluser123" required>
@@ -216,6 +219,52 @@
         registerForm.style.display = 'flex';
       }
     }
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-identifier').value;
+      const password = document.getElementById('login-password').value;
+      
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        alert("Login failed: " + error.message);
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      const username = document.getElementById('register-username').value;
+      
+      if (!email) {
+        alert("Email is required for Supabase registration.");
+        return;
+      }
+
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username: username
+          }
+        }
+      });
+
+      if (error) {
+        alert("Registration failed: " + error.message);
+      } else {
+        alert("Registration successful! You are now logged in.");
+        window.location.href = 'index.html';
+      }
+    });
   </script>
 </body>
 </html>
