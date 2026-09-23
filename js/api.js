@@ -93,15 +93,37 @@ function markApiUnhealthy(sourceKey) {
  * Danbooru uses a completely different URL structure than Rule34/Gelbooru.
  */
 function buildSearchUrl(source, tags, limit, page) {
+  const BANNED_TAGS = ['loli', 'shota', 'cub', 'toddler', 'underage', 'guro', 'snuff', 'rape'];
+  let tagList = tags.split(/[+ ]+/).map(t => t.trim().toLowerCase()).filter(t => t);
+  
+  // 1. Hard-block if they try to actively search for a banned term
+  const isBanned = tagList.some(t => BANNED_TAGS.includes(t));
+  if (isBanned) {
+    if (source.format === 'danbooru') {
+      return `${source.baseUrl}?tags=__blocked_search__&limit=0`;
+    }
+    return `${source.baseUrl}${source.auth}&tags=__blocked_search__&limit=0`;
+  }
+
+  // 2. Append negative tags, using + as the separator to maintain compatibility with booru APIs
+  let cleanTags = tags.trim();
+  for (let banned of BANNED_TAGS) {
+    if (!tagList.includes(`-${banned}`)) {
+      cleanTags += (cleanTags ? '+' : '') + `-${banned}`;
+    }
+  }
+
   if (source.format === 'danbooru') {
-    // Danbooru: /posts.json?tags=X&limit=N&page=N (1-indexed pages)
-    const cleanTags = tags.replace(/\+/g, ' ').trim();
+    // Danbooru: /posts.json?tags=X&limit=N&page=N
     let url = `${source.baseUrl}?tags=${encodeURIComponent(cleanTags)}&limit=${limit}&page=${page + 1}`;
     if (source.auth) url += source.auth;
     return url;
   }
+  
   // Rule34 / Gelbooru: /index.php?page=dapi&s=post&q=index&tags=X&limit=N&pid=N&json=1
-  let url = `${source.baseUrl}${source.auth}&tags=${encodeURIComponent(tags).replace(/%2B/g, '+')}&limit=${limit}&pid=${page}&json=1`;
+  // We encode the string, then replace encoded pluses (%2B) and spaces (%20) with literal pluses (+)
+  let encodedTags = encodeURIComponent(cleanTags).replace(/%2B/g, '+').replace(/%20/g, '+');
+  let url = `${source.baseUrl}${source.auth}&tags=${encodedTags}&limit=${limit}&pid=${page}&json=1`;
   return url;
 }
 

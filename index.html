@@ -55,24 +55,16 @@
         <button class="sidebar-item" id="nav-vault" title="Vault" aria-label="View Vault" aria-controls="view-vault">
           <img src="Icons/icons8-safe-48.png" alt="Vault" width="24" height="24" style="pointer-events:none;">
         </button>
-        <div class="profile-dropdown-wrapper" style="position: relative;">
-          <button class="sidebar-item" id="nav-profile" type="button" aria-label="View Profile"
-            onclick="toggleProfileDropdown(event)">
-            <img src="Icons/icons8-user-48.png" width="24" height="24" alt="Profile" style="pointer-events:none;">
-          </button>
-          <div id="profile-dropdown" class="profile-dropdown-menu">
-            <ul>
-              <li id="auth-menu-item"><button type="button" onclick="window.location.href='login.html'">Login / Register</button></li>
-              <li><button type="button" onclick="document.getElementById('nav-vault').click(); document.getElementById('profile-dropdown').classList.remove('show');">Account</button></li>
-              <li><button type="button" onclick="document.getElementById('nav-settings').click(); document.getElementById('profile-dropdown').classList.remove('show');">Settings</button></li>
-            </ul>
-          </div>
-        </div>
       </div>
-      <button class="sidebar-item" id="nav-settings" title="Settings" aria-label="Settings"
-        aria-controls="view-settings">
-        <img src="Icons/icons8-setting-48.png" alt="Settings" width="24" height="24" style="pointer-events:none;">
-      </button>
+      <div class="sidebar-bottom" style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
+        <button class="sidebar-item" id="nav-auth" title="Login" aria-label="Login" onclick="window.location.href='login.html'">
+          <img src="Icons/icons8-login-48.png" id="auth-icon" width="32" height="32" alt="Login" style="pointer-events:none;">
+        </button>
+        <button class="sidebar-item" id="nav-settings" title="Settings" aria-label="Settings"
+          aria-controls="view-settings">
+          <img src="Icons/icons8-setting-48.png" alt="Settings" width="24" height="24" style="pointer-events:none;">
+        </button>
+      </div>
     </nav>
 
     <main class="main-content">
@@ -173,16 +165,16 @@
           <div class="profile-info">
             <!-- Placeholder avatar from UI-Avatars -->
             <img src="https://ui-avatars.com/api/?name=Vault+Admin&background=8b5cf6&color=fff&size=128"
-              class="profile-pic" alt="Profile" />
+              class="profile-pic" alt="Profile" id="vault-profile-pic" />
             <div class="profile-text">
               <h1 id="vault-title">Vault Admin</h1>
-              <p>Locally Secured Collection</p>
+              <p id="vault-subtitle">Locally Secured Collection</p>
             </div>
           </div>
         </header>
 
         <!-- Backup Reminder -->
-        <div
+        <div id="local-backup-alert"
           style="background: rgba(30, 30, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 16px; margin: 0 40px 24px 40px; display: flex; align-items: center; justify-content: space-between;">
           <div style="display: flex; align-items: center; gap: 12px;">
             <img src="Icons/icons8-error-30.png" style="width: 20px; height: 20px; filter: grayscale(1) opacity(0.7);"
@@ -224,6 +216,7 @@
                 <li><button class="settings-tab active" data-target="settings-account">Account</button></li>
                 <li><button class="settings-tab" data-target="settings-tuning">Tuning</button></li>
                 <li><button class="settings-tab" data-target="settings-preferences">Preferences</button></li>
+                <li><button class="settings-tab" data-target="settings-filtering">Content Filtering</button></li>
                 <li><button class="settings-tab" data-target="settings-network">Network</button></li>
                 <li><button class="settings-tab" data-target="settings-legal">Legal & Privacy</button></li>
               </ul>
@@ -341,6 +334,37 @@
                     <option value="green">Emerald Green</option>
                     <option value="pink">Neon Pink</option>
                   </select>
+                </div>
+              </div>
+
+              <!-- Content Filtering Panel -->
+              <div id="settings-filtering" class="settings-pane" style="display: none;">
+                <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Content Filtering</h3>
+                
+                <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 1rem; color: #fff;">Global Whitelist</label>
+                  <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Tags here are ALWAYS included in your searches globally.</p>
+                  <div style="display: flex; gap: 8px; margin-bottom: 16px; position: relative;">
+                    <input type="text" id="whitelist-input" placeholder="Start typing a tag to add..."
+                      style="flex: 1; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
+                    <div id="whitelist-autocomplete-box"
+                      style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                    </div>
+                  </div>
+                  <div id="whitelist-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                </div>
+
+                <div class="setting-group" style="margin-bottom: 24px; background: rgba(22,22,31,0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 1rem; color: #fff;">Global Blacklist</label>
+                  <p style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 16px;">Hide posts containing these tags from ALL searches globally.</p>
+                  <div style="display: flex; gap: 8px; margin-bottom: 16px; position: relative;">
+                    <input type="text" id="blacklist-input" placeholder="Start typing a tag to add..."
+                      style="flex: 1; padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; outline: none;">
+                    <div id="blacklist-autocomplete-box"
+                      style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                    </div>
+                  </div>
+                  <div id="blacklist-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
                 </div>
               </div>
 
@@ -830,42 +854,7 @@
           </div>
         </div>
 
-        <!-- Content Filtering Section -->
-        <div class="settings-section">
-          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; color: var(--text);">Content Filtering</h3>
 
-          <!-- Whitelist -->
-          <div style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global
-              Whitelist</label>
-            <p class="modal-label">Tags here are ALWAYS included in your
-              searches globally.</p>
-            <div style="display: flex; gap: 8px; margin-bottom: 8px; position: relative;">
-              <input type="text" id="whitelist-input" placeholder="Start typing a tag to add..."
-                style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
-              <div id="whitelist-autocomplete-box"
-                style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-              </div>
-            </div>
-            <div id="whitelist-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;"></div>
-          </div>
-
-          <!-- Blacklist -->
-          <div>
-            <label style="display: block; margin-bottom: 4px; color: var(--text); font-weight: bold;">Global
-              Blacklist</label>
-            <p class="modal-label">Hide posts containing these tags from
-              ALL searches globally.</p>
-            <div style="display: flex; gap: 8px; margin-bottom: 8px; position: relative;">
-              <input type="text" id="blacklist-input" placeholder="Start typing a tag to add..."
-                style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none;">
-              <div id="blacklist-autocomplete-box"
-                style="display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
-              </div>
-            </div>
-            <div id="blacklist-tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;"></div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -886,11 +875,48 @@
     // Supabase Auth State Listener
     async function updateAuthUI() {
       const { data: { session } } = await supabaseClient.auth.getSession();
-      const authMenuItem = document.getElementById('auth-menu-item');
+      
+      const vaultTitle = document.getElementById('vault-title');
+      const vaultSubtitle = document.getElementById('vault-subtitle');
+      const vaultProfilePic = document.getElementById('vault-profile-pic');
+      const backupAlert = document.getElementById('local-backup-alert');
+      const authBtn = document.getElementById('nav-auth');
+      const authIcon = document.getElementById('auth-icon');
+
       if (session) {
-        authMenuItem.innerHTML = `<button type="button" onclick="supabaseClient.auth.signOut().then(() => window.location.reload())">Logout (${session.user.email})</button>`;
+        if (authBtn) {
+           authBtn.title = "Logout";
+           authBtn.setAttribute("aria-label", "Logout");
+           authBtn.onclick = () => supabaseClient.auth.signOut().then(() => window.location.reload());
+           if (authIcon) {
+             authIcon.src = "Icons/icons8-logout-64.png";
+             authIcon.alt = "Logout";
+           }
+        }
+        
+        // Update Vault Header
+        const username = session.user.user_metadata?.username || session.user.email.split('@')[0];
+        if (vaultTitle) vaultTitle.textContent = username;
+        if (vaultSubtitle) vaultSubtitle.textContent = "Cloud Synced Collection";
+        if (vaultProfilePic) vaultProfilePic.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=8b5cf6&color=fff&size=128`;
+        if (backupAlert) backupAlert.style.display = 'none';
+
       } else {
-        authMenuItem.innerHTML = `<button type="button" onclick="window.location.href='login.html'">Login / Register</button>`;
+        if (authBtn) {
+           authBtn.title = "Login";
+           authBtn.setAttribute("aria-label", "Login");
+           authBtn.onclick = () => window.location.href = 'login.html';
+           if (authIcon) {
+             authIcon.src = "Icons/icons8-login-48.png";
+             authIcon.alt = "Login";
+           }
+        }
+        
+        // Reset Vault Header
+        if (vaultTitle) vaultTitle.textContent = "Vault Admin";
+        if (vaultSubtitle) vaultSubtitle.textContent = "Locally Secured Collection";
+        if (vaultProfilePic) vaultProfilePic.src = "https://ui-avatars.com/api/?name=Vault+Admin&background=8b5cf6&color=fff&size=128";
+        if (backupAlert) backupAlert.style.display = 'flex';
       }
     }
     updateAuthUI();

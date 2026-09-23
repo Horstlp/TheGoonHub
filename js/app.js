@@ -232,7 +232,7 @@ const handleScroll = debounce((entries) => {
 }, 250);
 
 const scrollObserver = new IntersectionObserver(handleScroll, {
-  rootMargin: '400px'
+  rootMargin: '2500px'
 });
 
 scrollObserver.observe(scrollSentinel);
@@ -2074,7 +2074,7 @@ window.checkSentinelVisibility = function() {
 
   if (scrollSentinel) {
     const rect = scrollSentinel.getBoundingClientRect();
-    if (rect.top < window.innerHeight + 150) {
+    if (rect.top < window.innerHeight + 2500) {
       if (typeof loadNextPage === 'function') {
         loadNextPage();
       }
